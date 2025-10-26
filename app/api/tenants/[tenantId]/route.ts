@@ -7,6 +7,7 @@ import User from '@/models/User.model';
 import Shipment from '@/models/Shipment.model';
 import { jwtVerify } from 'jose';
 import mongoose from 'mongoose';
+import bcrypt from 'bcryptjs';
 
 // Helper function to verify Super Admin role from the token cookie
 async function verifySuperAdmin(request: NextRequest) {

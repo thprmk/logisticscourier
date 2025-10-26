@@ -138,7 +138,10 @@ closeModal();
   return (
     <div>
       <div className="flex justify-between items-center mb-6">
-        <p className="text-gray-500">Create, edit, and manage all branches on the platform.</p>
+         <div className="mb-6">
+          <h1 className="text-2xl font-semibold text-gray-900">Branches Dashboard</h1>
+          <p className="text-gray-500 mt-1">Create, edit, and manage all branches on the platform.</p>
+      </div>
         <button onClick={() => openModal('create')} className="flex items-center gap-2 bg-gray-900 text-white px-4 py-2 rounded-lg font-semibold hover:bg-gray-800 transition-colors">
           <Plus size={18} /> Add New Branch
         </button>

@@ -61,7 +61,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     navLinks = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '/dashboard/shipments', label: 'Shipments', icon: Package },
-        { href: '/dashboard/staff', label: 'Staff', icon: Users},
+        // { href: '/dashboard/staff', label: 'Staff', icon: Users},
     ];
   }
   
@@ -98,7 +98,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </aside>
       <main className="flex-1 flex flex-col overflow-hidden">
         <div className="flex-1 overflow-y-auto p-8">
-            <header className="mb-8"><h1 className="text-3xl font-bold text-gray-900">{pageTitle}</h1><p className="text-gray-500 mt-1">Welcome back, {user.name}.</p></header>
             {children}
         </div>
       </main>

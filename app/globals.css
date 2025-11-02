@@ -1,1 +1,228 @@
 @import "tailwindcss";
+
+@layer base {
+  :root {
+    --font-size-xs: 0.75rem;     /* 12px */
+    --font-size-sm: 0.875rem;     /* 14px */
+    --font-size-base: 1rem;       /* 16px */
+    --font-size-lg: 1.125rem;     /* 18px */
+    --font-size-xl: 1.25rem;      /* 20px */
+    --font-size-2xl: 1.5rem;      /* 24px */
+    --font-size-3xl: 1.875rem;    /* 30px */
+    --font-size-4xl: 2.25rem;     /* 36px */
+  }
+  
+  html {
+    font-size: 14px;
+  }
+  
+  body {
+    @apply bg-gray-50;
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, 'Inter', 'Helvetica Neue', sans-serif;
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    color: #1f2937;
+    font-size: 14px;
+    line-height: 1.5;
+  }
+  
+  h1, h2, h3, h4, h5, h6 {
+    @apply text-gray-900;
+    font-weight: 600;
+    letter-spacing: -0.01em;
+    line-height: 1.3;
+  }
+  
+  h1 { font-size: 1.5rem; }
+  h2 { font-size: 1.25rem; }
+  h3 { font-size: 1.125rem; }
+  
+  /* Enhanced focus styles */
+  button:focus, a:focus, input:focus, select:focus, textarea:focus {
+    @apply outline-none ring-2 ring-blue-500;
+  }
+  
+  /* Smooth transitions */
+  * {
+    transition-property: background-color, border-color, color, fill, stroke, box-shadow;
+    transition-timing-function: cubic-bezier(0.4, 0, 0.2, 1);
+    transition-duration: 200ms;
+  }
+}
+
+@layer components {
+  /* Clean Button Styles */
+  .btn-primary {
+    @apply px-4 py-2 bg-blue-600 text-white text-sm font-medium rounded-md hover:bg-blue-700 
+           focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 
+           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  
+  .btn-secondary {
+    @apply px-4 py-2 bg-white text-gray-700 text-sm font-medium rounded-md border border-gray-300 
+           hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 
+           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  
+  .btn-danger {
+    @apply px-4 py-2 bg-red-600 text-white text-sm font-medium rounded-md hover:bg-red-700 
+           focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-1 
+           disabled:opacity-50 disabled:cursor-not-allowed transition-colors;
+  }
+  
+  /* Clean Card Styles */
+  .card {
+    @apply bg-white rounded-lg border border-gray-200 overflow-hidden;
+  }
+  
+  .card-header {
+    @apply px-6 py-4 border-b border-gray-100 bg-white;
+  }
+  
+  .card-body {
+    @apply p-6;
+  }
+  
+  /* Clean Form Elements */
+  .form-input {
+    @apply block w-full px-3 py-2 text-sm border border-gray-300 rounded-md 
+           placeholder:text-gray-400 focus:outline-none focus:ring-1 focus:ring-blue-500 
+           focus:border-blue-500 transition-all;
+  }
+  
+  .form-label {
+    @apply block text-sm font-medium text-gray-700 mb-1;
+  }
+  
+  .form-select {
+    @apply block w-full px-3 py-2 text-sm border border-gray-300 rounded-md 
+           focus:outline-none focus:ring-1 focus:ring-blue-500 focus:border-blue-500 transition-all;
+  }
+  
+  /* Clean Table Styles */
+  .table-container {
+    @apply overflow-hidden rounded-lg border border-gray-200 bg-white;
+  }
+  
+  .table-header {
+    @apply bg-gray-50 px-6 py-3 text-left text-xs font-semibold text-gray-600 uppercase tracking-wider;
+  }
+  
+  .table-cell {
+    @apply px-6 py-4 text-sm text-gray-900;
+  }
+  
+  .table-row {
+    @apply border-b border-gray-100 hover:bg-gray-50 transition-colors;
+  }
+  
+  /* Clean Badge */
+  .badge {
+    @apply inline-flex items-center px-2.5 py-0.5 rounded-md text-xs font-medium;
+  }
+  
+  .badge-blue {
+    @apply bg-blue-50 text-blue-700;
+  }
+  
+  .badge-green {
+    @apply bg-green-50 text-green-700;
+  }
+  
+  .badge-yellow {
+    @apply bg-yellow-50 text-yellow-700;
+  }
+  
+  .badge-red {
+    @apply bg-red-50 text-red-700;
+  }
+  
+  .badge-gray {
+    @apply bg-gray-50 text-gray-700;
+  }
+  
+  /* Clean DatePicker Styling */
+  .react-datepicker-wrapper {
+    @apply w-auto;
+  }
+  
+  .react-datepicker {
+    @apply border-gray-200 rounded-lg shadow-lg font-sans text-sm;
+    border-width: 1px !important;
+  }
+  
+  .react-datepicker__header {
+    @apply bg-white border-b border-gray-200 rounded-t-lg pt-4 pb-2;
+    background-color: transparent !important;
+  }
+  
+  .react-datepicker__current-month {
+    @apply text-sm font-semibold text-gray-900 mb-2;
+  }
+  
+  .react-datepicker__day-name {
+    @apply text-xs font-medium text-gray-500 w-9 leading-9;
+  }
+  
+  .react-datepicker__day {
+    @apply text-xs font-normal text-gray-700 w-9 leading-9 rounded-md hover:bg-gray-100 transition-colors;
+  }
+  
+  .react-datepicker__day--selected,
+  .react-datepicker__day--in-range,
+  .react-datepicker__day--in-selecting-range {
+    @apply bg-blue-600 text-white font-medium hover:bg-blue-700;
+  }
+  
+  .react-datepicker__day--keyboard-selected {
+    @apply bg-blue-500 text-white;
+  }
+  
+  .react-datepicker__day--today {
+    @apply font-semibold border border-blue-400;
+  }
+  
+  .react-datepicker__day--disabled {
+    @apply text-gray-300 hover:bg-transparent cursor-not-allowed;
+  }
+  
+  .react-datepicker__navigation {
+    @apply top-4;
+  }
+  
+  .react-datepicker__navigation-icon::before {
+    @apply border-gray-600;
+    border-width: 1.5px 1.5px 0 0 !important;
+  }
+  
+  /* Toast Notification Enhancements */
+  div[role="status"] {
+    animation: slideInRight 0.4s cubic-bezier(0.16, 1, 0.3, 1) forwards !important;
+  }
+  
+  div[role="status"][data-visible="false"] {
+    animation: slideOutRight 0.3s cubic-bezier(0.4, 0, 1, 1) forwards !important;
+  }
+  
+  @keyframes slideInRight {
+    from {
+      transform: translateX(calc(100% + 2rem));
+      opacity: 0;
+    }
+    to {
+      transform: translateX(0);
+      opacity: 1;
+    }
+  }
+  
+  @keyframes slideOutRight {
+    from {
+      transform: translateX(0) scale(1);
+      opacity: 1;
+    }
+    to {
+      transform: translateX(calc(100% + 2rem)) scale(0.9);
+      opacity: 0;
+    }
+  }
+}

@@ -9,6 +9,8 @@ export interface User {
   name: string;
   email: string;
   role: string;
+  tenantId?: string;
+  tenantName?: string;
 }
 
 // Define the shape of the CONTEXT VALUE

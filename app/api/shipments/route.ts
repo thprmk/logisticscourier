@@ -30,8 +30,20 @@ export async function GET(request: NextRequest) {
   }
 
   try {
+    // Check if there's an assignedTo query parameter
+    const { searchParams } = new URL(request.url);
+    const assignedTo = searchParams.get('assignedTo');
+    
+    // Build query object
+    const query: any = { tenantId: payload.tenantId };
+    
+    // If assignedTo parameter is provided, filter by it
+    if (assignedTo) {
+      query.assignedTo = assignedTo;
+    }
+
     // CRUCIAL: Filter shipments by the tenantId from the user's token
-    const shipments = await Shipment.find({ tenantId: payload.tenantId })
+    const shipments = await Shipment.find(query)
       .sort({ createdAt: -1 }) // Show newest first
       .populate('assignedTo', 'name email'); // Later, this will fetch the driver's name
 
@@ -57,6 +69,7 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
+    const { assignedTo, ...shipmentData } = body; // Extract assignedTo from body
 
     // Generate a unique, human-readable tracking ID
     const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 10);
@@ -64,11 +77,12 @@ export async function POST(request: NextRequest) {
 
     // Create the new shipment
     const newShipment = new Shipment({
-      ...body,
+      ...shipmentData,
       trackingId: trackingId,
       status: 'Pending', // Set initial status
       tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId
       statusHistory: [{ status: 'Pending', timestamp: new Date() }], // Start the history log
+      ...(assignedTo && { assignedTo }) // Add assignedTo if provided
     });
 
     await newShipment.save();

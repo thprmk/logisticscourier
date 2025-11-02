@@ -7,7 +7,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
   return (
     <html lang="en">
       <body>
-        <Toaster position="top-right" />
+       <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
         <UserProvider>{children}</UserProvider>
       </body>
     </html>

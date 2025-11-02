@@ -61,26 +61,26 @@ export default function LoginPage() {
               id="email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
-              className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent"
+              className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent"
               required
             />
           </div>
-  <div className="space-y-2">
+          
+          <div className="space-y-2">
             <label htmlFor="password" className="block text-sm font-medium text-gray-700">
               Password
             </label>
             <div className="relative">
               <input
-                // Dynamically set the input type based on state
                 type={showPassword ? "text" : "password"}
                 id="password"
                 value={password}
                 onChange={(e) => setPassword(e.target.value)}
-                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-gray-800 focus:border-transparent pr-12" // Increased padding for the icon
+                className="w-full px-4 py-3 border border-gray-300 rounded-md shadow-sm transition-colors focus:outline-none focus:ring-2 focus:ring-blue-600 focus:border-transparent pr-12"
                 required
               />
               <button
-                type="button" // Important to prevent form submission
+                type="button"
                 onClick={() => setShowPassword(!showPassword)}
                 className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700"
                 aria-label="Toggle password visibility"
@@ -89,7 +89,6 @@ export default function LoginPage() {
               </button>
             </div>
           </div>
-          {/* END OF UPDATED SECTION */}
 
           {error && (
             <p className="text-red-600 text-sm text-center font-medium">{error}</p>
@@ -98,7 +97,7 @@ export default function LoginPage() {
           <div>
             <button
               type="submit"
-              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-gray-900 hover:bg-gray-800 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-gray-800 transition-all duration-300 ease-in-out"
+              className="w-full flex justify-center py-3 px-4 border border-transparent rounded-md shadow-sm text-sm font-medium text-white bg-blue-600 hover:bg-blue-700 disabled:bg-gray-400 focus:outline-none focus:ring-2 focus:ring-offset-2 focus:ring-blue-600 transition-all duration-300 ease-in-out"
               disabled={isLoading}
             >
               {isLoading ? (
@@ -111,11 +110,11 @@ export default function LoginPage() {
           </div>
         </form>
 
-                {/* dev hint */}
+        {/* dev hint */}
         <div className="mt-8 text-left">
-          <p className="text-xs text-gray-500">For developement use</p>
-            <p className="text-xs text-gray-500">Email: <span className="font-mono">superadmin@logistics.com</span></p>
-            <p className="text-xs text-gray-500">Pwd: <span className="font-mono">superpassword123</span></p>
+          <p className="text-xs text-gray-500">For development use</p>
+          <p className="text-xs text-gray-500">Email: <span className="font-mono">superadmin@logistics.com</span></p>
+          <p className="text-xs text-gray-500">Pwd: <span className="font-mono">superpassword123</span></p>
         </div>
       </div>
     </main>

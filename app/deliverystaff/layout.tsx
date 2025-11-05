@@ -2,10 +2,10 @@
 "use client";
 
 import { useUser } from '../context/UserContext';
-import { useEffect } from 'react';
+import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Package, User as UserIcon, Truck, Building } from 'lucide-react'; 
+import { LogOut, Package, User as UserIcon, Truck, Building, Bell } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 
 interface NavLink { href: string; label: string; icon: React.ElementType; }
@@ -15,11 +15,17 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
   const { user, setUser } = useUser();
   const router = useRouter();
   const pathname = usePathname();
+  const [notifications, setNotifications] = useState(0);
+  const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationList, setNotificationList] = useState<any[]>([]);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
       try {
-        const res = await fetch('/api/auth/me');
+        const res = await fetch('/api/auth/me', {
+          credentials: 'include',
+        });
         if (!res.ok) {
           throw new Error('Session expired');
         }
@@ -34,6 +40,31 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
       fetchUser();
     }
   }, [user, router, setUser]);
+
+  // Fetch notifications for delivery staff
+  useEffect(() => {
+    if (user && user.role === 'staff') {
+      const fetchNotifications = async () => {
+        try {
+          const res = await fetch('/api/notifications', {
+            credentials: 'include',
+          });
+          if (res.ok) {
+            const data = await res.json();
+            const unreadNotifications = data.filter((n: any) => !n.read);
+            setNotifications(unreadNotifications.length);
+            setNotificationList(data.slice(0, 10)); // Show last 10 notifications
+          }
+        } catch (error) {
+          console.error('Failed to fetch notifications');
+        }
+      };
+      fetchNotifications();
+      // Refresh notifications every 30 seconds
+      const interval = setInterval(fetchNotifications, 30000);
+      return () => clearInterval(interval);
+    }
+  }, [user]);
 
   if (!user) {
     return (
@@ -57,9 +88,16 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
   ];
 
   const handleLogout = async () => {
+    setShowLogoutModal(true);
+  };
+  
+  const confirmLogout = async () => {
     const toastId = toast.loading('Logging out...');
     try {
-      await fetch('/api/auth/logout', { method: 'POST' });
+      await fetch('/api/auth/logout', { 
+        method: 'POST',
+        credentials: 'include',
+      });
       toast.success('Logged out successfully!', { id: toastId });
       setUser(null);
       router.push('/login');
@@ -71,12 +109,18 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md">
+                <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+                <p className="text-xs text-gray-500 font-medium">Delivery Portal</p>
+              </div>
             </div>
             
             {/* Navigation */}
@@ -87,8 +131,8 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
                   href={link.href} 
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     pathname === link.href 
-                      ? 'bg-blue-50 text-blue-700' 
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-orange-600 text-white shadow-md' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   <link.icon className="h-4 w-4" strokeWidth={2} />
@@ -98,14 +142,32 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-3">
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500">Delivery Staff</p>
+            <div className="flex items-center gap-2">
+              {/* Notification Bell */}
+              <button
+                onClick={() => setShowNotifications(!showNotifications)}
+                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+              >
+                <Bell className="h-5 w-5" strokeWidth={2} />
+                {notifications > 0 && (
+                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    {notifications}
+                  </span>
+                )}
+              </button>
+              
+              {/* User Info - Desktop */}
+              <div className="hidden lg:flex items-center gap-3 pl-2">
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500">Delivery Staff</p>
+                </div>
+                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-md">
+                  <Truck size={18} className="text-white" strokeWidth={2.5} />
+                </div>
               </div>
-              <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md">
-                <Truck size={20} className="text-white" strokeWidth={2.5} />
-              </div>
+              
+              {/* Sign Out Button */}
               <button 
                 onClick={handleLogout} 
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
@@ -117,6 +179,111 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
           </div>
         </div>
       </header>
+      
+      {/* Notification Dropdown */}
+      {showNotifications && (
+        <div className="fixed top-16 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-orange-50 to-white">
+            <div className="flex items-center justify-between">
+              <h3 className="text-base font-bold text-gray-900">Notifications</h3>
+              <span className="px-2 py-1 bg-orange-600 text-white text-xs font-bold rounded-full">
+                {notifications}
+              </span>
+            </div>
+          </div>
+          <div className="overflow-y-auto max-h-80">
+            {notificationList.length > 0 ? (
+              <div className="p-3 space-y-2">
+                {notificationList.map((notification: any) => (
+                  <div 
+                    key={notification._id}
+                    className={`p-3 border rounded-lg transition-colors cursor-pointer ${
+                      notification.read 
+                        ? 'bg-gray-50 border-gray-200' 
+                        : 'bg-orange-50 border-orange-200 hover:bg-orange-100'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className="p-2 bg-orange-100 rounded-lg">
+                        <Bell className="h-4 w-4 text-orange-600" />
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-semibold text-gray-900 ${
+                          !notification.read && 'font-bold'
+                        }`}>
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                  </div>
+                ))}
+                <Link 
+                  href="/deliverystaff"
+                  onClick={() => setShowNotifications(false)}
+                  className="block p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors mt-2"
+                >
+                  <div className="flex items-start gap-3">
+                    <div className="p-2 bg-orange-100 rounded-lg">
+                      <Package className="h-4 w-4 text-orange-600" />
+                    </div>
+                    <div className="flex-1">
+                      <p className="text-sm font-semibold text-gray-900">View My Deliveries</p>
+                      <p className="text-xs text-gray-600 mt-1">Track and update your assigned deliveries</p>
+                    </div>
+                  </div>
+                </Link>
+              </div>
+            ) : (
+              <div className="p-8 text-center">
+                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
+                <p className="text-sm font-medium text-gray-900">No new notifications</p>
+                <p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
+              </div>
+            )}
+          </div>
+        </div>
+      )}
+      
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <LogOut className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">Sign Out</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Are you sure you want to sign out of your account?
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
+              >
+                Sign Out
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
       
       {/* Main Content */}
       <main className="max-w-7xl mx-auto px-6 py-8">

@@ -33,7 +33,9 @@ export default function DeliveryStaffPage() {
     const fetchAssignedShipments = async () => {
       setIsLoading(true);
       try {
-        const res = await fetch(`/api/shipments?assignedTo=${user?.id}`);
+        const res = await fetch(`/api/shipments?assignedTo=${user?.id}`, {
+          credentials: 'include',
+        });
         if (!res.ok) throw new Error('Failed to fetch assigned shipments');
         const data = await res.json();
         setShipments(data);
@@ -57,6 +59,7 @@ export default function DeliveryStaffPage() {
       const response = await fetch(`/api/shipments/${shipmentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
+        credentials: 'include',
         body: JSON.stringify({ 
           status: newStatus,
           ...(failureReason && { failureReason })

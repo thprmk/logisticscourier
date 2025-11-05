@@ -410,157 +410,152 @@ export default function ShipmentsPage() {
 
       {/* CREATE MODAL */}
       {modalType === 'create' && (
-        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-xl shadow-xl w-full max-w-4xl transform transition-all">
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 transform transition-all">
             <form onSubmit={handleCreateShipment}>
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Create New Shipment</h2>
-                <p className="text-gray-600 mt-1">Enter sender, recipient, and package details below.</p>
+              <div className="p-4 border-b border-gray-200">
+                <h2 className="text-lg font-bold text-gray-900">Create New Shipment</h2>
+                <p className="text-sm text-gray-600 mt-1">Enter sender, recipient, and package details below.</p>
               </div>
               
-              <div className="px-6 py-4 grid grid-cols-1 md:grid-cols-2 gap-6">
-                <fieldset className="space-y-4">
-                  <legend className="text-lg font-semibold text-gray-900">Sender Details</legend>
-                  <div className="space-y-4">
+              <div className="px-4 py-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Sender Details</legend>
+                  <div className="space-y-2">
                     <div>
-                      <label className="form-label">Full Name</label>
+                      <label className="form-label text-xs">Full Name</label>
                       <input 
                         type="text" 
                         placeholder="Sender's full name" 
                         value={senderName} 
                         onChange={(e) => setSenderName(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Full Address</label>
+                      <label className="form-label text-xs">Full Address</label>
                       <input 
                         type="text" 
                         placeholder="Sender's full address" 
                         value={senderAddress} 
                         onChange={(e) => setSenderAddress(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Phone Number</label>
+                      <label className="form-label text-xs">Phone Number</label>
                       <input 
                         type="tel" 
                         placeholder="Sender's phone number" 
                         value={senderPhone} 
                         onChange={(e) => setSenderPhone(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                   </div>
                 </fieldset>
                 
-                <fieldset className="space-y-4">
-                  <legend className="text-lg font-semibold text-gray-900">Recipient Details</legend>
-                  <div className="space-y-4">
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Recipient Details</legend>
+                  <div className="space-y-2">
                     <div>
-                      <label className="form-label">Full Name</label>
+                      <label className="form-label text-xs">Full Name</label>
                       <input 
                         type="text" 
                         placeholder="Recipient's full name" 
                         value={recipientName} 
                         onChange={(e) => setRecipientName(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Full Address</label>
+                      <label className="form-label text-xs">Full Address</label>
                       <input 
                         type="text" 
                         placeholder="Recipient's full address" 
                         value={recipientAddress} 
                         onChange={(e) => setRecipientAddress(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Phone Number</label>
+                      <label className="form-label text-xs">Phone Number</label>
                       <input 
                         type="tel" 
                         placeholder="Recipient's phone number" 
                         value={recipientPhone} 
                         onChange={(e) => setRecipientPhone(e.target.value)} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                       />
                     </div>
                   </div>
                 </fieldset>
                 
-                <fieldset className="md:col-span-2 space-y-4">
-                  <legend className="text-lg font-semibold text-gray-900">Package Details</legend>
-                  <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                <fieldset className="md:col-span-2 space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Package Details</legend>
+                  <div className="grid grid-cols-3 gap-3">
                     <div>
-                      <label className="form-label">Weight (kg)</label>
+                      <label className="form-label text-xs">Weight (kg)</label>
                       <input 
                         type="number" 
-                        placeholder="Weight in kg" 
+                        placeholder="Weight" 
                         value={packageWeight} 
                         onChange={(e) => setPackageWeight(parseFloat(e.target.value))} 
-                        className="form-input" 
+                        className="form-input text-sm py-2" 
                         required 
                         min="0.1" 
                         step="0.1" 
                       />
                     </div>
                     <div>
-                      <label className="form-label">Package Type</label>
+                      <label className="form-label text-xs">Package Type</label>
                       <select 
                         value={packageType} 
                         onChange={(e) => setPackageType(e.target.value)} 
-                        className="form-select"
+                        className="form-select text-sm py-2"
                       >
                         <option value="Parcel">Parcel</option>
                         <option value="Document">Document</option>
                         <option value="Fragile">Fragile</option>
                       </select>
                     </div>
-                  </div>
-                </fieldset>
-                
-                {/* Staff Assignment Section */}
-                <fieldset className="md:col-span-2 space-y-4">
-                  <legend className="text-lg font-semibold text-gray-900">Assign Staff (Optional)</legend>
-                  <div>
-                    <label className="form-label">Select Staff Member</label>
-                    <select 
-                      value={assignedStaff} 
-                      onChange={(e) => setAssignedStaff(e.target.value)} 
-                      className="form-select"
-                    >
-                      <option value="">-- Select Staff --</option>
-                      {drivers.map(driver => (
-                        <option key={driver._id} value={driver._id}>
-                          {driver.name}
-                        </option>
-                      ))}
-                    </select>
+                    <div>
+                      <label className="form-label text-xs">Assign Staff</label>
+                      <select 
+                        value={assignedStaff} 
+                        onChange={(e) => setAssignedStaff(e.target.value)} 
+                        className="form-select text-sm py-2"
+                      >
+                        <option value="">-- None --</option>
+                        {drivers.map(driver => (
+                          <option key={driver._id} value={driver._id}>
+                            {driver.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
                   </div>
                 </fieldset>
               </div>
 
-              <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
+              <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50 rounded-b-xl border-t border-gray-200">
                 <button 
                   type="button" 
                   onClick={closeModal} 
-                  className="px-5 py-2.5 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
+                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSubmitting} 
-                  className="px-5 py-2.5 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">
@@ -570,7 +565,7 @@ export default function ShipmentsPage() {
                       </svg>
                       Saving...
                     </span>
-                  ) : 'Save Shipment'}
+                  ) : 'Create Shipment'}
                 </button>
               </div>
             </form>

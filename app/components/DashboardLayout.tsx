@@ -29,12 +29,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const pathname = usePathname();
   const [notifications, setNotifications] = useState(0);
   const [showNotifications, setShowNotifications] = useState(false);
+  const [notificationList, setNotificationList] = useState<any[]>([]);
+  const [showLogoutModal, setShowLogoutModal] = useState(false);
 
   useEffect(() => {
     // This effect runs on the client to fetch user data if it's not already there
     const fetchUser = async () => {
         try {
-            const res = await fetch('/api/auth/me');
+            const res = await fetch('/api/auth/me', {
+                credentials: 'include', // Ensure cookies are included
+            });
             if (!res.ok) {
                 throw new Error('Session expired');
             }
@@ -60,19 +64,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     }
   }, [user, router, setUser]);
 
-  // Fetch notifications for admin
+  // Fetch notifications for admin and delivery staff
   useEffect(() => {
-    if (user && user.role === 'admin') {
+    if (user && (user.role === 'admin' || user.role === 'staff')) {
       const fetchNotifications = async () => {
         try {
-          const res = await fetch('/api/shipments');
+          const res = await fetch('/api/notifications', {
+            credentials: 'include',
+          });
           if (res.ok) {
-            const shipments = await res.json();
-            // Count pending and out for delivery shipments as notifications
-            const pendingCount = shipments.filter(
-              (s: any) => s.status === 'Pending' || s.status === 'Out for Delivery'
-            ).length;
-            setNotifications(pendingCount);
+            const data = await res.json();
+            const unreadNotifications = data.filter((n: any) => !n.read);
+            setNotifications(unreadNotifications.length);
+            setNotificationList(data.slice(0, 10)); // Show last 10 notifications
           }
         } catch (error) {
           console.error('Failed to fetch notifications');
@@ -122,9 +126,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }
   
   const handleLogout = async () => {
+    setShowLogoutModal(true);
+  };
+  
+  const confirmLogout = async () => {
     const toastId = toast.loading('Signing you out...');
     try {
-        await fetch('/api/auth/logout', { method: 'POST' });
+        await fetch('/api/auth/logout', { 
+          method: 'POST',
+          credentials: 'include',
+        });
         toast.success('Successfully logged out', { id: toastId });
         setUser(null); // Clear user from context
         router.push('/login');
@@ -136,12 +147,20 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   return (
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50">
-        <div className="max-w-7xl mx-auto px-6">
+      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
           <div className="flex items-center justify-between h-16">
             {/* Logo */}
-            <div className="flex items-center">
-              <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+            <div className="flex items-center gap-3">
+              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-md">
+                <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
+              </div>
+              <div>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+                {user?.tenantName && (
+                  <p className="text-xs text-gray-500 font-medium">{user.tenantName}</p>
+                )}
+              </div>
             </div>
             
             {/* Navigation */}
@@ -152,8 +171,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   href={link.href} 
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard') 
-                      ? 'bg-blue-50 text-blue-700' 
-                      : 'text-gray-700 hover:bg-gray-50 hover:text-gray-900'
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
                   <link.icon className="h-4 w-4" strokeWidth={2} />
@@ -163,29 +182,34 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-3">
+            <div className="flex items-center gap-2">
               {/* Notification Bell */}
-              {user.role === 'admin' && (
+              {(user.role === 'admin' || user.role === 'staff') && (
                 <button
                   onClick={() => setShowNotifications(!showNotifications)}
                   className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
                 >
                   <Bell className="h-5 w-5" strokeWidth={2} />
                   {notifications > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                       {notifications}
                     </span>
                   )}
                 </button>
               )}
               
-              <div className="hidden md:block text-right">
-                <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                <p className="text-xs text-gray-500">{userRole}</p>
+              {/* User Info - Desktop */}
+              <div className="hidden lg:flex items-center gap-3 pl-2">
+                <div className="text-right">
+                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500">{userRole}</p>
+                </div>
+                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
+                  <UserIconComponent size={18} className="text-white" strokeWidth={2.5} />
+                </div>
               </div>
-              <div className="h-10 w-10 flex items-center justify-center bg-blue-600 rounded-full">
-                <UserIconComponent size={18} className="text-white" strokeWidth={2} />
-              </div>
+              
+              {/* Sign Out Button */}
               <button 
                 onClick={handleLogout} 
                 className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
@@ -199,7 +223,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       </header>
       
       {/* Notification Dropdown */}
-      {showNotifications && user.role === 'admin' && (
+      {showNotifications && (user.role === 'admin' || user.role === 'staff') && (
         <div className="fixed top-16 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
           <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
             <div className="flex items-center justify-between">
@@ -210,31 +234,62 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
           <div className="overflow-y-auto max-h-80">
-            {notifications > 0 ? (
+            {notificationList.length > 0 ? (
               <div className="p-3 space-y-2">
-                <div className="p-3 bg-yellow-50 border border-yellow-200 rounded-lg hover:bg-yellow-100 transition-colors cursor-pointer">
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-yellow-100 rounded-lg">
-                      <Bell className="h-4 w-4 text-yellow-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">Pending Shipments</p>
-                      <p className="text-xs text-gray-600 mt-1">You have shipments waiting for assignment</p>
+                {notificationList.map((notification: any) => (
+                  <div 
+                    key={notification._id}
+                    className={`p-3 border rounded-lg transition-colors cursor-pointer ${
+                      notification.read 
+                        ? 'bg-gray-50 border-gray-200' 
+                        : notification.type === 'assignment'
+                          ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
+                          : 'bg-green-50 border-green-200 hover:bg-green-100'
+                    }`}
+                  >
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${
+                        notification.type === 'assignment' ? 'bg-blue-100' : 'bg-green-100'
+                      }`}>
+                        {notification.type === 'assignment' ? (
+                          <Bell className={`h-4 w-4 ${
+                            notification.type === 'assignment' ? 'text-blue-600' : 'text-green-600'
+                          }`} />
+                        ) : (
+                          <Package className="h-4 w-4 text-green-600" />
+                        )}
+                      </div>
+                      <div className="flex-1">
+                        <p className={`text-sm font-semibold text-gray-900 ${
+                          !notification.read && 'font-bold'
+                        }`}>
+                          {notification.message}
+                        </p>
+                        <p className="text-xs text-gray-500 mt-1">
+                          {new Date(notification.createdAt).toLocaleString()}
+                        </p>
+                      </div>
                     </div>
                   </div>
-                </div>
+                ))}
                 <Link 
-                  href="/dashboard/shipments"
+                  href={user.role === 'admin' ? '/dashboard/shipments' : '/deliverystaff'}
                   onClick={() => setShowNotifications(false)}
-                  className="block p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors"
+                  className="block p-3 bg-blue-50 border border-blue-200 rounded-lg hover:bg-blue-100 transition-colors mt-2"
                 >
                   <div className="flex items-start gap-3">
                     <div className="p-2 bg-blue-100 rounded-lg">
                       <Package className="h-4 w-4 text-blue-600" />
                     </div>
                     <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">View All Shipments</p>
-                      <p className="text-xs text-gray-600 mt-1">Manage and track all deliveries</p>
+                      <p className="text-sm font-semibold text-gray-900">
+                        {user.role === 'admin' ? 'View All Shipments' : 'View My Deliveries'}
+                      </p>
+                      <p className="text-xs text-gray-600 mt-1">
+                        {user.role === 'admin' 
+                          ? 'Manage and track all deliveries' 
+                          : 'Track and update your assigned deliveries'}
+                      </p>
                     </div>
                   </div>
                 </Link>
@@ -246,6 +301,44 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
               </div>
             )}
+          </div>
+        </div>
+      )}
+      
+      {/* Logout Confirmation Modal */}
+      {showLogoutModal && (
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <LogOut className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">Sign Out</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Are you sure you want to sign out of your account?
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+              <button
+                type="button"
+                onClick={() => setShowLogoutModal(false)}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmLogout}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
+              >
+                Sign Out
+              </button>
+            </div>
           </div>
         </div>
       )}

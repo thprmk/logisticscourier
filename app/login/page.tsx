@@ -24,10 +24,13 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
+        credentials: 'include', // Ensure cookies are included
       });
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Login failed');
-      router.push('/dashboard');
+      
+      // Use window.location for a full page reload to ensure cookies are set
+      window.location.href = '/dashboard';
     } catch (error: any) {
       setError(error.message);
     } finally {

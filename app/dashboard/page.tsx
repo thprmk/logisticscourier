@@ -4,10 +4,8 @@
 
 import { useState, useEffect, useMemo } from 'react';
 import { useUser } from '../context/UserContext';
-import { TrendingUp, Calendar, BarChart2, Target, Package as PackageIcon } from 'lucide-react';
+import { TrendingUp, Calendar, BarChart2, Target, Package as PackageIcon, CheckCircle, XCircle, Package } from 'lucide-react';
 import toast from 'react-hot-toast';
-import DatePicker from 'react-datepicker';
-import "react-datepicker/dist/react-datepicker.css";
 
 // Interfaces for data
 interface IShipment { 
@@ -28,15 +26,17 @@ export default function BranchDashboardPage() {
   const [allShipments, setAllShipments] = useState<IShipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [error, setError] = useState('');
-  const [dateRange, setDateRange] = useState<[Date | null, Date | null]>([null, null]);
-  const [startDate, endDate] = dateRange;
+  const [startDate, setStartDate] = useState<string>('');
+  const [endDate, setEndDate] = useState<string>('');
   const [timeFilter, setTimeFilter] = useState<'7days' | '30days' | '3months' | '1year'>('7days');
 
   useEffect(() => {
     const fetchShipments = async () => {
       try {
         setIsLoading(true);
-        const response = await fetch('/api/shipments');
+        const response = await fetch('/api/shipments', {
+          credentials: 'include',
+        });
         if (!response.ok) throw new Error('Failed to fetch shipments');
         const data: IShipment[] = await response.json();
         setAllShipments(data);
@@ -68,14 +68,16 @@ export default function BranchDashboardPage() {
         acc.total += 1;
         return acc;
     }, { pending: 0, outForDelivery: 0, delivered: 0, failed: 0, total: 0 });
-  }, [allShipments, dateRange]);
+  }, [allShipments, startDate, endDate]);
 
   // Time-based statistics
   const timeBasedStats = useMemo(() => {
     const filtered = startDate && endDate 
       ? allShipments.filter(s => {
           const shipmentDate = new Date(s.createdAt);
-          return shipmentDate >= startDate && shipmentDate <= endDate;
+          const start = new Date(startDate);
+          const end = new Date(endDate);
+          return shipmentDate >= start && shipmentDate <= end;
         })
       : allShipments;
 
@@ -86,16 +88,19 @@ export default function BranchDashboardPage() {
     return { delivered, total, successRate };
   }, [allShipments, startDate, endDate]);
 
-  // Chart data for delivery trends
+  // Chart data for delivery trends - Simplified
   const chartData = useMemo(() => {
     if (!startDate || !endDate) return [];
     
-    const data: Array<{ day: string; value: number; date: Date }> = [];
+    const data: Array<{ day: string; delivered: number; failed: number; total: number; date: Date }> = [];
     const start = new Date(startDate);
     const end = new Date(endDate);
     const daysDiff = Math.ceil((end.getTime() - start.getTime()) / (1000 * 60 * 60 * 24));
 
-    for (let i = 0; i <= Math.min(daysDiff, 30); i++) {
+    // Limit to maximum 30 days for better visualization
+    const daysToShow = Math.min(daysDiff, 30);
+
+    for (let i = 0; i <= daysToShow; i++) {
       const date = new Date(start.getTime() + i * 24 * 60 * 60 * 1000);
       const dayShipments = allShipments.filter(s => {
         const shipmentDate = new Date(s.createdAt);
@@ -103,20 +108,22 @@ export default function BranchDashboardPage() {
       });
 
       const delivered = dayShipments.filter(s => s.status === 'Delivered').length;
+      const failed = dayShipments.filter(s => s.status === 'Failed').length;
       const total = dayShipments.length;
-      const profitLoss = delivered * 100 - (total - delivered) * 50; // Mock P&L calculation
 
       data.push({
         date,
         day: date.toLocaleDateString('en-US', { month: 'short', day: 'numeric' }),
-        value: profitLoss,
+        delivered,
+        failed,
+        total,
       });
     }
 
     return data;
   }, [allShipments, startDate, endDate]);
 
-  const maxChartValue = Math.max(...chartData.map(d => Math.abs(d.value)), 1);
+  const maxChartValue = Math.max(...chartData.map(d => d.total), 1);
 
   if (error) return (
     <div className="flex h-96 items-center justify-center bg-white rounded-lg border border-gray-200">
@@ -159,6 +166,7 @@ export default function BranchDashboardPage() {
           value={isLoading ? "--" : stats.total.toString()}
           isLoading={isLoading}
           trend="+12%"
+          color="pink"
         />
         <MetricCard
           icon={TrendingUp}
@@ -166,21 +174,21 @@ export default function BranchDashboardPage() {
           value={isLoading ? "--" : stats.delivered.toString()}
           isLoading={isLoading}
           trend="+8%"
-          color="green"
+          color="cyan"
         />
         <MetricCard
           icon={Calendar}
           label="In Progress"
           value={isLoading ? "--" : (stats.pending + stats.outForDelivery).toString()}
           isLoading={isLoading}
-          color="blue"
+          color="purple"
         />
         <MetricCard
           icon={Target}
           label="Success Rate"
           value={isLoading ? "--" : `${timeBasedStats.successRate}%`}
           isLoading={isLoading}
-          color="purple"
+          color="orange"
         />
       </div>
 
@@ -188,67 +196,194 @@ export default function BranchDashboardPage() {
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Daily Trend Chart - Takes 2 columns */}
         <div className="lg:col-span-2 bg-white rounded-xl border border-gray-200 p-6 shadow-sm">
-          <div className="flex items-center justify-between mb-6">
-            <div className="flex items-center gap-3">
-              <div className="p-2 bg-blue-50 rounded-lg">
-                <BarChart2 className="h-5 w-5 text-blue-600" strokeWidth={2} />
-              </div>
-              <div>
-                <h3 className="text-base font-bold text-gray-900">Delivery Performance</h3>
-                <p className="text-xs text-gray-600 mt-0.5">Track shipment trends over time</p>
+          <div className="flex flex-col gap-4 mb-6">
+            <div className="flex items-center justify-between">
+              <div className="flex items-center gap-3">
+                <div className="p-2 bg-gradient-to-br from-blue-500 to-blue-600 rounded-lg shadow-sm">
+                  <BarChart2 className="h-5 w-5 text-white" strokeWidth={2} />
+                </div>
+                <div>
+                  <h3 className="text-base font-bold text-gray-900">Daily Delivery Performance</h3>
+                  <p className="text-xs text-gray-500 mt-0.5">Track delivery statistics by date</p>
+                </div>
               </div>
             </div>
-            <DatePicker
-              selectsRange={true}
-              startDate={startDate}
-              endDate={endDate}
-              onChange={(update: [Date | null, Date | null]) => setDateRange(update)}
-              isClearable={true}
-              placeholderText="Select range"
-              className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-1 focus:ring-blue-500 bg-white"
-              dateFormat="MMM d"
-            />
+            
+            {/* Date Range Picker Row */}
+            <div className="flex flex-col sm:flex-row sm:items-center gap-3 p-4 bg-gradient-to-r from-blue-50 to-indigo-50 rounded-xl border border-blue-200">
+              <div className="flex items-center gap-2">
+                <div className="p-2 bg-white rounded-lg shadow-sm">
+                  <Calendar className="h-4 w-4 text-blue-600" />
+                </div>
+                <span className="text-sm font-semibold text-gray-900">Date Range:</span>
+              </div>
+              <div className="flex-1 flex flex-wrap items-center gap-3">
+                <div className="flex items-center gap-2">
+                  <label htmlFor="start-date" className="text-sm text-gray-600 font-medium">From</label>
+                  <input
+                    type="date"
+                    id="start-date"
+                    value={startDate}
+                    onChange={(e) => setStartDate(e.target.value)}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                  />
+                </div>
+                <span className="text-gray-400">→</span>
+                <div className="flex items-center gap-2">
+                  <label htmlFor="end-date" className="text-sm text-gray-600 font-medium">To</label>
+                  <input
+                    type="date"
+                    id="end-date"
+                    value={endDate}
+                    onChange={(e) => setEndDate(e.target.value)}
+                    min={startDate}
+                    max={new Date().toISOString().split('T')[0]}
+                    className="px-3 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500 bg-white shadow-sm"
+                  />
+                </div>
+              </div>
+              {startDate && endDate && (
+                <button
+                  onClick={() => {
+                    setStartDate('');
+                    setEndDate('');
+                  }}
+                  className="px-4 py-2 text-sm font-medium text-blue-700 bg-white border border-blue-300 rounded-lg hover:bg-blue-50 transition-colors shadow-sm"
+                >
+                  Clear
+                </button>
+              )}
+            </div>
           </div>
 
-          {/* Bar Chart */}
+          {/* Chart Content */}
           {isLoading ? (
-            <div className="h-64 flex items-center justify-center">
-              <div className="animate-spin rounded-full h-8 w-8 border-2 border-blue-600 border-t-transparent"></div>
+            <div className="h-96 flex items-center justify-center">
+              <div className="text-center">
+                <div className="animate-spin rounded-full h-10 w-10 border-3 border-blue-500 border-t-transparent mx-auto mb-3"></div>
+                <p className="text-sm text-gray-500">Loading performance data...</p>
+              </div>
             </div>
           ) : chartData.length === 0 ? (
-            <div className="h-64 flex items-center justify-center bg-gray-50 rounded">
-              <p className="text-sm text-gray-500">Select a date range to view chart</p>
+            <div className="h-96 flex items-center justify-center bg-gradient-to-br from-gray-50 to-white rounded-lg border-2 border-dashed border-gray-200">
+              <div className="text-center px-4">
+                <Calendar className="mx-auto h-16 w-16 text-gray-300 mb-4" />
+                <p className="text-lg font-semibold text-gray-700 mb-2">No Date Range Selected</p>
+                <p className="text-sm text-gray-500">Choose a date range above to view delivery performance</p>
+              </div>
             </div>
           ) : (
-            <div className="h-64 flex items-end justify-between gap-1">
+            <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2 custom-scrollbar">
               {chartData.map((data, index) => {
-                const height = (Math.abs(data.value) / maxChartValue) * 100;
-                const isPositive = data.value >= 0;
+                const successRate = data.total > 0 ? (data.delivered / data.total) * 100 : 0;
+                const failureRate = data.total > 0 ? (data.failed / data.total) * 100 : 0;
+                const pendingRate = 100 - successRate - failureRate;
                 
                 return (
-                  <div key={index} className="flex-1 flex flex-col items-center justify-end h-full group">
-                    <div 
-                      className={`w-full rounded-t transition-all ${
-                        isPositive ? 'bg-black hover:bg-gray-800' : 'bg-red-500 hover:bg-red-600'
-                      }`}
-                      style={{ height: `${height}%` }}
-                    >
-                      <div className="opacity-0 group-hover:opacity-100 transition-opacity text-white text-xs text-center pt-1">
-                        {data.value > 0 ? '+' : ''}{data.value}
+                  <div key={index} className="p-4 bg-gradient-to-r from-gray-50 to-white rounded-lg border border-gray-200 hover:shadow-md transition-all group">
+                    {/* Date Header */}
+                    <div className="flex items-center justify-between mb-3">
+                      <div className="flex items-center gap-2">
+                        <div className="w-8 h-8 flex items-center justify-center bg-blue-100 rounded-lg">
+                          <Calendar className="h-4 w-4 text-blue-600" />
+                        </div>
+                        <span className="text-sm font-bold text-gray-900">{data.day}</span>
+                      </div>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Total Shipments</p>
+                          <p className="text-lg font-bold text-gray-900">{data.total}</p>
+                        </div>
+                        <div className="text-right">
+                          <p className="text-xs text-gray-500">Success Rate</p>
+                          <p className="text-lg font-bold text-emerald-600">{successRate.toFixed(0)}%</p>
+                        </div>
                       </div>
                     </div>
-                    <span className="text-xs text-gray-400 mt-2">{data.day}</span>
+                    
+                    {/* Horizontal Stacked Bar */}
+                    <div className="relative mb-3">
+                      <div className="flex h-10 rounded-lg overflow-hidden shadow-sm border border-gray-200">
+                        {/* Delivered Section */}
+                        {data.delivered > 0 && (
+                          <div 
+                            className="bg-gradient-to-r from-emerald-500 to-emerald-400 flex items-center justify-center text-white font-bold text-sm hover:from-emerald-600 hover:to-emerald-500 transition-all relative group/bar cursor-pointer"
+                            style={{ width: `${successRate}%` }}
+                            title={`Delivered: ${data.delivered} (${successRate.toFixed(1)}%)`}
+                          >
+                            {successRate > 15 && (
+                              <span className="flex items-center gap-1.5">
+                                <CheckCircle className="h-4 w-4" />
+                                <span>{data.delivered}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Failed Section */}
+                        {data.failed > 0 && (
+                          <div 
+                            className="bg-gradient-to-r from-rose-500 to-rose-400 flex items-center justify-center text-white font-bold text-sm hover:from-rose-600 hover:to-rose-500 transition-all relative group/bar cursor-pointer"
+                            style={{ width: `${failureRate}%` }}
+                            title={`Failed: ${data.failed} (${failureRate.toFixed(1)}%)`}
+                          >
+                            {failureRate > 15 && (
+                              <span className="flex items-center gap-1.5">
+                                <XCircle className="h-4 w-4" />
+                                <span>{data.failed}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                        
+                        {/* Pending Section */}
+                        {(data.total - data.delivered - data.failed) > 0 && (
+                          <div 
+                            className="bg-gradient-to-r from-amber-400 to-amber-300 flex items-center justify-center text-gray-800 font-bold text-sm hover:from-amber-500 hover:to-amber-400 transition-all relative group/bar cursor-pointer"
+                            style={{ width: `${pendingRate}%` }}
+                            title={`In Progress: ${data.total - data.delivered - data.failed} (${pendingRate.toFixed(1)}%)`}
+                          >
+                            {pendingRate > 15 && (
+                              <span className="flex items-center gap-1.5">
+                                <PackageIcon className="h-4 w-4" />
+                                <span>{data.total - data.delivered - data.failed}</span>
+                              </span>
+                            )}
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                    
+                    {/* Details Grid */}
+                    <div className="grid grid-cols-3 gap-3">
+                      <div className="flex items-center gap-2 p-2 bg-emerald-50 rounded-lg">
+                        <div className="w-2 h-2 bg-emerald-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-xs text-emerald-700 font-medium">Delivered</p>
+                          <p className="text-sm font-bold text-emerald-900">{data.delivered}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-rose-50 rounded-lg">
+                        <div className="w-2 h-2 bg-rose-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-xs text-rose-700 font-medium">Failed</p>
+                          <p className="text-sm font-bold text-rose-900">{data.failed}</p>
+                        </div>
+                      </div>
+                      <div className="flex items-center gap-2 p-2 bg-amber-50 rounded-lg">
+                        <div className="w-2 h-2 bg-amber-500 rounded-full"></div>
+                        <div className="flex-1">
+                          <p className="text-xs text-amber-700 font-medium">In Progress</p>
+                          <p className="text-sm font-bold text-amber-900">{data.total - data.delivered - data.failed}</p>
+                        </div>
+                      </div>
+                    </div>
                   </div>
                 );
               })}
             </div>
           )}
-
-          {/* Chart Labels */}
-          <div className="flex justify-between mt-4 pt-4 border-t border-gray-100">
-            <span className="text-xs text-gray-500">Oct 9</span>
-            <span className="text-xs text-gray-500">Oct 16</span>
-          </div>
         </div>
 
         {/* Status Breakdown - Right Column */}
@@ -312,45 +447,66 @@ export default function BranchDashboardPage() {
   );
 }
 
-// Metric Card Component - Enhanced
+// Metric Card Component - Enhanced with Gradient
 interface MetricCardProps {
   icon: React.ElementType;
   label: string;
   value: string;
   isLoading?: boolean;
   trend?: string;
-  color?: 'green' | 'blue' | 'purple' | 'gray';
+  color?: 'pink' | 'cyan' | 'purple' | 'orange';
 }
 
-function MetricCard({ icon: Icon, label, value, isLoading, trend, color = 'gray' }: MetricCardProps) {
+function MetricCard({ icon: Icon, label, value, isLoading, trend, color = 'pink' }: MetricCardProps) {
   const colorClasses = {
-    green: 'bg-green-50 text-green-700',
-    blue: 'bg-blue-50 text-blue-700',
-    purple: 'bg-purple-50 text-purple-700',
-    gray: 'bg-gray-50 text-gray-700',
+    pink: {
+      gradient: 'bg-gradient-to-br from-pink-500 to-pink-600',
+      shadow: 'shadow-pink-200',
+      iconBg: 'bg-pink-400/30',
+    },
+    cyan: {
+      gradient: 'bg-gradient-to-br from-cyan-400 to-teal-500',
+      shadow: 'shadow-cyan-200',
+      iconBg: 'bg-cyan-300/30',
+    },
+    purple: {
+      gradient: 'bg-gradient-to-br from-purple-500 to-purple-600',
+      shadow: 'shadow-purple-200',
+      iconBg: 'bg-purple-400/30',
+    },
+    orange: {
+      gradient: 'bg-gradient-to-br from-orange-500 to-orange-600',
+      shadow: 'shadow-orange-200',
+      iconBg: 'bg-orange-400/30',
+    },
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-5 hover:shadow-lg transition-all duration-200">
-      <div className="flex items-center gap-3 mb-4">
-        <div className={`p-2.5 rounded-lg ${colorClasses[color]}`}>
-          <Icon className="h-5 w-5" strokeWidth={2} />
+    <div className={`${colorClasses[color].gradient} rounded-2xl p-5 hover:shadow-xl ${colorClasses[color].shadow} transition-all duration-300 relative overflow-hidden`}>
+      {/* Decorative circle */}
+      <div className="absolute -right-8 -top-8 w-32 h-32 bg-white/10 rounded-full"></div>
+      
+      <div className="relative z-10">
+        <div className="flex items-start justify-between mb-3">
+          <span className="text-sm font-medium text-white/90">{label}</span>
+          <div className={`p-2 rounded-lg ${colorClasses[color].iconBg}`}>
+            <Icon className="h-5 w-5 text-white" strokeWidth={2} />
+          </div>
         </div>
-        <span className="text-xs font-semibold text-gray-600 uppercase tracking-wide">{label}</span>
+        {isLoading ? (
+          <div className="h-10 w-24 bg-white/20 rounded animate-pulse"></div>
+        ) : (
+          <div className="flex items-end justify-between">
+            <p className="text-4xl font-bold text-white">{value}</p>
+            {trend && (
+              <span className="text-xs font-semibold text-white/90 flex items-center gap-1 bg-white/20 px-2 py-1 rounded-full">
+                <TrendingUp className="h-3 w-3" />
+                {trend}
+              </span>
+            )}
+          </div>
+        )}
       </div>
-      {isLoading ? (
-        <div className="h-8 w-20 bg-gray-100 rounded animate-pulse"></div>
-      ) : (
-        <div className="flex items-end justify-between">
-          <p className="text-3xl font-bold text-gray-900">{value}</p>
-          {trend && (
-            <span className="text-xs font-medium text-green-600 flex items-center gap-1">
-              <TrendingUp className="h-3 w-3" />
-              {trend}
-            </span>
-          )}
-        </div>
-      )}
     </div>
   );
 }

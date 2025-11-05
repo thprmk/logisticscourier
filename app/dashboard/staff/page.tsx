@@ -29,15 +29,23 @@ export default function StaffManagementPage() {
   const [staffPassword, setStaffPassword] = useState('');
   const [staffRole, setStaffRole] = useState<'staff' | 'admin'>('staff');
   const [isSubmittingStaff, setIsSubmittingStaff] = useState(false);
+  
+  // Delete confirmation modal state
+  const [showDeleteModal, setShowDeleteModal] = useState(false);
+  const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
 
   useEffect(() => {
     const fetchStaff = async () => {
       setIsLoading(true);
       try {
-        const staffRes = await fetch('/api/users');
+        const staffRes = await fetch('/api/users', {
+          credentials: 'include',
+        });
         if (!staffRes.ok) throw new Error('Failed to load staff data.');
         const staffData = await staffRes.json();
-        setStaff(staffData);
+        // Filter out admin users - only show delivery staff
+        const deliveryStaff = staffData.filter((member: IUser) => member.role === 'staff');
+        setStaff(deliveryStaff);
       } catch (err: any) {
         setError(err.message);
         toast.error(err.message);
@@ -105,19 +113,27 @@ export default function StaffManagementPage() {
   };
 
   const handleDeleteStaff = async (staffId: string, staffName: string) => {
-    if (!confirm(`Are you sure you want to remove ${staffName} from your branch?`)) return;
+    setStaffToDelete({ id: staffId, name: staffName });
+    setShowDeleteModal(true);
+  };
+  
+  const confirmDeleteStaff = async () => {
+    if (!staffToDelete) return;
     
-    const toastId = toast.loading(`Removing ${staffName}...`);
+    const toastId = toast.loading(`Removing ${staffToDelete.name}...`);
     try {
-      const response = await fetch(`/api/users/${staffId}`, {
+      const response = await fetch(`/api/users/${staffToDelete.id}`, {
         method: 'DELETE',
+        credentials: 'include',
       });
       
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Failed to remove staff');
       
-      toast.success(`${staffName} removed successfully`, { id: toastId });
-      setStaff(prev => prev.filter(member => member._id !== staffId));
+      toast.success(`${staffToDelete.name} removed successfully`, { id: toastId });
+      setStaff(prev => prev.filter(member => member._id !== staffToDelete.id));
+      setShowDeleteModal(false);
+      setStaffToDelete(null);
     } catch (err: any) {
       toast.error(err.message || 'Failed to remove staff member', { id: toastId });
     }
@@ -310,11 +326,12 @@ export default function StaffManagementPage() {
                     id="staffRole"
                     value={staffRole}
                     onChange={(e) => setStaffRole(e.target.value as 'staff' | 'admin')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
+                    disabled
                   >
                     <option value="staff">Delivery Staff</option>
-                    <option value="admin">Branch Admin</option>
                   </select>
+                  <p className="mt-1 text-xs text-gray-500">New staff members are created as delivery staff by default.</p>
                 </div>
               </div>
               
@@ -337,6 +354,47 @@ export default function StaffManagementPage() {
                 </button>
               </div>
             </form>
+          </div>
+        </div>
+      )}
+
+      {/* Delete Confirmation Modal */}
+      {showDeleteModal && staffToDelete && (
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
+            <div className="p-6">
+              <div className="flex items-center gap-4">
+                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
+                  <Trash2 className="h-6 w-6 text-red-600" />
+                </div>
+                <div className="flex-1">
+                  <h3 className="text-lg font-semibold text-gray-900">Remove Staff Member</h3>
+                  <p className="text-sm text-gray-600 mt-1">
+                    Are you sure you want to remove <span className="font-semibold">{staffToDelete.name}</span> from your branch?
+                  </p>
+                </div>
+              </div>
+            </div>
+            
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
+              <button
+                type="button"
+                onClick={() => {
+                  setShowDeleteModal(false);
+                  setStaffToDelete(null);
+                }}
+                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
+              >
+                Cancel
+              </button>
+              <button
+                type="button"
+                onClick={confirmDeleteStaff}
+                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
+              >
+                Remove Staff
+              </button>
+            </div>
           </div>
         </div>
       )}

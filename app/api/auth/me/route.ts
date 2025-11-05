@@ -3,7 +3,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { jwtVerify } from 'jose';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User.model';
-import Tenant from '@/models/Tenant.model';
+import Tenant from '@/models/Tenant.model'; // Import Tenant model to ensure it's registered
 import { IUser } from '@/models/User.model'; // Import interface for type safety
 
 export async function GET(request: NextRequest) {
@@ -11,7 +11,6 @@ export async function GET(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
 
     console.log('Auth check - Token present:', !!token);
-    console.log('Auth check - Headers:', Object.fromEntries(request.headers.entries()));
 
     if (!token) {
       console.log('Auth failed: No token found in cookies');
@@ -27,14 +26,23 @@ export async function GET(request: NextRequest) {
     }
 
     await dbConnect();
-    const user = await User.findById<IUser>(payload.userId).select('name email role tenantId').populate('tenantId').lean();
+    
+    // Ensure Tenant model is registered before populate
+    if (!Tenant) {
+      console.error('Tenant model not loaded');
+    }
+    
+    const user = await User.findById<IUser>(payload.userId)
+      .select('name email role tenantId')
+      .populate('tenantId')
+      .lean();
 
     if (!user) {
       console.log('Auth failed: User not found');
       throw new Error('User not found.');
     }
 
-    console.log('Auth successful for user:', user.email);
+    console.log('Auth successful for user:', user.email, 'Role:', user.role);
 
     // Prepare response data
     const responseData: any = {

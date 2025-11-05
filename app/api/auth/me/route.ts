@@ -10,7 +10,11 @@ export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get('token')?.value;
 
+    console.log('Auth check - Token present:', !!token);
+    console.log('Auth check - Headers:', Object.fromEntries(request.headers.entries()));
+
     if (!token) {
+      console.log('Auth failed: No token found in cookies');
       throw new Error('Authentication token not found.');
     }
 
@@ -18,6 +22,7 @@ export async function GET(request: NextRequest) {
     const { payload } = await jwtVerify(token, secret);
     
     if (!payload.userId) {
+      console.log('Auth failed: Invalid token payload');
       throw new Error('Invalid token payload.');
     }
 
@@ -25,8 +30,11 @@ export async function GET(request: NextRequest) {
     const user = await User.findById<IUser>(payload.userId).select('name email role tenantId').populate('tenantId').lean();
 
     if (!user) {
+      console.log('Auth failed: User not found');
       throw new Error('User not found.');
     }
+
+    console.log('Auth successful for user:', user.email);
 
     // Prepare response data
     const responseData: any = {
@@ -46,6 +54,7 @@ export async function GET(request: NextRequest) {
 
     return NextResponse.json(responseData);
   } catch (error: any) {
+    console.error('Auth error:', error.message);
     // Return a clear 401 Unauthorized error
     return NextResponse.json({ message: error.message || 'Authentication failed' }, { status: 401 });
   }

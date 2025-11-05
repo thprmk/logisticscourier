@@ -54,6 +54,9 @@ export async function POST(request: NextRequest) {
 
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '1d' });
     
+    console.log('Login successful for:', email, 'Role:', user.role);
+    console.log('Setting cookie with domain:', process.env.COOKIE_DOMAIN || 'not set');
+    
     // The response now includes the correct redirect URL
     const response = NextResponse.json({
       message: 'Login successful.',
@@ -61,13 +64,18 @@ export async function POST(request: NextRequest) {
       redirectTo: redirectTo, // Send the redirect path to the frontend
     });
 
-    response.cookies.set('token', token, {
+    // For Vercel, we need to be more explicit about cookie settings
+    const cookieOptions: any = {
         httpOnly: true,
-        secure: process.env.NODE_ENV === 'production',
-        sameSite: 'lax', // Changed from 'strict' to 'lax' for better compatibility
+        secure: true, // Always use secure in production
+        sameSite: 'lax',
         maxAge: 60 * 60 * 24,
         path: '/',
-    });
+    };
+
+    response.cookies.set('token', token, cookieOptions);
+    
+    console.log('Cookie set successfully');
 
     return response;
 

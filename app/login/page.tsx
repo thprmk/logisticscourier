@@ -46,7 +46,7 @@ export default function LoginPage() {
         <div className="text-center mb-8">
           <Truck className="mx-auto h-10 w-10 text-gray-800" strokeWidth={1.5} />
           <h1 className="mt-4 text-3xl font-semibold text-gray-900 tracking-tight">
-            Logistics App
+            Netta Logistics 
           </h1>
           <p className="mt-2 text-sm text-gray-500">
             Log in to your branch dashboard to continue.

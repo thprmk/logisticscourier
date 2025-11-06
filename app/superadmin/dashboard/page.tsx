@@ -102,10 +102,21 @@ export default function SuperAdminDashboardPage() {
     setIsSubmitting(true);
     const toastId = toast.loading(`Updating ${branchName}...`);
     try {
+        const updateData: any = { 
+            name: branchName,
+            adminName,
+            adminEmail
+        };
+        
+        // Only include password if it's been entered
+        if (adminPassword) {
+            updateData.adminPassword = adminPassword;
+        }
+        
         const res = await fetch(`/api/tenants/${selectedTenant._id}`, {
             method: 'PATCH',
             headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify({ name: branchName }),
+            body: JSON.stringify(updateData),
         });
         if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
         toast.success(`Branch "${branchName}" was updated successfully.`, { id: toastId });        

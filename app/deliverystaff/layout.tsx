@@ -118,7 +118,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
                 <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
                 <p className="text-xs text-gray-500 font-medium">Delivery Portal</p>
               </div>
             </div>

@@ -43,12 +43,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 throw new Error('Session expired');
             }
             const userData = await res.json();
-            setUser(userData); // Update the global context
             
-            // Redirect delivery staff to their专属 page
+            // Redirect delivery staff BEFORE setting user to prevent flash
             if (userData.role === 'staff') {
-                router.push('/deliverystaff');
+                router.replace('/deliverystaff');
+                return; // Don't set user in this context
             }
+            
+            setUser(userData); // Update the global context
         } catch (error) {
             // If fetching fails, the session is bad, redirect to login
             router.push('/login');
@@ -59,8 +61,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     if (!user) {
         fetchUser();
     } else if (user.role === 'staff') {
-        // Redirect delivery staff to their专属 page
-        router.push('/deliverystaff');
+        // Redirect delivery staff to their page immediately
+        router.replace('/deliverystaff');
     }
   }, [user, router, setUser]);
 
@@ -96,6 +98,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="text-center">
           <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
           <p className="text-lg font-medium text-gray-700">Loading your session...</p>
+        </div>
+      </div>
+    );
+  }
+  
+  // If user is delivery staff, don't render this layout at all (they should be redirected)
+  if (user.role === 'staff') {
+    return (
+      <div className="flex h-screen items-center justify-center bg-gray-50">
+        <div className="text-center">
+          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
+          <p className="text-lg font-medium text-gray-700">Redirecting...</p>
         </div>
       </div>
     );
@@ -156,7 +170,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Logistics</h1>
+                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
                 {user?.tenantName && (
                   <p className="text-xs text-gray-500 font-medium">{user.tenantName}</p>
                 )}

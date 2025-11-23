@@ -4,7 +4,8 @@
 
 import { useState, FormEvent } from 'react';
 import { useRouter } from 'next/navigation';
-import { Truck, Eye, EyeOff } from 'lucide-react'; 
+import { Truck, Eye, EyeOff } from 'lucide-react';
+import InstallPWA from '../components/InstallPWA'; 
 
 export default function LoginPage() {
   const router = useRouter();
@@ -40,6 +41,7 @@ export default function LoginPage() {
 
   return (
     <main className="flex items-center justify-center min-h-screen bg-white">
+      <InstallPWA />
       <div className="w-full max-w-sm p-4">
         
         {/* Header Section */}

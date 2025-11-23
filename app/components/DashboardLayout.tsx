@@ -16,7 +16,9 @@ import {
   Truck,
   Bell,
   Store,
-  Boxes
+  Boxes,
+  Menu,
+  X
 } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 
@@ -32,6 +34,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [showNotifications, setShowNotifications] = useState(false);
   const [notificationList, setNotificationList] = useState<any[]>([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
+  const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
 
   useEffect(() => {
     // This effect runs on the client to fetch user data if it's not already there
@@ -165,17 +168,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     <div className="min-h-screen bg-gray-50">
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="flex items-center justify-between h-16">
+            {/* Mobile Menu Button */}
+            <button
+              onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
+              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+            >
+              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+            </button>
+            
             {/* Logo */}
-            <div className="flex items-center gap-3">
-              <div className="flex items-center justify-center w-10 h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-md">
-                <Truck className="h-5 w-5 text-white" strokeWidth={2.5} />
+            <div className="flex items-center gap-2 sm:gap-3">
+              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-md">
+                <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
               </div>
               <div>
-                <h1 className="text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
+                <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
                 {user?.tenantName && (
-                  <p className="text-xs text-gray-500 font-medium">{user.tenantName}</p>
+                  <p className="text-xs text-gray-500 font-medium hidden sm:block">{user.tenantName}</p>
                 )}
               </div>
             </div>
@@ -199,7 +210,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-2">
+            <div className="flex items-center gap-1 sm:gap-2">
               {/* Notification Bell */}
               {(user.role === 'admin' || user.role === 'staff') && (
                 <button
@@ -229,7 +240,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Sign Out Button */}
               <button 
                 onClick={handleLogout} 
-                className="flex items-center gap-2 px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
+                className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2} />
                 <span className="hidden sm:inline">Sign Out</span>
@@ -237,19 +248,61 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </div>
           </div>
         </div>
+        
+        {/* Mobile Navigation Menu */}
+        <div className={`md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden transition-all duration-300 ease-in-out z-40 ${
+          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        }`}>
+          <div>
+            <nav className="px-4 py-3 space-y-1">
+              {navLinks.map((link) => (
+                <Link 
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => setIsMobileMenuOpen(false)}
+                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150 ${
+                    pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
+                      ? 'bg-blue-600 text-white shadow-md' 
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                  }`}
+                >
+                  <link.icon className="h-5 w-5" strokeWidth={2} />
+                  <span>{link.label}</span>
+                </Link>
+              ))}
+              
+              {/* Mobile User Info */}
+              <div className="flex items-center gap-3 px-4 py-3 mt-2 border-t border-gray-200 pt-3">
+                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
+                  <UserIconComponent size={18} className="text-white" strokeWidth={2.5} />
+                </div>
+                <div>
+                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500">{userRole}</p>
+                </div>
+              </div>
+            </nav>
+          </div>
+        </div>
       </header>
       
       {/* Notification Dropdown */}
       {showNotifications && (user.role === 'admin' || user.role === 'staff') && (
-        <div className="fixed top-16 right-6 w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
-          <div className="p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
-            <div className="flex items-center justify-between">
-              <h3 className="text-base font-bold text-gray-900">Notifications</h3>
-              <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
-                {notifications}
-              </span>
+        <>
+          {/* Backdrop */}
+          <div 
+            className="fixed inset-0 z-40" 
+            onClick={() => setShowNotifications(false)}
+          />
+          <div className="fixed top-16 right-2 sm:right-6 w-[calc(100vw-1rem)] sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
+            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
+              <div className="flex items-center justify-between">
+                <h3 className="text-sm sm:text-base font-bold text-gray-900">Notifications</h3>
+                <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
+                  {notifications}
+                </span>
+              </div>
             </div>
-          </div>
           <div className="overflow-y-auto max-h-80">
             {notificationList.length > 0 ? (
               <div className="p-3 space-y-2">
@@ -320,6 +373,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             )}
           </div>
         </div>
+        </>
       )}
       
       {/* Logout Confirmation Modal */}

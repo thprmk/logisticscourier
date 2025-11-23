@@ -199,60 +199,74 @@ export default function DispatchPage() {
   const destBranchName = branches.find(b => b._id === selectedDestBranch)?.name;
 
   return (
-    <div className="space-y-6">
+    <div className="space-y-6 pb-8">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900">Branch Dispatch Management</h1>
-        <p className="text-sm text-gray-600 mt-1">
-          Manage inter-branch package transfers, incoming manifests, and dispatch history
+      <div className="mb-8">
+        <h1 className="text-3xl font-bold text-gray-900">Dispatch Management</h1>
+        <p className="text-base text-gray-600 mt-2">
+          Create manifests, track incoming deliveries, and manage outgoing shipments
         </p>
       </div>
 
-      {/* Tabs */}
-      <div className="flex gap-3 border-b border-gray-200">
-        <button
-          onClick={() => setActiveTab('create')}
-          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === 'create'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Plus className="h-4 w-4" />
-            Create Dispatch
+      {/* Stats Overview */}
+      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+        <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Incoming Manifests</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{incomingManifests.length}</p>
+            </div>
+            <TrendingDown className="h-6 w-6 text-blue-600" />
           </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('incoming')}
-          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === 'incoming'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <TrendingDown className="h-4 w-4" />
-            Incoming ({incomingManifests.length})
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Outgoing Manifests</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{outgoingManifests.length}</p>
+            </div>
+            <Send className="h-6 w-6 text-green-600" />
           </div>
-        </button>
-        <button
-          onClick={() => setActiveTab('outgoing')}
-          className={`px-4 py-3 font-medium text-sm border-b-2 transition-colors ${
-            activeTab === 'outgoing'
-              ? 'border-blue-600 text-blue-600'
-              : 'border-transparent text-gray-600 hover:text-gray-900'
-          }`}
-        >
-          <div className="flex items-center gap-2">
-            <Send className="h-4 w-4" />
-            Outgoing ({outgoingManifests.length})
+        </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-4 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between">
+            <div>
+              <p className="text-sm text-gray-600 font-medium">Available for Dispatch</p>
+              <p className="text-2xl font-bold text-gray-900 mt-1">{availableShipments.length}</p>
+            </div>
+            <Boxes className="h-6 w-6 text-orange-600" />
           </div>
-        </button>
+        </div>
       </div>
 
-      {/* Tab Content */}
-      <div className="mt-6">
+      {/* Tabs */}
+      <div className="border-b border-gray-200">
+        <div className="flex gap-1">
+        {[
+          { value: 'create', label: 'Create Dispatch', icon: Plus },
+          { value: 'incoming', label: `Incoming (${incomingManifests.length})`, icon: TrendingDown },
+          { value: 'outgoing', label: `Outgoing (${outgoingManifests.length})`, icon: Send },
+        ].map((tab) => {
+          const TabIcon = tab.icon;
+          return (
+            <button
+              key={tab.value}
+              onClick={() => setActiveTab(tab.value as TabType)}
+              className={`px-5 py-3 font-medium text-sm border-b-2 transition-all flex items-center gap-2 ${
+                activeTab === tab.value
+                  ? 'border-blue-600 text-blue-600 bg-blue-50/30'
+                  : 'border-transparent text-gray-600 hover:text-gray-900'
+              }`}
+            >
+              <TabIcon className="h-4 w-4" />
+              {tab.label}
+            </button>
+          );
+        })}
+        </div>
+      </div>
+
+      <div className="mt-8">
         {/* Create Dispatch Tab */}
         {activeTab === 'create' && (
           <CreateDispatchTab
@@ -316,16 +330,16 @@ function CreateDispatchTab({
       <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
         {/* Left: Branch Selection and Details */}
         <div className="lg:col-span-1">
-          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6">
+          <div className="bg-white rounded-xl border border-gray-200 p-6 space-y-6 sticky top-6">
             {/* Destination Branch */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Destination Branch *
+                Destination Branch <span className="text-red-500">*</span>
               </label>
               <select
                 value={selectedDestBranch}
                 onChange={(e) => setSelectedDestBranch(e.target.value)}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent bg-white"
               >
                 <option value="">Select a branch...</option>
                 {branches.map((branch: IBranch) => (
@@ -339,76 +353,77 @@ function CreateDispatchTab({
             {/* Vehicle Number */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Vehicle Number (Optional)
+                Vehicle Number
               </label>
               <input
                 type="text"
                 value={vehicleNumber}
                 onChange={(e) => setVehicleNumber(e.target.value)}
                 placeholder="e.g., KA01AB1234"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* Driver Name */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Driver Name (Optional)
+                Driver Name
               </label>
               <input
                 type="text"
                 value={driverName}
                 onChange={(e) => setDriverName(e.target.value)}
                 placeholder="e.g., Ramesh Kumar"
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent"
               />
             </div>
 
             {/* Notes */}
             <div>
               <label className="block text-sm font-semibold text-gray-900 mb-2">
-                Notes (Optional)
+                Notes
               </label>
               <textarea
                 value={notes}
                 onChange={(e) => setNotes(e.target.value)}
                 placeholder="Add any additional notes..."
                 rows={3}
-                className="w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
+                className="w-full px-4 py-2.5 border border-gray-300 rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent resize-none"
               />
             </div>
 
             {/* Summary Card */}
-            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4">
-              <h3 className="text-sm font-bold text-gray-900 mb-3">Dispatch Summary</h3>
+            <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border border-blue-200 rounded-lg p-4 space-y-3">
+              <div>
+                <p className="text-xs text-gray-600 font-semibold">DISPATCH SUMMARY</p>
+              </div>
               <div className="space-y-2 text-sm">
-                <div className="flex justify-between">
+                <div className="flex justify-between items-center">
                   <span className="text-gray-600">Destination:</span>
-                  <span className="font-semibold text-gray-900">{destBranchName || '-'}</span>
+                  <span className="font-semibold text-gray-900">{destBranchName || '—'}</span>
                 </div>
-                <div className="flex justify-between">
-                  <span className="text-gray-600">Selected Shipments:</span>
-                  <span className="font-semibold text-gray-900">{selectedShipments.size}</span>
+                <div className="flex justify-between items-center">
+                  <span className="text-gray-600">Selected:</span>
+                  <span className="font-semibold text-gray-900">{selectedShipments.size} shipments</span>
                 </div>
-                <div className="pt-2 border-t border-blue-200">
-                  <button
-                    onClick={handleDispatch}
-                    disabled={!selectedDestBranch || selectedShipments.size === 0 || isSubmitting}
-                    className="w-full py-2 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2"
-                  >
-                    {isSubmitting ? (
-                      <>
-                        <Loader className="h-4 w-4 animate-spin" />
-                        Dispatching...
-                      </>
-                    ) : (
-                      <>
-                        <Send className="h-4 w-4" />
-                        Dispatch Now
-                      </>
-                    )}
-                  </button>
-                </div>
+                <div className="h-px bg-blue-200 my-2"></div>
+                <button
+                  onClick={handleDispatch}
+                  disabled={!selectedDestBranch || selectedShipments.size === 0 || isSubmitting}
+                  className="w-full py-2.5 bg-blue-600 text-white font-semibold rounded-lg hover:bg-blue-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
+                >
+                  {isSubmitting ? (
+                    <>
+                      <Loader className="h-4 w-4 animate-spin" />
+                      Dispatching...
+                    </>
+                  ) : (
+                    <>
+                      <Send className="h-4 w-4" />
+                      Dispatch Now
+                    </>
+                  )}
+                </button>
               </div>
             </div>
           </div>
@@ -417,14 +432,14 @@ function CreateDispatchTab({
         {/* Right: Shipment Selection */}
         <div className="lg:col-span-2">
           <div className="bg-white rounded-xl border border-gray-200 p-6">
-            <div className="flex items-center justify-between mb-4">
+            <div className="flex items-center justify-between mb-6">
               <h3 className="text-base font-bold text-gray-900">
-                Available Shipments ({availableShipments.length})
+                Available Shipments <span className="text-gray-500 font-normal">({availableShipments.length})</span>
               </h3>
               {availableShipments.length > 0 && (
                 <button
                   onClick={handleSelectAll}
-                  className="text-sm font-semibold text-blue-600 hover:text-blue-700"
+                  className="text-sm font-semibold text-blue-600 hover:text-blue-700 transition-colors"
                 >
                   {selectedShipments.size === availableShipments.length
                     ? 'Deselect All'
@@ -434,22 +449,22 @@ function CreateDispatchTab({
             </div>
 
             {!selectedDestBranch ? (
-              <div className="text-center py-12">
+              <div className="text-center py-16">
                 <Boxes className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-                <p className="text-gray-600 font-medium">Select a destination branch to view shipments</p>
+                <p className="text-gray-600 font-medium">Select a destination branch to view available shipments</p>
               </div>
             ) : isLoading ? (
-              <div className="text-center py-12">
+              <div className="text-center py-16">
                 <div className="animate-spin rounded-full h-12 w-12 border-3 border-blue-500 border-t-transparent mx-auto mb-3"></div>
-                <p className="text-gray-600">Loading available shipments...</p>
+                <p className="text-gray-600 font-medium">Loading shipments...</p>
               </div>
             ) : availableShipments.length === 0 ? (
-              <div className="text-center py-12">
+              <div className="text-center py-16">
                 <Boxes className="h-16 w-16 text-gray-300 mx-auto mb-4" />
                 <p className="text-gray-600 font-medium">No shipments available for dispatch to this branch</p>
               </div>
             ) : (
-              <div className="space-y-3 max-h-96 overflow-y-auto">
+              <div className="space-y-3 max-h-[500px] overflow-y-auto pr-2">
                 {availableShipments.map((shipment: IShipment) => (
                   <ShipmentCheckItem
                     key={shipment._id}
@@ -470,23 +485,23 @@ function CreateDispatchTab({
 // Shipment Check Item Component
 function ShipmentCheckItem({ shipment, isSelected, onToggle }: any) {
   return (
-    <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:bg-blue-50 cursor-pointer transition-colors">
+    <label className="flex items-start gap-3 p-4 border border-gray-200 rounded-lg hover:border-blue-300 hover:bg-blue-50 cursor-pointer transition-all">
       <input
         type="checkbox"
         checked={isSelected}
         onChange={onToggle}
-        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500"
+        className="mt-1 w-4 h-4 rounded border-gray-300 text-blue-600 focus:ring-blue-500 cursor-pointer"
       />
       <div className="flex-1 min-w-0">
-        <div className="flex items-start justify-between gap-2 mb-1">
-          <p className="font-semibold text-gray-900">{shipment.trackingId}</p>
-          {isSelected && <Check className="h-5 w-5 text-blue-600 flex-shrink-0" />}
+        <div className="flex items-start justify-between gap-2 mb-2">
+          <p className="font-semibold text-gray-900 text-sm">{shipment.trackingId}</p>
+          {isSelected && <Check className="h-5 w-5 text-blue-600 flex-shrink-0 mt-0.5" />}
         </div>
-        <p className="text-xs text-gray-600">
-          From: <span className="font-medium">{shipment.sender.name}</span>
+        <p className="text-sm text-gray-600 mb-1">
+          From: <span className="font-medium text-gray-900">{shipment.sender.name}</span>
         </p>
-        <p className="text-xs text-gray-600">
-          To: <span className="font-medium">{shipment.recipient.name}</span>
+        <p className="text-sm text-gray-600">
+          To: <span className="font-medium text-gray-900">{shipment.recipient.name}</span>
         </p>
       </div>
     </label>
@@ -499,10 +514,15 @@ function ManifestListTab({ manifests, type }: any) {
 
   if (manifests.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200 p-12 text-center">
+      <div className="bg-white rounded-xl border border-gray-200 p-16 text-center">
         <Boxes className="h-16 w-16 text-gray-300 mx-auto mb-4" />
-        <p className="text-gray-600 font-medium">
-          {isIncoming ? 'No incoming manifests' : 'No outgoing manifests'}
+        <p className="text-gray-600 font-medium text-lg">
+          {isIncoming ? 'No incoming manifests yet' : 'No outgoing manifests yet'}
+        </p>
+        <p className="text-sm text-gray-500 mt-2">
+          {isIncoming
+            ? 'Manifests from other branches will appear here'
+            : 'Manifests you create will appear here'}
         </p>
       </div>
     );
@@ -541,7 +561,6 @@ function ManifestCard({ manifest, type }: any) {
       }
 
       toast.success('Manifest received successfully!', { id: toastId });
-      // Reload the page to refresh the manifests
       window.location.reload();
     } catch (error: any) {
       toast.error(error.message || 'Failed to receive manifest', { id: toastId });
@@ -551,50 +570,52 @@ function ManifestCard({ manifest, type }: any) {
   };
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-md transition-shadow">
-      <div className="flex items-start justify-between mb-4">
+    <div className="bg-white rounded-xl border border-gray-200 p-6 hover:shadow-lg transition-all">
+      <div className="flex items-start justify-between mb-5">
         <div className="flex-1">
-          <div className="flex items-center gap-2 mb-2">
+          <div className="flex items-center gap-3 mb-2">
             <h3 className="text-base font-bold text-gray-900">Manifest {manifest._id.slice(-6)}</h3>
-            <span className={`px-3 py-1 rounded-full text-xs font-semibold ${
-              isCompleted
-                ? 'bg-green-100 text-green-700'
-                : 'bg-yellow-100 text-yellow-700'
-            }`}>
+            <span
+              className={`px-3 py-1 rounded-full text-xs font-semibold transition-colors ${
+                isCompleted
+                  ? 'bg-green-100 text-green-700'
+                  : 'bg-yellow-100 text-yellow-700'
+              }`}
+            >
               {manifest.status}
             </span>
           </div>
-          <p className="text-sm text-gray-600">
+          <p className="text-sm text-gray-600 font-medium">
             {isIncoming
-              ? `From: ${manifest.fromBranchId.name}`
-              : `To: ${manifest.toBranchId.name}`}
+              ? `📥 From: ${manifest.fromBranchId.name}`
+              : `📤 To: ${manifest.toBranchId.name}`}
           </p>
         </div>
         <Link
           href={`/dashboard/dispatch/${manifest._id}`}
-          className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors"
+          className="flex items-center gap-2 px-4 py-2 text-blue-600 hover:bg-blue-50 rounded-lg transition-colors font-semibold text-sm"
         >
           <Eye className="h-4 w-4" />
-          <span className="text-sm font-semibold">View Details</span>
+          View Details
         </Link>
       </div>
 
-      <div className="grid grid-cols-4 gap-4 mb-4">
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 mb-5 pb-5 border-b border-gray-200">
         <div>
-          <p className="text-xs text-gray-500">Shipments</p>
-          <p className="text-lg font-bold text-gray-900">{manifest.shipmentIds.length}</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Shipments</p>
+          <p className="text-xl font-bold text-gray-900 mt-1">{manifest.shipmentIds.length}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Vehicle</p>
-          <p className="text-lg font-bold text-gray-900">{manifest.vehicleNumber || '-'}</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Vehicle</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">{manifest.vehicleNumber || '—'}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Driver</p>
-          <p className="text-sm font-semibold text-gray-900">{manifest.driverName || '-'}</p>
+          <p className="text-xs text-gray-500 font-semibold uppercase">Driver</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">{manifest.driverName || '—'}</p>
         </div>
         <div>
-          <p className="text-xs text-gray-500">Dispatched</p>
-          <p className="text-sm font-semibold text-gray-900">
+          <p className="text-xs text-gray-500 font-semibold uppercase">Dispatched</p>
+          <p className="text-sm font-semibold text-gray-900 mt-1">
             {new Date(manifest.dispatchedAt).toLocaleDateString()}
           </p>
         </div>
@@ -604,7 +625,7 @@ function ManifestCard({ manifest, type }: any) {
         <button
           onClick={handleReceive}
           disabled={isReceiving}
-          className="w-full py-2 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-400 transition-colors flex items-center justify-center gap-2"
+          className="w-full py-2.5 bg-green-600 text-white font-semibold rounded-lg hover:bg-green-700 disabled:bg-gray-400 disabled:cursor-not-allowed transition-colors flex items-center justify-center gap-2 text-sm"
         >
           {isReceiving ? (
             <>

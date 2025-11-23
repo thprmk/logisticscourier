@@ -278,7 +278,24 @@ export default function ShipmentsPage() {
             body: JSON.stringify(updatePayload),
         });
         if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
-        toast.success(`Shipment ${selectedShipment.trackingId} updated to ${statusToUpdate}`, { id: toastId });        
+        
+        // Show specific status update message based on the status
+        let statusMessage = '';
+        switch (statusToUpdate) {
+          case 'Delivered':
+            statusMessage = 'Status updated to Delivered';
+            break;
+          case 'Out for Delivery':
+            statusMessage = 'Status updated to Out for Delivery';
+            break;
+          case 'Assigned':
+            statusMessage = 'Status updated to Assigned';
+            break;
+          default:
+            statusMessage = `Status updated to ${statusToUpdate}`;
+        }
+        
+        toast.success(statusMessage, { id: toastId });        
         closeModal();
         fetchData();
     } catch (error: any) {
@@ -324,35 +341,35 @@ export default function ShipmentsPage() {
   };
   
   return (
-    <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Shipment Management</h1>
-        <p className="text-gray-600 mt-2">Create, track, and manage all shipments for your branch.</p>
+    <div className="space-y-4 sm:space-y-6">
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shipment Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Create, track, and manage all shipments for your branch.</p>
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
         {/* Search Bar */}
-        <div className="relative w-full md:w-80">
+        <div className="relative w-full sm:w-80">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-            <Search size={20} className="text-gray-400" />
+            <Search size={18} className="text-gray-400" />
           </div>
           <input
             type="text"
             placeholder="Search shipments..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="w-full h-12 pl-10 pr-4 text-base bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+            className="w-full h-10 sm:h-12 pl-10 pr-4 text-sm sm:text-base bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
           />
         </div>
 
         {/* Filters and Button */}
-        <div className="flex items-center gap-3">
-          <div className="relative">
+        <div className="flex items-center gap-2 sm:gap-3">
+          <div className="relative flex-1 sm:flex-none">
             <select
               value={statusFilter}
               onChange={(e) => setStatusFilter(e.target.value)}
-              className="h-12 w-full md:w-48 pl-4 pr-10 text-base bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
+              className="h-10 sm:h-12 w-full sm:w-48 pl-3 sm:pl-4 pr-8 sm:pr-10 text-sm sm:text-base bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             >
               <option value="">All Statuses</option>
               <option value="At Origin Branch">At Origin Branch</option>
@@ -363,24 +380,24 @@ export default function ShipmentsPage() {
               <option value="Delivered">Delivered</option>
               <option value="Failed">Failed</option>
             </select>
-            <div className="absolute right-0 top-0 h-full pr-3 flex items-center pointer-events-none">
-                <ChevronDown size={20} className="text-gray-400" />
+            <div className="absolute right-0 top-0 h-full pr-2 sm:pr-3 flex items-center pointer-events-none">
+                <ChevronDown size={18} className="text-gray-400" />
             </div>
           </div>
           
           <button 
             onClick={() => openModal('create')} 
-            className="flex items-center gap-2 h-12 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm"
+            className="flex items-center gap-2 h-10 sm:h-12 px-3 sm:px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-colors shadow-sm whitespace-nowrap"
           >
-            <Plus size={20} /> 
+            <Plus size={18} /> 
             <span className="hidden sm:inline">Add New Shipment</span>
             <span className="sm:hidden">Add</span>
           </button>
         </div>
       </div>
 
-      {/* Shipments Table */}
-      <div className="table-container">
+      {/* Shipments Table - Desktop */}
+      <div className="hidden md:block table-container">
         <table className="min-w-full divide-y divide-gray-200">
           <thead className="bg-gray-50">
             <tr>
@@ -479,17 +496,107 @@ export default function ShipmentsPage() {
         </table>
       </div>
 
+      {/* Shipments Cards - Mobile */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+            <p className="text-sm text-gray-600">Loading shipments...</p>
+          </div>
+        ) : filteredShipments.length > 0 ? (
+          filteredShipments.map((shipment, index) => (
+            <div key={shipment._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-500">#{index + 1}</span>
+                    <span className="text-xs font-mono text-blue-600 font-semibold">{shipment.trackingId}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">{shipment.recipient.name}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{shipment.recipient.address}</p>
+                </div>
+                <StatusBadge status={shipment.status} />
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+                <div>
+                  <span className="text-gray-500 block mb-0.5">Assigned To</span>
+                  <span className="text-gray-900 font-medium">
+                    {shipment.assignedTo?.name || <span className="text-gray-400 italic">Unassigned</span>}
+                  </span>
+                </div>
+                <div>
+                  <span className="text-gray-500 block mb-0.5">Date</span>
+                  <span className="text-gray-900 font-medium">
+                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: '2-digit'
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <button 
+                  onClick={() => openModal('view', shipment)} 
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  <Eye size={14}/>
+                  View
+                </button>
+                <button 
+                  onClick={() => openModal('update', shipment)} 
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+                >
+                  <Edit size={14}/>
+                  Update
+                </button>
+                <button 
+                  onClick={() => openModal('delete', shipment)} 
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 size={14}/>
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="text-base font-medium text-gray-900 mb-1">No shipments found</h3>
+            <p className="text-sm text-gray-500 text-center px-4">
+              {shipments.length > 0 
+                ? "No shipments match your filters." 
+                : "No shipments have been created yet."}
+            </p>
+            {shipments.length === 0 && (
+              <button 
+                onClick={() => openModal('create')}
+                className="mt-4 px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create your first shipment
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
       {/* CREATE MODAL */}
       {modalType === 'create' && (
-        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4 overflow-y-auto">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 transform transition-all">
             <form onSubmit={handleCreateShipment}>
-              <div className="p-4 border-b border-gray-200">
-                <h2 className="text-lg font-bold text-gray-900">Create New Shipment</h2>
-                <p className="text-sm text-gray-600 mt-1">Enter sender, recipient, and package details below.</p>
+              <div className="p-3 sm:p-4 border-b border-gray-200">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">Create New Shipment</h2>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">Enter sender, recipient, and package details below.</p>
               </div>
               
-              <div className="px-4 py-4 grid grid-cols-1 md:grid-cols-2 gap-4 max-h-[60vh] overflow-y-auto">
+              <div className="px-3 sm:px-4 py-3 sm:py-4 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 max-h-[60vh] overflow-y-auto">
                 <fieldset className="space-y-3">
                   <legend className="text-sm font-semibold text-gray-900">Sender Details</legend>
                   <div className="space-y-2">
@@ -603,7 +710,7 @@ export default function ShipmentsPage() {
                       <p className={`text-xs font-semibold ${isLocalDelivery ? 'text-green-900' : 'text-blue-900'}`}>
                         {isLocalDelivery 
                           ? '📍 Local Delivery: This package stays in ' + (branches.find(b => b._id === destinationBranchId)?.name || 'this branch') + '. It can be immediately assigned to a delivery staff member.'
-                          : '🚚 Inter-Branch Transfer: This package will be sent to ' + (branches.find(b => b._id === destinationBranchId)?.name || 'the destination') + '. It will require a manifest dispatch.'
+                          : 'Inter-Branch Transfer: This package will be sent to ' + (branches.find(b => b._id === destinationBranchId)?.name || 'the destination') + '. It will require a manifest dispatch.'
                         }
                       </p>
                     </div>
@@ -657,18 +764,18 @@ export default function ShipmentsPage() {
                 </fieldset>
               </div>
 
-              <div className="flex justify-end gap-2 px-4 py-3 bg-gray-50 rounded-b-xl border-t border-gray-200">
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-3 sm:px-4 py-3 bg-gray-50 rounded-b-xl border-t border-gray-200">
                 <button 
                   type="button" 
                   onClick={closeModal} 
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
                 <button 
                   type="submit" 
                   disabled={isSubmitting} 
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center">
@@ -688,17 +795,17 @@ export default function ShipmentsPage() {
 
       {/* UPDATE MODAL */}
       {modalType === 'update' && selectedShipment && (
-        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
           <div className="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all">
             <form onSubmit={handleUpdateShipment}>
-              <div className="p-6 border-b border-gray-200">
-                <h2 className="text-2xl font-bold text-gray-900">Update Shipment</h2>
-                <p className="text-gray-600 mt-1">
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Update Shipment</h2>
+                <p className="text-xs sm:text-base text-gray-600 mt-1">
                   Update status or assign a driver for <span className="font-semibold">{selectedShipment.trackingId}</span>.
                 </p>
               </div>
               
-              <div className="px-6 py-4 space-y-5">
+              <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5">
                 <div>
                   <label className="form-label">Status</label>
                   <select 
@@ -918,7 +1025,7 @@ export default function ShipmentsPage() {
                 <div className="mt-8">
                   {selectedShipment.status === 'Delivered' && selectedShipment.deliveryProof && (
                     <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold text-green-900 mb-4">✓ Delivery Proof</h3>
+                      <h3 className="text-lg font-semibold text-green-900 mb-4">Delivery Proof</h3>
                       {selectedShipment.deliveryProof.type === 'photo' ? (
                         <div>
                           <p className="text-sm text-green-700 mb-3 font-medium">Photo Proof:</p>
@@ -935,7 +1042,7 @@ export default function ShipmentsPage() {
               
                   {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
                     <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                      <h3 className="text-lg font-semibold text-red-900 mb-3">✗ Delivery Failed</h3>
+                      <h3 className="text-lg font-semibold text-red-900 mb-3">Delivery Failed</h3>
                       <div className="bg-white rounded p-3 border border-red-100">
                         <p className="text-sm text-red-700"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
                       </div>

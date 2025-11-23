@@ -2,15 +2,12 @@
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from "./context/UserContext";
-import PWASetup from "./components/PWASetup";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
   title: "Netta Logistics",
   description: "Courier and logistics management application",
   manifest: "/manifest.json",
-  themeColor: "#2563eb",
-  viewport: "width=device-width, initial-scale=1, viewport-fit=cover",
 };
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
@@ -26,7 +23,6 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       <body>
         <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
         <UserProvider>
-          <PWASetup />
           {children}
         </UserProvider>
       </body>

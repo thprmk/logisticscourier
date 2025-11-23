@@ -10,6 +10,7 @@
     "db:seed": "ts-node --project tsconfig.scripts.json scripts/seedSuperAdmin.ts"
   },
   "dependencies": {
+    "@ducanh2912/next-pwa": "^10.2.9",
     "@vercel/blob": "^2.0.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",

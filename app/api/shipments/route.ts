@@ -69,7 +69,16 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { assignedTo, ...shipmentData } = body; // Extract assignedTo from body
+    const { assignedTo, originBranchId, destinationBranchId, ...shipmentData } = body;
+
+    // Validate that branch IDs are provided
+    if (!originBranchId || !destinationBranchId) {
+      console.error('Missing branch IDs:', { originBranchId, destinationBranchId });
+      return NextResponse.json(
+        { message: 'originBranchId and destinationBranchId are required' },
+        { status: 400 }
+      );
+    }
 
     // Generate a unique, human-readable tracking ID
     const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 10);
@@ -79,9 +88,12 @@ export async function POST(request: NextRequest) {
     const newShipment = new Shipment({
       ...shipmentData,
       trackingId: trackingId,
-      status: 'Pending', // Set initial status
-      tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId
-      statusHistory: [{ status: 'Pending', timestamp: new Date() }], // Start the history log
+      status: 'At Origin Branch', // Set initial status
+      tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId (current/origin branch)
+      originBranchId, // The branch where this shipment was created
+      destinationBranchId, // The final destination
+      currentBranchId: payload.tenantId, // Initially, the shipment is at the origin branch
+      statusHistory: [{ status: 'At Origin Branch', timestamp: new Date() }], // Start the history log
       ...(assignedTo && { assignedTo }) // Add assignedTo if provided
     });
 

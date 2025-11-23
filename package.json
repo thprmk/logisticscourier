@@ -10,6 +10,7 @@
     "db:seed": "ts-node --project tsconfig.scripts.json scripts/seedSuperAdmin.ts"
   },
   "dependencies": {
+    "@vercel/blob": "^2.0.0",
     "bcryptjs": "^3.0.2",
     "dotenv": "^17.2.3",
     "jose": "^6.1.0",
@@ -21,7 +22,8 @@
     "next": "16.0.0",
     "react": "19.2.0",
     "react-dom": "19.2.0",
-    "react-hot-toast": "^2.6.0"
+    "react-hot-toast": "^2.6.0",
+    "web-push": "^3.6.7"
   },
   "devDependencies": {
     "@tailwindcss/postcss": "^4",
@@ -30,6 +32,7 @@
     "@types/node": "^20",
     "@types/react": "^19",
     "@types/react-dom": "^19",
+    "@types/web-push": "^3.6.4",
     "eslint": "^9",
     "eslint-config-next": "16.0.0",
     "tailwindcss": "^4",

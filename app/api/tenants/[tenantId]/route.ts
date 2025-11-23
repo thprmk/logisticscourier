@@ -19,7 +19,7 @@ async function verifySuperAdmin(request: NextRequest) {
         if (payload.role === 'superAdmin') {
             return payload;
         }
-        return null;
+        return null;    
     } catch (error) {
         return null;
     }

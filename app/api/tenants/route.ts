@@ -8,6 +8,23 @@ import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
 
 // Helper function to get and verify the token
+async function verifyAuth(request: NextRequest) {
+    const token = request.cookies.get('token')?.value;
+    if (!token) return null;
+    
+    try {
+        const { payload } = await jwtVerify(token, new TextEncoder().encode(process.env.JWT_SECRET!));
+        // Allow both superAdmin and admin
+        if (payload.role === 'superAdmin' || payload.role === 'admin') {
+            return payload;
+        }
+        return null;
+    } catch (error) {
+        return null;
+    }
+}
+
+// Helper function to verify superAdmin only (for POST requests)
 async function verifySuperAdmin(request: NextRequest) {
     const token = request.cookies.get('token')?.value;
     if (!token) return null;
@@ -26,8 +43,8 @@ async function verifySuperAdmin(request: NextRequest) {
 export async function GET(request: NextRequest) {
     await dbConnect();
 
-    const superAdminPayload = await verifySuperAdmin(request);
-    if (!superAdminPayload) {
+    const authPayload = await verifyAuth(request);
+    if (!authPayload) {
         return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 

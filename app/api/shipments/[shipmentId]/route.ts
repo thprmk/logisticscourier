@@ -6,6 +6,7 @@ import Shipment from '@/models/Shipment.model';
 import Notification from '@/models/Notification.model';
 import User from '@/models/User.model';
 import { jwtVerify } from 'jose';
+import { sendShipmentNotification } from '@/app/lib/notifications';
 
 // Helper to get user payload (Your existing function, no changes)
 async function getUserPayload(request: NextRequest) {
@@ -63,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     // FIX: Use the reliable URL parsing method
     const shipmentId = getShipmentIdFromUrl(request.url);
     const body = await request.json();
-    const { status, assignedTo, notes, failureReason } = body;
+    const { status, assignedTo, notes, failureReason, deliveryProof } = body;
 
     // Find the shipment
     const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId });
@@ -85,8 +86,8 @@ export async function PATCH(request: NextRequest) {
         const previousAssignedTo = shipment.assignedTo;
         shipment.assignedTo = assignedTo;
         
-        // If assigning to a driver and current status is 'Pending', update status to 'Assigned'
-        if (assignedTo && shipment.status === 'Pending') {
+    // If assigning to a driver and current status is 'Pending' or 'At Destination Branch', update status to 'Assigned'
+        if (assignedTo && (shipment.status === 'Pending' || shipment.status === 'At Destination Branch')) {
           shipment.status = 'Assigned';
           const newHistoryEntry = { 
             status: 'Assigned', 
@@ -116,16 +117,32 @@ export async function PATCH(request: NextRequest) {
               
               const notification = await Notification.create(notificationData);
               console.log('Notification created successfully:', notification._id);
+              
+              // Send push notification to delivery staff
+              await sendShipmentNotification(
+                assignedTo.toString(),
+                shipment._id.toString(),
+                shipment.trackingId,
+                'Assigned',
+                'assignment'
+              ).catch(err => {
+                console.error('Error sending push notification:', err);
+              });
             } catch (notifError) {
               console.error('Error creating notification:', notifError);
             }
           }
         }
-        // If unassigning and current status is 'Assigned', update status back to 'Pending'
+        // If unassigning and current status is 'Assigned', update status back to original state
         else if (!assignedTo && shipment.status === 'Assigned') {
-          shipment.status = 'Pending';
+          // If it was from a branch transfer, go back to 'At Destination Branch'
+          // Otherwise, go back to 'Pending' for locally created shipments
+          const destinationStatus = shipment.destinationBranchId.toString() !== shipment.originBranchId.toString() 
+            ? 'At Destination Branch' 
+            : 'Pending';
+          shipment.status = destinationStatus;
           const newHistoryEntry = { 
-            status: 'Pending', 
+            status: destinationStatus, 
             timestamp: new Date(), 
             notes: 'Shipment unassigned from driver'
           };
@@ -144,6 +161,7 @@ export async function PATCH(request: NextRequest) {
       if (payload.role !== 'admin') {
         const validStatusTransitions: Record<string, string[]> = {
           'Assigned': ['Out for Delivery'],
+          'At Destination Branch': ['Assigned'], // Allow direct assignment at destination
           'Out for Delivery': ['Delivered', 'Failed']
         };
         
@@ -171,6 +189,14 @@ export async function PATCH(request: NextRequest) {
         shipment.failureReason = failureReason;
       }
       
+      // Add delivery proof if provided
+      if (deliveryProof) {
+        shipment.deliveryProof = {
+          type: deliveryProof.type,
+          url: deliveryProof.url
+        };
+      }
+      
       // Create notification for branch admin when delivery staff updates status
       if (payload.role === 'staff' && shipment.assignedTo?.toString() === payload.userId) {
         // Find the branch admin(s) for this tenant
@@ -189,11 +215,30 @@ export async function PATCH(request: NextRequest) {
         
         if (notifications.length > 0) {
           await Notification.insertMany(notifications);
+          
+          // Send push notifications to all admins
+          for (const notification of notifications) {
+            await sendShipmentNotification(
+              notification.userId.toString(),
+              shipment._id.toString(),
+              shipment.trackingId,
+              status,
+              'status_update'
+            ).catch(err => {
+              console.error('Error sending push notification to admin:', err);
+            });
+          }
         }
       }
     }
     
     await shipment.save();
+    
+    console.log('Shipment saved successfully:', { 
+      shipmentId: shipment._id, 
+      status: shipment.status,
+      deliveryProof: shipment.deliveryProof
+    });
 
     return NextResponse.json(shipment, { status: 200 });
 

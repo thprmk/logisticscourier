@@ -7,11 +7,11 @@ interface IAddressDetails {
   name: string;
   address: string;
   phone: string;
-}
+} 
 
 // This is the main TypeScript interface for a Shipment document
 export interface IShipment extends Document {
-  tenantId: Schema.Types.ObjectId;      // CRUCIAL: The link to the Branch/Tenant
+  tenantId: Schema.Types.ObjectId;      // CRUCIAL: The link to the Branch/Tenant (current branch)
   trackingId: string;                   // The unique ID for customers
   sender: IAddressDetails;
   recipient: IAddressDetails;
@@ -20,7 +20,10 @@ export interface IShipment extends Document {
     type: string;                         // e.g., 'Document', 'Parcel'
     details?: string;                     // Optional notes about the contents
   };
-  status: 'Pending' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed'; // Controlled list of statuses
+  originBranchId: Schema.Types.ObjectId;     // The branch where shipment was created
+  destinationBranchId: Schema.Types.ObjectId; // The final destination branch
+  currentBranchId: Schema.Types.ObjectId;    // The branch currently holding the shipment
+  status: 'At Origin Branch' | 'In Transit to Destination' | 'At Destination Branch' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed'; // Controlled list of statuses
   assignedTo?: Schema.Types.ObjectId;     // Optional: The User ID of the assigned driver
   statusHistory: {
     status: string;
@@ -29,7 +32,7 @@ export interface IShipment extends Document {
   }[];                                    // A log of all status changes
   deliveryProof?: {
     type: 'signature' | 'photo';
-    dataUrl: string;                      // Will store the image data or a URL to the image
+    url: string;                      // Vercel Blob URL instead of base64
   };
   failureReason?: string;
 }
@@ -52,10 +55,13 @@ const ShipmentSchema = new Schema<IShipment>({
     type: { type: String, required: true },
     details: { type: String },
   },
+  originBranchId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  destinationBranchId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
+  currentBranchId: { type: Schema.Types.ObjectId, ref: 'Tenant', required: true, index: true },
   status: {
     type: String,
-    enum: ['Pending', 'Assigned', 'Out for Delivery', 'Delivered', 'Failed'],
-    default: 'Pending',
+    enum: ['At Origin Branch', 'In Transit to Destination', 'At Destination Branch', 'Assigned', 'Out for Delivery', 'Delivered', 'Failed'],
+    default: 'At Origin Branch',
     required: true,
   },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User' }, // This links to a User document
@@ -66,7 +72,7 @@ const ShipmentSchema = new Schema<IShipment>({
   }],
   deliveryProof: {
     type: { type: String, enum: ['signature', 'photo'] },
-    dataUrl: String,
+    url: String,                     // Vercel Blob URL
   },
   failureReason: String,
 }, { timestamps: true }); // Automatically adds 'createdAt' and 'updatedAt' fields

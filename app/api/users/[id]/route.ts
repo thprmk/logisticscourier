@@ -39,7 +39,7 @@ export async function PATCH(request: NextRequest) {
 
     try {
         const userId = getUserIdFromUrl(request.url);
-        const { name, email, role } = await request.json();
+        const { name, email, role, password } = await request.json();
 
         // Check if user exists and belongs to the same tenant
         const user = await User.findOne({ _id: userId, tenantId: payload.tenantId });
@@ -53,6 +53,13 @@ export async function PATCH(request: NextRequest) {
         user.email = email;
         user.role = role;
         
+        // Hash password if it's being updated
+        if (password && password.trim() !== '') {
+            const hashedPassword = await bcrypt.hash(password, 10);
+            user.password = hashedPassword;
+            console.log('Password updated for user:', email);
+        }
+        
         await user.save();
         
         const userResponse = user.toObject();
@@ -61,6 +68,7 @@ export async function PATCH(request: NextRequest) {
         return NextResponse.json(userResponse, { status: 200 });
 
     } catch (error: any) {
+        console.error('User update error:', error);
         if (error.code === 11000) {
              return NextResponse.json({ message: 'Email already exists' }, { status: 409 });
         }

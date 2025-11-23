@@ -12,6 +12,11 @@ interface IAddress {
   phone: string;
 }
 
+interface IBranch {
+  _id: string;
+  name: string;
+}
+
 interface IStatusHistory {
     status: string;
     timestamp: Date;
@@ -23,7 +28,7 @@ interface IShipment {
   trackingId: string;
   sender: IAddress;
   recipient: IAddress;
-  status: 'Pending' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed';
+  status: 'At Origin Branch' | 'In Transit to Destination' | 'At Destination Branch' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed';
   assignedTo?: {
       _id: string;
       name: string;
@@ -34,6 +39,11 @@ interface IShipment {
     weight: number;
     type: string;
   };
+  deliveryProof?: {
+    type: 'signature' | 'photo';
+    url: string;  // Vercel Blob URL
+  };
+  failureReason?: string;
 }
 
 interface IUser {
@@ -48,6 +58,7 @@ export default function ShipmentsPage() {
   const { user } = useUser();
   const [shipments, setShipments] = useState<IShipment[]>([]);
   const [drivers, setDrivers] = useState<IUser[]>([]);
+  const [branches, setBranches] = useState<IBranch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
   // Refined state management from the blueprint
@@ -65,32 +76,45 @@ export default function ShipmentsPage() {
   const [packageWeight, setPackageWeight] = useState(1);
   const [packageType, setPackageType] = useState('Parcel');
   const [assignedStaff, setAssignedStaff] = useState(''); // New state for staff assignment
+  const [originBranchId, setOriginBranchId] = useState('');
+  const [destinationBranchId, setDestinationBranchId] = useState('');
 
   // State for the update form
-  const [updateStatus, setUpdateStatus] = useState<IShipment['status']>('Pending');
+  const [updateStatus, setUpdateStatus] = useState<IShipment['status']>('At Origin Branch');
   const [updateAssignedTo, setUpdateAssignedTo] = useState('');
   const [updateNotes, setUpdateNotes] = useState('');
 
-   const [searchQuery, setSearchQuery] = useState('');
+  const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
+
+  const isLocalDelivery = destinationBranchId && destinationBranchId === originBranchId;
 
   const fetchData = async () => {
     setIsLoading(true);
     try {
-      // Fetch shipments and drivers in parallel
-      const [shipmentsRes, driversRes] = await Promise.all([
-        fetch('/api/shipments'),
-        fetch('/api/users?role=staff') // Assuming 'staff' are drivers
+      // Fetch shipments, drivers, and branches in parallel
+      const [shipmentsRes, driversRes, branchesRes] = await Promise.all([
+        fetch('/api/shipments', { credentials: 'include' }),
+        fetch('/api/users?role=staff', { credentials: 'include' }), // Assuming 'staff' are drivers
+        fetch('/api/tenants', { credentials: 'include' })
       ]);
 
       if (!shipmentsRes.ok) throw new Error('Failed to fetch shipments');
       if (!driversRes.ok) throw new Error('Failed to fetch drivers');
+      if (!branchesRes.ok) throw new Error('Failed to fetch branches');
 
       const shipmentsData = await shipmentsRes.json();
       const driversData = await driversRes.json();
+      const branchesData = await branchesRes.json();
 
       setShipments(shipmentsData);
       setDrivers(driversData);
+      setBranches(branchesData);
+      
+      // Set origin branch to current user's branch
+      if (user?.tenantId && !originBranchId) {
+        setOriginBranchId(user.tenantId);
+      }
 
     } catch (err: any) {
       toast.error(err.message);
@@ -101,6 +125,11 @@ export default function ShipmentsPage() {
   
   useEffect(() => {
     fetchData();
+    // Auto-refresh every 10 seconds to catch real-time updates from manifest receipts
+    const interval = setInterval(() => {
+      fetchData();
+    }, 10000);
+    return () => clearInterval(interval);
   }, []);
 
 
@@ -130,7 +159,9 @@ export default function ShipmentsPage() {
     setRecipientName(''); setRecipientAddress(''); setRecipientPhone('');
     setPackageWeight(1); setPackageType('Parcel');
     setAssignedStaff(''); // Reset assigned staff
-    setUpdateStatus('Pending'); setUpdateAssignedTo(''); setUpdateNotes('');
+    setDestinationBranchId(''); // Reset destination, but keep origin
+    setOriginBranchId(user?.tenantId || '');
+    setUpdateStatus('At Origin Branch'); setUpdateAssignedTo(''); setUpdateNotes('');
     setSelectedShipment(null);
   };
 
@@ -144,6 +175,21 @@ export default function ShipmentsPage() {
         setUpdateStatus(shipment.status);
         setUpdateAssignedTo(shipment.assignedTo?._id || '');
       }
+      // If viewing, fetch fresh data to ensure we have all fields including deliveryProof
+      if (type === 'view') {
+        const fetchShipmentDetails = async () => {
+          try {
+            const res = await fetch(`/api/shipments/${shipment._id}`, { credentials: 'include' });
+            if (res.ok) {
+              const freshData = await res.json();
+              setSelectedShipment(freshData);
+            }
+          } catch (error) {
+            console.error('Error fetching shipment details:', error);
+          }
+        };
+        fetchShipmentDetails();
+      }
     }
   };
 
@@ -156,6 +202,25 @@ export default function ShipmentsPage() {
 
   const handleCreateShipment = async (event: FormEvent) => {
     event.preventDefault();
+    
+    // Validation
+    if (!originBranchId) {
+      toast.error('Origin branch is required');
+      return;
+    }
+    if (!destinationBranchId) {
+      toast.error('Please select a destination branch');
+      return;
+    }
+    if (!senderName || !senderAddress || !senderPhone) {
+      toast.error('Please fill in all sender details');
+      return;
+    }
+    if (!recipientName || !recipientAddress || !recipientPhone) {
+      toast.error('Please fill in all recipient details');
+      return;
+    }
+    
     setIsSubmitting(true);
     const toastId = toast.loading('Creating new shipment...');
 
@@ -163,12 +228,15 @@ export default function ShipmentsPage() {
         sender: { name: senderName, address: senderAddress, phone: senderPhone },
         recipient: { name: recipientName, address: recipientAddress, phone: recipientPhone },
         packageInfo: { weight: packageWeight, type: packageType },
+        originBranchId: originBranchId,
+        destinationBranchId: destinationBranchId,
         assignedTo: assignedStaff || undefined // Include assigned staff if selected
     };
     
     try {
         const response = await fetch('/api/shipments', {
             method: 'POST',
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(newShipmentData)
         });
@@ -192,11 +260,9 @@ export default function ShipmentsPage() {
     setIsSubmitting(true);
     const toastId = toast.loading(`Updating shipment ${selectedShipment.trackingId}...`);
 
-    // If we're assigning a driver and the current status is 'Pending', update status to 'Assigned'
+    // If we're assigning a driver, the update is handled by the API endpoint
+    // The API will automatically transition to 'Assigned' status
     let statusToUpdate = updateStatus;
-    if (updateAssignedTo && selectedShipment.status === 'Pending' && updateStatus === 'Pending') {
-      statusToUpdate = 'Assigned';
-    }
 
     const updatePayload = {
       status: statusToUpdate,
@@ -207,6 +273,7 @@ export default function ShipmentsPage() {
     try {
         const res = await fetch(`/api/shipments/${selectedShipment._id}`, {
             method: 'PATCH', // Use PATCH for partial updates
+            credentials: 'include',
             headers: { 'Content-Type': 'application/json' },
             body: JSON.stringify(updatePayload),
         });
@@ -226,7 +293,7 @@ export default function ShipmentsPage() {
     setIsSubmitting(true);
     const toastId = toast.loading(`Deleting shipment ${selectedShipment.trackingId}...`);
     try {
-        const res = await fetch(`/api/shipments/${selectedShipment._id}`, { method: 'DELETE' });
+        const res = await fetch(`/api/shipments/${selectedShipment._id}`, { method: 'DELETE', credentials: 'include' });
         if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
         toast.success(`Shipment ${selectedShipment.trackingId} deleted successfully`, { id: toastId });
         closeModal();
@@ -241,9 +308,11 @@ export default function ShipmentsPage() {
   // Helper to render status badges
   const StatusBadge = ({ status }: { status: string }) => {
     const styles: { [key: string]: string } = {
-        'Pending': 'bg-yellow-100 text-yellow-800',
-        'Assigned': 'bg-blue-100 text-blue-800',
-        'Out for Delivery': 'bg-indigo-100 text-indigo-800',
+        'At Origin Branch': 'bg-purple-100 text-purple-800',
+        'In Transit to Destination': 'bg-indigo-100 text-indigo-800',
+        'At Destination Branch': 'bg-blue-100 text-blue-800',
+        'Assigned': 'bg-cyan-100 text-cyan-800',
+        'Out for Delivery': 'bg-orange-100 text-orange-800',
         'Delivered': 'bg-green-100 text-green-800',
         'Failed': 'bg-red-100 text-red-800',
     };
@@ -286,7 +355,9 @@ export default function ShipmentsPage() {
               className="h-12 w-full md:w-48 pl-4 pr-10 text-base bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm"
             >
               <option value="">All Statuses</option>
-              <option value="Pending">Pending</option>
+              <option value="At Origin Branch">At Origin Branch</option>
+              <option value="In Transit to Destination">In Transit</option>
+              <option value="At Destination Branch">At Destination Branch</option>
               <option value="Assigned">Assigned</option>
               <option value="Out for Delivery">Out for Delivery</option>
               <option value="Delivered">Delivered</option>
@@ -498,6 +569,48 @@ export default function ShipmentsPage() {
                 </fieldset>
                 
                 <fieldset className="md:col-span-2 space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Branch Details</legend>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="form-label text-xs">Origin Branch (Current) *</label>
+                      <input 
+                        type="text" 
+                        value={branches.find(b => b._id === originBranchId)?.name || user?.tenantName || 'Your Branch'} 
+                        disabled
+                        className="form-input text-sm py-2 bg-gray-50 cursor-not-allowed" 
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Destination Branch *</label>
+                      <select 
+                        value={destinationBranchId} 
+                        onChange={(e) => setDestinationBranchId(e.target.value)} 
+                        className="form-select text-sm py-2"
+                        required
+                      >
+                        <option value="">-- Select Destination --</option>
+                        {branches.map((branch: IBranch) => (
+                          <option key={branch._id} value={branch._id}>
+                            {branch.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {/* Show delivery type info */}
+                  {destinationBranchId && (
+                    <div className={`p-3 rounded-lg border ${isLocalDelivery ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+                      <p className={`text-xs font-semibold ${isLocalDelivery ? 'text-green-900' : 'text-blue-900'}`}>
+                        {isLocalDelivery 
+                          ? '📍 Local Delivery: This package stays in ' + (branches.find(b => b._id === destinationBranchId)?.name || 'this branch') + '. It can be immediately assigned to a delivery staff member.'
+                          : '🚚 Inter-Branch Transfer: This package will be sent to ' + (branches.find(b => b._id === destinationBranchId)?.name || 'the destination') + '. It will require a manifest dispatch.'
+                        }
+                      </p>
+                    </div>
+                  )}
+                </fieldset>
+                
+              <fieldset className="md:col-span-2 space-y-3">
                   <legend className="text-sm font-semibold text-gray-900">Package Details</legend>
                   <div className="grid grid-cols-3 gap-3">
                     <div>
@@ -593,7 +706,9 @@ export default function ShipmentsPage() {
                     onChange={(e) => setUpdateStatus(e.target.value as IShipment['status'])} 
                     className="form-select"
                   >
-                    <option value="Pending">Pending</option>
+                    <option value="At Origin Branch">At Origin Branch</option>
+                    <option value="In Transit to Destination">In Transit to Destination</option>
+                    <option value="At Destination Branch">At Destination Branch</option>
                     <option value="Assigned">Assigned</option>
                     <option value="Out for Delivery">Out for Delivery</option>
                     <option value="Delivered">Delivered</option>
@@ -712,7 +827,7 @@ export default function ShipmentsPage() {
               </p>
             </div>
 
-            <div className="px-6 py-4 overflow-y-auto flex-grow">
+            <div className="px-6 py-4 overflow-y-auto flex-grow space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
                   <h3 className="text-lg font-semibold text-gray-800 mb-3">Sender</h3>
@@ -744,7 +859,7 @@ export default function ShipmentsPage() {
                 </div>
               </div>
 
-              <div className="mt-8">
+              <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Package Information</h3>
                 <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
                   <div className="bg-gray-50 p-4 rounded-lg">
@@ -763,7 +878,7 @@ export default function ShipmentsPage() {
               </div>
 
               {/* Status History Timeline */}
-              <div className="mt-8">
+              <div>
                 <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
                 {selectedShipment.statusHistory && selectedShipment.statusHistory.length > 0 ? (
                   <div className="space-y-4">
@@ -787,7 +902,7 @@ export default function ShipmentsPage() {
                             })}
                           </p>
                           {history.notes && (
-                            <p className="text-sm text-gray-600 mt-1 italic">"{history.notes}"</p>
+                            <p className="text-sm text-gray-600 mt-1 italic">\u201C{history.notes}\u201D</p>
                           )}
                         </div>
                       </div>
@@ -797,6 +912,37 @@ export default function ShipmentsPage() {
                   <div className="text-sm text-gray-500">No history available.</div>
                 )}
               </div>
+              
+              {/* Delivery Proof Section */}
+              {(selectedShipment.status === 'Delivered' || selectedShipment.status === 'Failed') && (
+                <div className="mt-8">
+                  {selectedShipment.status === 'Delivered' && selectedShipment.deliveryProof && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-green-900 mb-4">✓ Delivery Proof</h3>
+                      {selectedShipment.deliveryProof.type === 'photo' ? (
+                        <div>
+                          <p className="text-sm text-green-700 mb-3 font-medium">Photo Proof:</p>
+                          <img src={selectedShipment.deliveryProof.url} alt="Delivery proof" className="max-w-full max-h-96 rounded-lg border border-green-300" />
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm text-green-700 mb-3 font-medium">Signature Proof:</p>
+                          <img src={selectedShipment.deliveryProof.url} alt="Signature" className="max-w-xs max-h-48 rounded-lg border border-green-300" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+              
+                  {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-red-900 mb-3">✗ Delivery Failed</h3>
+                      <div className="bg-white rounded p-3 border border-red-100">
+                        <p className="text-sm text-red-700"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
+                      </div>
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
 
             <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">

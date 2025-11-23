@@ -15,7 +15,8 @@ import {
   Building,
   Truck,
   Bell,
-  Store
+  Store,
+  Boxes
 } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 
@@ -129,12 +130,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     userRole = user.role === 'admin' ? 'Branch Manager' : 'Delivery Staff';
     
     if (pathname.startsWith('/dashboard/shipments')) pageTitle = 'Shipment Management';
+    else if (pathname.startsWith('/dashboard/dispatch')) pageTitle = 'Branch Dispatch';
     else if (pathname.startsWith('/dashboard/staff')) pageTitle = 'Staff Management';
     else pageTitle = 'Branch Overview';
     
     navLinks = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
         { href: '/dashboard/shipments', label: 'Shipments', icon: Package },
+        { href: '/dashboard/dispatch', label: 'Dispatch', icon: Boxes },
         { href: '/dashboard/staff', label: 'Staff', icon: Users },
     ];
   }

@@ -12,6 +12,8 @@ export async function POST(request: NextRequest) {
   try {
     const { email, password } = await request.json();
 
+    console.log('Login attempt for email:', email);
+
     if (!email || !password) {
       return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
     }
@@ -21,12 +23,20 @@ export async function POST(request: NextRequest) {
     const user = await User.findOne({ email }).select('+password');
 
     if (!user) {
+      console.log('User not found:', email);
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 
+    console.log('User found:', email, 'Role:', user.role);
+    console.log('Password hash exists:', !!user.password);
+    console.log('Password hash starts with $2a or $2b:', user.password?.startsWith('$2'));
+
     const isPasswordMatch = await bcrypt.compare(password, user.password);
 
+    console.log('Password match result:', isPasswordMatch);
+
     if (!isPasswordMatch) {
+      console.log('Password mismatch for:', email);
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 

@@ -2,6 +2,7 @@
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from "./context/UserContext";
+import InstallPWA from "./components/InstallPWA";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
@@ -22,6 +23,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
       </head>
       <body>
         <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
+        <InstallPWA />
         <UserProvider>
           {children}
         </UserProvider>

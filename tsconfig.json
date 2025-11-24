@@ -15,7 +15,7 @@
     "moduleResolution": "bundler",
     "resolveJsonModule": true,
     "isolatedModules": true,
-    "jsx": "react-jsx",
+    "jsx": "preserve",
     "incremental": true,
     "plugins": [
       {
@@ -26,8 +26,12 @@
       "@/*": [
         "./*"
       ],
-  "@/components/*": ["./app/components/*"],
-  "@/lib/*": ["./lib/*"]
+      "@/components/*": [
+        "./app/components/*"
+      ],
+      "@/lib/*": [
+        "./lib/*"
+      ]
     }
   },
   "include": [

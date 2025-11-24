@@ -2,23 +2,29 @@
   "name": "Netta Logistics",
   "short_name": "Netta",
   "description": "Courier and logistics management application",
+  "id": "/",
   "start_url": "/",
   "scope": "/",
   "display": "standalone",
   "orientation": "portrait-primary",
   "background_color": "#ffffff",
   "theme_color": "#2563eb",
+  "categories": [
+    "business",
+    "productivity",
+    "utilities"
+  ],
   "icons": [
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 192 192'%3E%3Crect fill='%232563eb' width='192' height='192'/%3E%3Ctext x='96' y='96' text-anchor='middle' dy='0.35em' font-family='Arial' font-size='100' fill='white' font-weight='bold'%3EN%3C/text%3E%3C/svg%3E",
+      "src": "/icons/icon-192x192.png",
       "sizes": "192x192",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     },
     {
-      "src": "data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 512 512'%3E%3Crect fill='%232563eb' width='512' height='512'/%3E%3Ctext x='256' y='256' text-anchor='middle' dy='0.35em' font-family='Arial' font-size='280' fill='white' font-weight='bold'%3EN%3C/text%3E%3C/svg%3E",
+      "src": "/icons/icon-512x512.png",
       "sizes": "512x512",
-      "type": "image/svg+xml",
+      "type": "image/png",
       "purpose": "any maskable"
     }
   ]

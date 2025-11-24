@@ -2,7 +2,7 @@ import type { NextConfig } from "next";
 import withPWAInit from '@ducanh2912/next-pwa';
 
 const nextConfig: NextConfig = {
-  turbopack: {},  // Add empty turbopack config to silence warning
+  // turbopack: {}, // Not needed for Next.js 15
   async headers() {
     return [
       {
@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  disable: process.env.NODE_ENV === 'development',
+  disable: false, // Explicitly enable PWA
   workboxOptions: {
     skipWaiting: true,
   },

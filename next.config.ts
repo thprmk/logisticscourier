@@ -18,13 +18,15 @@ const nextConfig: NextConfig = {
   },
 };
 
-const withPWA = withPWAInit({
-  dest: 'public',
-  register: true,
-  disable: false, // Explicitly enable PWA
-  workboxOptions: {
-    skipWaiting: true,
-  },
-});
+// const withPWA = withPWAInit({
+//   dest: 'public',
+//   register: true,
+//   disable: false, // Explicitly enable PWA
+//   workboxOptions: {
+//     skipWaiting: true,
+//   },
+// });
 
-export default withPWA(nextConfig);
+// export default withPWA(nextConfig);
+
+export default nextConfig;

@@ -7,7 +7,7 @@ interface IAddressDetails {
   name: string;
   address: string;
   phone: string;
-} 
+}   
 
 // This is the main TypeScript interface for a Shipment document
 export interface IShipment extends Document {

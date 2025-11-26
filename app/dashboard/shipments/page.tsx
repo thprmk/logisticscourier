@@ -3,8 +3,7 @@
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { useUser } from '../../context/UserContext';
 import toast from 'react-hot-toast';
-import { Plus, Search, Filter, Package as PackageIcon, Trash2, UserPlus, X, Calendar } from 'lucide-react';
-import { ModernTable, StatusBadge, ActionButtons, Column } from '../components/TableComponents';
+import { Plus, Edit, Trash2, Eye, Search, ChevronDown, Building, Package as PackageIcon, X, Filter, CheckSquare, Square } from 'lucide-react';
 
 // Define TypeScript interfaces for our data
 interface IAddress {
@@ -39,7 +38,6 @@ interface IShipment {
   packageInfo: {
     weight: number;
     type: string;
-    details?: string;
   };
   deliveryProof?: {
     type: 'signature' | 'photo';
@@ -77,7 +75,6 @@ export default function ShipmentsPage() {
   const [recipientPhone, setRecipientPhone] = useState('');
   const [packageWeight, setPackageWeight] = useState(1);
   const [packageType, setPackageType] = useState('Parcel');
-  const [packageDetails, setPackageDetails] = useState(''); // New state
   const [assignedStaff, setAssignedStaff] = useState(''); // New state for staff assignment
   const [originBranchId, setOriginBranchId] = useState('');
   const [destinationBranchId, setDestinationBranchId] = useState('');
@@ -89,20 +86,17 @@ export default function ShipmentsPage() {
 
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
-  const [staffFilter, setStaffFilter] = useState('');
-
-  // Date Range Filter State
-  const [startDate, setStartDate] = useState('');
-  const [endDate, setEndDate] = useState('');
-
+  
   // Bulk actions state
-  const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(new Set());
-  const [bulkAssignStaffId, setBulkAssignStaffId] = useState('');
-  const [showBulkAssignModal, setShowBulkAssignModal] = useState(false);
-
+  const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set());
+  const [filterAssignedTo, setFilterAssignedTo] = useState('');
+  const [filterStartDate, setFilterStartDate] = useState('');
+  const [filterEndDate, setFilterEndDate] = useState('');
+  const [bulkAssignStaff, setBulkAssignStaff] = useState('');
+  
   // Pagination state
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const ITEMS_PER_PAGE = 10;
 
   const isLocalDelivery = destinationBranchId && destinationBranchId === originBranchId;
 
@@ -140,6 +134,35 @@ export default function ShipmentsPage() {
     }
   };
 
+  // Load filters from localStorage on mount
+  useEffect(() => {
+    const savedFilters = localStorage.getItem('shipmentFilters');
+    if (savedFilters) {
+      try {
+        const filters = JSON.parse(savedFilters);
+        setSearchQuery(filters.searchQuery || '');
+        setStatusFilter(filters.statusFilter || '');
+        setFilterAssignedTo(filters.filterAssignedTo || '');
+        setFilterStartDate(filters.filterStartDate || '');
+        setFilterEndDate(filters.filterEndDate || '');
+      } catch (error) {
+        console.error('Failed to parse saved filters:', error);
+      }
+    }
+  }, []);
+
+  // Save filters to localStorage whenever they change
+  useEffect(() => {
+    const filters = {
+      searchQuery,
+      statusFilter,
+      filterAssignedTo,
+      filterStartDate,
+      filterEndDate
+    };
+    localStorage.setItem('shipmentFilters', JSON.stringify(filters));
+  }, [searchQuery, statusFilter, filterAssignedTo, filterStartDate, filterEndDate]);
+
   useEffect(() => {
     fetchData();
     // Auto-refresh every 10 seconds to catch real-time updates from manifest receipts
@@ -158,30 +181,20 @@ export default function ShipmentsPage() {
       filtered = filtered.filter(shipment => shipment.status === statusFilter);
     }
 
-    // Apply staff filter
-    if (staffFilter) {
-      filtered = filtered.filter(shipment => shipment.assignedTo?._id === staffFilter);
+    // Apply assigned staff filter
+    if (filterAssignedTo) {
+      filtered = filtered.filter(shipment => shipment.assignedTo?._id === filterAssignedTo);
     }
 
     // Apply date range filter
-    if (startDate || endDate) {
-      filtered = filtered.filter(shipment => {
-        const shipmentDate = new Date(shipment.createdAt);
-        shipmentDate.setHours(0, 0, 0, 0);
-
-        let isValid = true;
-        if (startDate) {
-          const start = new Date(startDate);
-          start.setHours(0, 0, 0, 0);
-          isValid = isValid && shipmentDate >= start;
-        }
-        if (endDate) {
-          const end = new Date(endDate);
-          end.setHours(23, 59, 59, 999);
-          isValid = isValid && shipmentDate <= end;
-        }
-        return isValid;
-      });
+    if (filterStartDate) {
+      const startDate = new Date(filterStartDate);
+      filtered = filtered.filter(shipment => new Date(shipment.createdAt) >= startDate);
+    }
+    if (filterEndDate) {
+      const endDate = new Date(filterEndDate);
+      endDate.setHours(23, 59, 59, 999);
+      filtered = filtered.filter(shipment => new Date(shipment.createdAt) <= endDate);
     }
 
     // Apply search query
@@ -195,12 +208,23 @@ export default function ShipmentsPage() {
     }
 
     return filtered;
-  }, [shipments, searchQuery, statusFilter, staffFilter, startDate, endDate]);
+  }, [shipments, searchQuery, statusFilter, filterAssignedTo, filterStartDate, filterEndDate]);
+
+  // Pagination logic
+  const totalPages = Math.ceil(filteredShipments.length / ITEMS_PER_PAGE);
+  const startIndex = (currentPage - 1) * ITEMS_PER_PAGE;
+  const endIndex = startIndex + ITEMS_PER_PAGE;
+  const paginatedShipments = filteredShipments.slice(startIndex, endIndex);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, filterAssignedTo, filterStartDate, filterEndDate]);
 
   const resetForms = () => {
     setSenderName(''); setSenderAddress(''); setSenderPhone('');
     setRecipientName(''); setRecipientAddress(''); setRecipientPhone('');
-    setPackageWeight(1); setPackageType('Parcel'); setPackageDetails('');
+    setPackageWeight(1); setPackageType('Parcel');
     setAssignedStaff(''); // Reset assigned staff
     setDestinationBranchId(''); // Reset destination, but keep origin
     setOriginBranchId(user?.tenantId || '');
@@ -208,111 +232,135 @@ export default function ShipmentsPage() {
     setSelectedShipment(null);
   };
 
-  // Pagination logic
-  const totalPages = Math.ceil(filteredShipments.length / itemsPerPage);
-  const paginatedShipments = useMemo(() => {
-    const startIdx = (currentPage - 1) * itemsPerPage;
-    const endIdx = startIdx + itemsPerPage;
-    return filteredShipments.slice(startIdx, endIdx);
-  }, [filteredShipments, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-    setSelectedShipmentIds(new Set()); // Clear selections when filters change
-  }, [searchQuery, statusFilter, staffFilter, startDate, endDate]);
-
-  const goToPage = (page: number) => {
-    if (page >= 1 && page <= totalPages) {
-      setCurrentPage(page);
-      window.scrollTo({ top: 0, behavior: 'smooth' });
-    }
-  };
-
-  // Bulk actions handlers
   const toggleSelectShipment = (shipmentId: string) => {
-    const newSelected = new Set(selectedShipmentIds);
+    const newSelected = new Set(selectedIds);
     if (newSelected.has(shipmentId)) {
       newSelected.delete(shipmentId);
     } else {
       newSelected.add(shipmentId);
     }
-    setSelectedShipmentIds(newSelected);
+    setSelectedIds(newSelected);
   };
 
   const toggleSelectAll = () => {
-    if (selectedShipmentIds.size === paginatedShipments.length) {
-      setSelectedShipmentIds(new Set());
+    if (selectedIds.size === filteredShipments.length && filteredShipments.length > 0) {
+      setSelectedIds(new Set());
     } else {
-      setSelectedShipmentIds(new Set(paginatedShipments.map(s => s._id)));
+      setSelectedIds(new Set(filteredShipments.map(s => s._id)));
+    }
+  };
+
+  // Validate which actions are valid for selected shipments
+  const canAssignToStaff = useMemo(() => {
+    if (selectedIds.size === 0) return false;
+    const selectedShipments = shipments.filter(s => selectedIds.has(s._id));
+    // Only "At Destination Branch" status allows staff assignment
+    return selectedShipments.every(s => s.status === 'At Destination Branch');
+  }, [selectedIds, shipments]);
+
+  const getAssignmentDisabledReason = useMemo(() => {
+    if (selectedIds.size === 0) return '';
+    const selectedShipments = shipments.filter(s => selectedIds.has(s._id));
+    
+    const invalidStatuses = new Set<string>();
+    selectedShipments.forEach(s => {
+      if (s.status !== 'At Destination Branch') {
+        invalidStatuses.add(s.status);
+      }
+    });
+
+    if (invalidStatuses.size > 0) {
+      const statusList = Array.from(invalidStatuses).join(', ');
+      return `You can only assign shipments that are at the destination branch. Selected has: ${statusList}`;
+    }
+    return '';
+  }, [selectedIds, shipments]);
+
+  const handleBulkAssign = async () => {
+    if (!canAssignToStaff) {
+      toast.error(getAssignmentDisabledReason || 'Cannot assign these shipments');
+      return;
+    }
+    if (!bulkAssignStaff) {
+      toast.error('Please select a staff member');
+      return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast.loading(`Assigning ${selectedIds.size} shipments...`);
+
+    try {
+      const shipmentIds = Array.from(selectedIds);
+      const results = await Promise.all(
+        shipmentIds.map(id =>
+          fetch(`/api/shipments/${id}`, {
+            method: 'PATCH',
+            credentials: 'include',
+            headers: { 'Content-Type': 'application/json' },
+            body: JSON.stringify({ assignedTo: bulkAssignStaff })
+          })
+        )
+      );
+
+      const allSuccess = results.every(r => r.ok);
+      if (!allSuccess) throw new Error('Some assignments failed');
+
+      toast.success(`Successfully assigned ${shipmentIds.length} shipments`, { id: toastId });
+      setSelectedIds(new Set());
+      setBulkAssignStaff('');
+      fetchData();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to assign shipments', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
   const handleBulkDelete = async () => {
-    if (selectedShipmentIds.size === 0) return;
-    const confirmDelete = window.confirm(`Delete ${selectedShipmentIds.size} shipment(s)? This action cannot be undone.`);
-    if (!confirmDelete) return;
+    if (selectedIds.size === 0) {
+      toast.error('Please select at least one shipment');
+      return;
+    }
 
-    const toastId = toast.loading(`Deleting ${selectedShipmentIds.size} shipment(s)...`);
+    if (!window.confirm(`Are you sure you want to delete ${selectedIds.size} shipment(s)? This cannot be undone.`)) {
+      return;
+    }
+
+    setIsSubmitting(true);
+    const toastId = toast.loading(`Deleting ${selectedIds.size} shipments...`);
+
     try {
-      const deletePromises = Array.from(selectedShipmentIds).map(id =>
-        fetch(`/api/shipments/${id}`, { method: 'DELETE', credentials: 'include' })
+      const shipmentIds = Array.from(selectedIds);
+      const results = await Promise.all(
+        shipmentIds.map(id =>
+          fetch(`/api/shipments/${id}`, {
+            method: 'DELETE',
+            credentials: 'include'
+          })
+        )
       );
 
-      const results = await Promise.all(deletePromises);
       const allSuccess = results.every(r => r.ok);
+      if (!allSuccess) throw new Error('Some deletions failed');
 
-      if (!allSuccess) throw new Error('Some shipments failed to delete');
-
-      toast.success(`Deleted ${selectedShipmentIds.size} shipment(s)`, { id: toastId });
-      setSelectedShipmentIds(new Set());
+      toast.success(`Successfully deleted ${shipmentIds.length} shipments`, { id: toastId });
+      setSelectedIds(new Set());
       fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to delete shipments', { id: toastId });
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete shipments', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
     }
   };
 
-  // Validation logic for bulk actions
-  const getSelectedShipments = () => {
-    return filteredShipments.filter(s => selectedShipmentIds.has(s._id));
-  };
-
-  const canAssignSelected = () => {
-    const selected = getSelectedShipments();
-    if (selected.length === 0) return false;
-    // Can only assign shipments at destination branch or in assigned state
-    return selected.every(s =>
-      s.status === 'At Destination Branch' || s.status === 'Assigned'
-    );
-  };
-
-  const handleBulkAssign = async () => {
-    if (selectedShipmentIds.size === 0 || !bulkAssignStaffId) return;
-
-    const toastId = toast.loading(`Assigning ${selectedShipmentIds.size} shipment(s)...`);
-    try {
-      const updatePromises = Array.from(selectedShipmentIds).map(id =>
-        fetch(`/api/shipments/${id}`, {
-          method: 'PATCH',
-          credentials: 'include',
-          headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ assignedTo: bulkAssignStaffId })
-        })
-      );
-
-      const results = await Promise.all(updatePromises);
-      const allSuccess = results.every(r => r.ok);
-
-      if (!allSuccess) throw new Error('Some shipments failed to update');
-
-      toast.success(`Assigned ${selectedShipmentIds.size} shipment(s)`, { id: toastId });
-      setSelectedShipmentIds(new Set());
-      setShowBulkAssignModal(false);
-      setBulkAssignStaffId('');
-      fetchData();
-    } catch (err: any) {
-      toast.error(err.message || 'Failed to assign shipments', { id: toastId });
-    }
+  const clearFiltersAndState = () => {
+    setSearchQuery('');
+    setStatusFilter('');
+    setFilterAssignedTo('');
+    setFilterStartDate('');
+    setFilterEndDate('');
+    setCurrentPage(1);
+    localStorage.removeItem('shipmentFilters');
   };
 
   const openModal = (type: ModalType, shipment?: IShipment) => {
@@ -348,7 +396,7 @@ export default function ShipmentsPage() {
     resetForms();
   };
 
-  //CRUD Handlers
+  //CRUD Handlers 
 
   const handleCreateShipment = async (event: FormEvent) => {
     event.preventDefault();
@@ -377,7 +425,7 @@ export default function ShipmentsPage() {
     const newShipmentData = {
       sender: { name: senderName, address: senderAddress, phone: senderPhone },
       recipient: { name: recipientName, address: recipientAddress, phone: recipientPhone },
-      packageInfo: { weight: packageWeight, type: packageType, details: packageDetails },
+      packageInfo: { weight: packageWeight, type: packageType },
       originBranchId: originBranchId,
       destinationBranchId: destinationBranchId,
       assignedTo: assignedStaff || undefined // Include assigned staff if selected
@@ -472,428 +520,661 @@ export default function ShipmentsPage() {
     }
   };
 
-  // Columns configuration for the ModernTable
-  const columns: Column<IShipment>[] = [
-    {
-      header: 'S/No',
-      cell: (item) => {
-        const index = paginatedShipments.findIndex(s => s._id === item._id);
-        return <span className="text-gray-500 font-medium">{(currentPage - 1) * itemsPerPage + index + 1}</span>;
-      },
-      className: 'w-16'
-    },
-    {
-      header: 'Tracking ID',
-      accessorKey: 'trackingId',
-      cell: (item) => <span className="font-mono text-blue-700 font-bold text-base">{item.trackingId}</span>
-    },
-    {
-      header: 'Recipient',
-      cell: (item) => (
-        <div>
-          <div className="font-bold text-gray-900 text-base">{item.recipient.name}</div>
-          <div className="text-gray-500 text-sm mt-0.5">{item.recipient.address}</div>
-        </div>
-      )
-    },
-    {
-      header: 'Status',
-      cell: (item) => <StatusBadge status={item.status} />
-    },
-    {
-      header: 'Assigned To',
-      cell: (item) => (
-        <span className={`font-medium ${item.assignedTo ? 'text-gray-900' : 'text-gray-400 italic'}`}>
-          {item.assignedTo?.name || 'Unassigned'}
-        </span>
-      )
-    },
-    {
-      header: 'Date',
-      cell: (item) => (
-        <span className="text-gray-600 font-medium">
-          {new Date(item.createdAt).toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-            year: 'numeric'
-          })}
-        </span>
-      )
-    },
-    {
-      header: 'Actions',
-      cell: (item) => (
-        <ActionButtons
-          onView={() => openModal('view', item)}
-          onEdit={() => openModal('update', item)}
-          onDelete={() => openModal('delete', item)}
-        />
-      ),
-      className: 'text-right'
-    }
-  ];
+  // Helper to render status badges
+  const StatusBadge = ({ status }: { status: string }) => {
+    const styles: { [key: string]: string } = {
+      'At Origin Branch': 'bg-purple-100 text-purple-800',
+      'In Transit to Destination': 'bg-indigo-100 text-indigo-800',
+      'At Destination Branch': 'bg-blue-100 text-blue-800',
+      'Assigned': 'bg-cyan-100 text-cyan-800',
+      'Out for Delivery': 'bg-orange-100 text-orange-800',
+      'Delivered': 'bg-green-100 text-green-800',
+      'Failed': 'bg-red-100 text-red-800',
+    };
+    return (
+      <span className={`px-3 py-1 text-sm font-medium rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        {status}
+      </span>
+    );
+  };
 
   return (
-    <div className="space-y-6 max-w-[1600px] mx-auto">
-      <div className="flex flex-col md:flex-row md:items-center justify-between gap-4 border-b border-gray-200 pb-5">
+    <div className="space-y-4">
+      {/* Header Section */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3">
         <div>
-          <h1 className="text-3xl font-extrabold text-gray-900 tracking-tight">Shipment Management</h1>
-          <p className="text-base text-gray-500 mt-1">Create, track, and manage all shipments for your branch.</p>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shipment Management</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1">Create, track, and manage all shipments for your branch.</p>
         </div>
         <button
           onClick={() => openModal('create')}
-          className="inline-flex items-center justify-center gap-2 px-5 py-3 bg-blue-600 text-white text-sm font-bold rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-md hover:shadow-lg"
+          className="h-10 px-4 bg-gradient-to-r from-blue-600 to-blue-700 text-white font-semibold text-sm rounded-lg hover:from-blue-700 hover:to-blue-800 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 transition-all shadow-sm hover:shadow-md whitespace-nowrap flex items-center justify-center gap-2 sm:w-auto w-full"
         >
-          <Plus size={20} />
-          <span>New Shipment</span>
+          <Plus size={18} />
+          <span>Add New Shipment</span>
         </button>
       </div>
 
-      {/* Action Bar */}
-      <div className="bg-white p-5 rounded-xl border border-gray-200 shadow-sm space-y-4">
-        <div className="flex flex-col xl:flex-row gap-4 items-center">
-          {/* Search - Compact */}
-          <div className="relative w-full xl:w-96">
-            <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search size={18} className="text-gray-400" />
-            </div>
-            <input
-              type="text"
-              placeholder="Search by tracking ID, name, or phone..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
-              className="block w-full pl-10 pr-3 py-2 border border-gray-300 rounded-lg leading-5 bg-gray-50 placeholder-gray-500 focus:outline-none focus:bg-white focus:ring-2 focus:ring-blue-500 focus:border-blue-500 text-sm transition-all"
-            />
+      {/* Search & Filters Section */}
+      <div className="flex flex-col lg:flex-row lg:items-end gap-4">
+        {/* Search Bar - Left Side */}
+        <div className="relative flex-1">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
           </div>
+          <input
+            type="text"
+            placeholder="Search tracking, name, phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="w-full h-10 pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-gray-400 transition-all placeholder:text-gray-400 font-medium"
+          />
+        </div>
 
-          {/* Inline Filters */}
-          <div className="flex flex-col md:flex-row gap-3 w-full xl:w-auto xl:flex-1">
-            <select
-              value={statusFilter}
-              onChange={(e) => setStatusFilter(e.target.value)}
-              className="block w-full md:w-48 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-lg bg-gray-50"
-            >
-              <option value="">All Statuses</option>
-              <option value="At Origin Branch">At Origin Branch</option>
-              <option value="In Transit to Destination">In Transit</option>
-              <option value="At Destination Branch">At Destination Branch</option>
-              <option value="Assigned">Assigned</option>
-              <option value="Out for Delivery">Out for Delivery</option>
-              <option value="Delivered">Delivered</option>
-              <option value="Failed">Failed</option>
-            </select>
-
-            <select
-              value={staffFilter}
-              onChange={(e) => setStaffFilter(e.target.value)}
-              className="block w-full md:w-48 pl-3 pr-10 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-lg bg-gray-50"
-            >
-              <option value="">All Staff</option>
-              {drivers.map(driver => (
-                <option key={driver._id} value={driver._id}>
-                  {driver.name}
-                </option>
-              ))}
-            </select>
-
-            <div className="flex items-center gap-2">
-              <div className="relative">
-                <input
-                  type="date"
-                  value={startDate}
-                  onChange={(e) => setStartDate(e.target.value)}
-                  className="block w-full md:w-40 pl-3 pr-3 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-lg bg-gray-50"
-                  placeholder="Start Date"
-                />
-              </div>
-              <span className="text-gray-400">-</span>
-              <div className="relative">
-                <input
-                  type="date"
-                  value={endDate}
-                  onChange={(e) => setEndDate(e.target.value)}
-                  className="block w-full md:w-40 pl-3 pr-3 py-2 text-sm border-gray-300 focus:outline-none focus:ring-blue-500 focus:border-blue-500 rounded-lg bg-gray-50"
-                  placeholder="End Date"
-                />
-              </div>
+        {/* Filter Controls - Right Side */}
+        <div className="flex flex-wrap lg:flex-nowrap items-end gap-2 lg:justify-end">
+          <select
+            value={statusFilter}
+            onChange={(e) => setStatusFilter(e.target.value)}
+            className="h-10 px-2.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition-all font-medium flex-1 sm:flex-initial sm:w-32"
+          >
+            <option value="">All Status</option>
+            <option value="At Origin Branch">At Origin</option>
+            <option value="In Transit to Destination">In Transit</option>
+            <option value="At Destination Branch">At Destination</option>
+            <option value="Assigned">Assigned</option>
+            <option value="Out for Delivery">Out for Delivery</option>
+            <option value="Delivered">Delivered</option>
+            <option value="Failed">Failed</option>
+          </select>
+          
+          <select
+            value={filterAssignedTo}
+            onChange={(e) => setFilterAssignedTo(e.target.value)}
+            className="h-10 px-2.5 text-xs bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent hover:border-gray-400 transition-all font-medium flex-1 sm:flex-initial sm:w-32"
+          >
+            <option value="">All Staff</option>
+            {drivers.map(driver => (
+              <option key={driver._id} value={driver._id}>
+                {driver.name}
+              </option>
+            ))}
+          </select>
+          
+          {/* Date Range - Single Control */}
+          <div className="flex-1 sm:flex-initial sm:w-auto">
+            <div className="flex items-center gap-1 h-10 px-3 bg-white border border-gray-300 rounded-lg focus-within:ring-2 focus-within:ring-blue-500 focus-within:border-transparent hover:border-gray-400 transition-all">
+              <svg className="w-4 h-4 text-gray-400 flex-shrink-0" fill="none" stroke="currentColor" viewBox="0 0 24 24">
+                <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M8 7V3m8 4V3m-9 8h10M5 21h14a2 2 0 002-2V7a2 2 0 00-2-2H5a2 2 0 00-2 2v12a2 2 0 002 2z" />
+              </svg>
+              <input
+                type="date"
+                value={filterStartDate}
+                onChange={(e) => setFilterStartDate(e.target.value)}
+                className="h-full text-xs bg-transparent border-0 outline-none w-20 focus:ring-0 p-0 font-medium"
+              />
+              <span className="text-xs text-gray-400 font-medium">-</span>
+              <input
+                type="date"
+                value={filterEndDate}
+                onChange={(e) => setFilterEndDate(e.target.value)}
+                className="h-full text-xs bg-transparent border-0 outline-none w-20 focus:ring-0 p-0 font-medium"
+              />
             </div>
           </div>
-
-          {/* Bulk Actions Indicator */}
-          {selectedShipmentIds.size > 0 && (
-            <div className="flex items-center gap-3 bg-blue-50 px-4 py-2 rounded-lg border border-blue-100 animate-in fade-in whitespace-nowrap">
-              <span className="text-sm font-semibold text-blue-900">
-                {selectedShipmentIds.size} selected
-              </span>
-              <div className="h-4 w-px bg-blue-200"></div>
-              <div className="flex items-center gap-2">
-                <button
-                  onClick={() => canAssignSelected() && setShowBulkAssignModal(true)}
-                  disabled={!canAssignSelected()}
-                  className={`inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold uppercase tracking-wide rounded transition-colors ${canAssignSelected()
-                    ? 'text-blue-700 hover:bg-blue-100'
-                    : 'text-gray-400 cursor-not-allowed'
-                    }`}
-                >
-                  Assign
-                </button>
-                <button
-                  onClick={handleBulkDelete}
-                  className="inline-flex items-center gap-1.5 px-2 py-1 text-xs font-bold uppercase tracking-wide text-red-700 hover:bg-red-100 rounded transition-colors"
-                >
-                  Delete
-                </button>
-                <button
-                  onClick={() => setSelectedShipmentIds(new Set())}
-                  className="p-1 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-200"
-                >
-                  <X size={14} />
-                </button>
-              </div>
-            </div>
-          )}
+          
+          <button
+            onClick={clearFiltersAndState}
+            className="h-10 px-3 text-xs font-semibold text-red-600 hover:text-red-700 hover:bg-red-50 rounded-lg border border-red-200 transition-all whitespace-nowrap"
+          >
+            Clear
+          </button>
         </div>
       </div>
 
-      {/* Table Section */}
-      <ModernTable
-        data={paginatedShipments}
-        columns={columns}
-        isLoading={isLoading}
-        emptyMessage="No shipments found matching your criteria."
-        keyField="_id"
-        selectedIds={selectedShipmentIds}
-        onSelect={toggleSelectShipment}
-        onSelectAll={toggleSelectAll}
-        onRowClick={(item) => openModal('view', item)}
-      />
-
-      {/* Pagination */}
-      {paginatedShipments.length > 0 && (
-        <div className="flex items-center justify-between border-t border-gray-200 pt-5">
-          <div className="text-sm text-gray-500">
-            Showing <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredShipments.length)}</span> of <span className="font-bold text-gray-900">{filteredShipments.length}</span> results
+      {/* Bulk Actions Bar - Only shows when shipments selected */}
+      {selectedIds.size > 0 && (
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 bg-gradient-to-r from-blue-50 to-blue-100/50 p-5 rounded-xl border border-blue-200 shadow-sm transition-all duration-200">
+          <div className="flex items-center gap-3">
+            <div className="flex items-center justify-center w-6 h-6 rounded-md bg-blue-600 text-white">
+              <CheckSquare size={16} />
+            </div>
+            <div>
+              <p className="font-semibold text-gray-900">{selectedIds.size} selected</p>
+              <p className="text-xs text-gray-500 mt-0.5">Choose an action below</p>
+            </div>
           </div>
-          <div className="flex items-center gap-2">
-            <button
-              onClick={() => goToPage(currentPage - 1)}
-              disabled={currentPage === 1}
-              className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
-            >
-              Previous
-            </button>
-            {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-              <button
-                key={page}
-                onClick={() => goToPage(page)}
-                className={`px-3 py-1 text-sm font-medium rounded-md ${currentPage === page
-                  ? 'bg-blue-600 text-white'
-                  : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50'
-                  }`}
+          <div className="flex items-center gap-3 flex-wrap">
+            <div className="relative flex-1 sm:flex-none min-w-[200px]">
+              <select
+                value={bulkAssignStaff}
+                onChange={(e) => setBulkAssignStaff(e.target.value)}
+                disabled={!canAssignToStaff}
+                className="h-11 w-full pl-4 pr-10 text-sm bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed font-medium transition-all"
               >
-                {page}
+                <option value="">Select Staff Member</option>
+                {drivers.map(driver => (
+                  <option key={driver._id} value={driver._id}>
+                    {driver.name}
+                  </option>
+                ))}
+              </select>
+              <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
+                <ChevronDown size={18} className="text-gray-400" />
+              </div>
+            </div>
+            <div className="relative group">
+              <button
+                onClick={handleBulkAssign}
+                disabled={!canAssignToStaff || !bulkAssignStaff || isSubmitting}
+                title={!canAssignToStaff ? getAssignmentDisabledReason : ''}
+                className="px-5 py-2.5 h-11 bg-gradient-to-r from-green-600 to-green-700 text-white text-sm font-semibold rounded-lg hover:from-green-700 hover:to-green-800 disabled:opacity-40 disabled:cursor-not-allowed disabled:bg-gray-400 disabled:from-gray-400 disabled:to-gray-400 whitespace-nowrap transition-all shadow-sm hover:shadow-md"
+              >
+                {isSubmitting ? 'Assigning...' : 'Assign to Staff'}
               </button>
-            ))}
+              {!canAssignToStaff && (
+                <div className="absolute bottom-full left-1/2 transform -translate-x-1/2 mb-3 px-3 py-2 bg-gray-900 text-white text-xs rounded-lg whitespace-nowrap pointer-events-none opacity-0 group-hover:opacity-100 transition-opacity z-10 shadow-lg">
+                  {getAssignmentDisabledReason}
+                  <div className="absolute top-full left-1/2 transform -translate-x-1/2 border-4 border-transparent border-t-gray-900"></div>
+                </div>
+              )}
+            </div>
             <button
-              onClick={() => goToPage(currentPage + 1)}
-              disabled={currentPage === totalPages}
-              className="px-3 py-1 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md hover:bg-gray-50 disabled:opacity-50 disabled:cursor-not-allowed"
+              onClick={handleBulkDelete}
+              disabled={isSubmitting}
+              className="px-5 py-2.5 h-11 bg-red-600 text-white text-sm font-semibold rounded-lg hover:bg-red-700 disabled:opacity-40 disabled:cursor-not-allowed transition-all shadow-sm hover:shadow-md"
             >
-              Next
+              {isSubmitting ? 'Deleting...' : 'Delete Selected'}
+            </button>
+            <button
+              onClick={() => setSelectedIds(new Set())}
+              className="px-5 py-2.5 h-11 text-gray-700 bg-white border border-gray-300 text-sm font-semibold rounded-lg hover:bg-gray-50 hover:border-gray-400 transition-all"
+            >
+              Cancel
             </button>
           </div>
         </div>
       )}
 
-      {/* Modals */}
-      {/* Create Modal */}
-      {modalType === 'create' && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-4xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <h2 className="text-xl font-bold text-gray-900">Create New Shipment</h2>
-              <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-                <X size={20} />
+      {/* Advanced Filters Panel - Removed (now integrated above) */}
+      <div className="hidden md:block table-container">
+        <table className="min-w-full divide-y divide-gray-200">
+          <thead className="bg-gray-50">
+            <tr>
+              <th scope="col" className="table-header w-14 px-3">
+                <button
+                  onClick={toggleSelectAll}
+                  className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-blue-100 transition-colors group"
+                  title={selectedIds.size === filteredShipments.length ? 'Deselect All' : 'Select All'}
+                >
+                  {selectedIds.size === filteredShipments.length && filteredShipments.length > 0 ? (
+                    <CheckSquare size={20} className="text-blue-600" />
+                  ) : (
+                    <Square size={20} className="text-gray-400 group-hover:text-gray-600" />
+                  )}
+                </button>
+              </th>
+              <th scope="col" className="table-header">S/No</th>
+              <th scope="col" className="table-header">Tracking ID</th>
+              <th scope="col" className="table-header">Recipient</th>
+              <th scope="col" className="table-header">Status</th>
+              <th scope="col" className="table-header">Assigned To</th>
+              <th scope="col" className="table-header">Date</th>
+              <th scope="col" className="table-header text-right">Actions</th>
+            </tr>
+          </thead>
+          <tbody className="bg-white divide-y divide-gray-200">
+            {isLoading ? (
+              <tr>
+                <td colSpan={8} className="table-cell text-center py-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+                    <p className="text-gray-600">Loading shipments...</p>
+                  </div>
+                </td>
+              </tr>
+            ) : paginatedShipments.length > 0 ? (
+              paginatedShipments.map((shipment, index) => (
+                <tr key={shipment._id} className={`table-row ${selectedIds.has(shipment._id) ? 'bg-blue-50' : ''}`}>
+                  <td className="table-cell w-14 px-3">
+                    <button
+                      onClick={() => toggleSelectShipment(shipment._id)}
+                      className="flex items-center justify-center w-6 h-6 rounded-md hover:bg-blue-100 transition-colors group"
+                    >
+                      {selectedIds.has(shipment._id) ? (
+                        <CheckSquare size={20} className="text-blue-600" />
+                      ) : (
+                        <Square size={20} className="text-gray-400 group-hover:text-gray-600" />
+                      )}
+                    </button>
+                  </td>
+                  <td className="table-cell font-medium">{startIndex + index + 1}</td>
+                  <td className="table-cell font-mono text-blue-600 font-medium">{shipment.trackingId}</td>
+                  <td className="table-cell">
+                    <div className="font-medium text-gray-900">{shipment.recipient.name}</div>
+                    <div className="text-gray-500 text-sm mt-1">{shipment.recipient.address}</div>
+                  </td>
+                  <td className="table-cell">
+                    <StatusBadge status={shipment.status} />
+                  </td>
+                  <td className="table-cell text-gray-700">
+                    {shipment.assignedTo?.name || (
+                      <span className="text-gray-400 italic">Unassigned</span>
+                    )}
+                  </td>
+                  <td className="table-cell text-gray-500">
+                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </td>
+                  <td className="table-cell text-right space-x-2">
+                    <button
+                      onClick={() => openModal('view', shipment)}
+                      className="p-2 text-gray-500 hover:text-blue-600 rounded-md hover:bg-blue-50 transition-colors"
+                      title="View Details"
+                    >
+                      <Eye size={18} />
+                    </button>
+                    <button
+                      onClick={() => openModal('update', shipment)}
+                      className="p-2 text-gray-500 hover:text-indigo-600 rounded-md hover:bg-indigo-50 transition-colors"
+                      title="Update Status/Assign"
+                    >
+                      <Edit size={18} />
+                    </button>
+                    <button
+                      onClick={() => openModal('delete', shipment)}
+                      className="p-2 text-gray-500 hover:text-red-600 rounded-md hover:bg-red-50 transition-colors"
+                      title="Cancel Shipment"
+                    >
+                      <Trash2 size={18} />
+                    </button>
+                  </td>
+                </tr>
+              ))
+            ) : (
+              <tr>
+                <td colSpan={8} className="table-cell text-center py-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">No shipments found</h3>
+                    <p className="text-gray-500">
+                      {shipments.length > 0
+                        ? "No shipments match your filters."
+                        : "No shipments have been created yet."}
+                    </p>
+                    {shipments.length === 0 && (
+                      <button
+                        onClick={() => openModal('create')}
+                        className="mt-4 px-4 py-2 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+                      >
+                        Create your first shipment
+                      </button>
+                    )}
+                  </div>
+                </td>
+              </tr>
+            )}
+          </tbody>
+        </table>
+        
+        {/* Pagination Controls */}
+        {filteredShipments.length > 0 && (
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 px-6 py-5 bg-white border-t border-gray-200 rounded-b-xl">
+            <div className="text-sm font-medium text-gray-700">
+              Showing <span className="font-semibold text-gray-900">{startIndex + 1}</span> to <span className="font-semibold text-gray-900">{Math.min(endIndex, filteredShipments.length)}</span> of <span className="font-semibold text-gray-900">{filteredShipments.length}</span> shipments
+            </div>
+            <div className="flex items-center justify-center sm:justify-end gap-2">
+              <button
+                onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+                disabled={currentPage === 1}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all"
+              >
+                ← Previous
+              </button>
+              
+              <div className="flex items-center gap-1">
+                {Array.from({ length: Math.min(5, totalPages) }, (_, i) => {
+                  let pageNum;
+                  if (totalPages <= 5) {
+                    pageNum = i + 1;
+                  } else if (currentPage <= 3) {
+                    pageNum = i + 1;
+                  } else if (currentPage >= totalPages - 2) {
+                    pageNum = totalPages - 4 + i;
+                  } else {
+                    pageNum = currentPage - 2 + i;
+                  }
+                  return (
+                    <button
+                      key={pageNum}
+                      onClick={() => setCurrentPage(pageNum)}
+                      className={`min-w-10 h-10 px-3 text-sm font-semibold rounded-lg transition-all ${
+                        currentPage === pageNum
+                          ? 'bg-gradient-to-r from-blue-600 to-blue-700 text-white shadow-md'
+                          : 'text-gray-700 bg-white border border-gray-300 hover:bg-gray-50 hover:border-gray-400'
+                      }`}
+                    >
+                      {pageNum}
+                    </button>
+                  );
+                })}
+              </div>
+              
+              <button
+                onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+                disabled={currentPage === totalPages}
+                className="px-4 py-2 text-sm font-semibold text-gray-700 bg-white border border-gray-300 rounded-lg hover:bg-gray-50 hover:border-gray-400 disabled:opacity-40 disabled:cursor-not-allowed disabled:hover:bg-white transition-all"
+              >
+                Next →
               </button>
             </div>
+          </div>
+        )}
+      </div>
 
-            <form onSubmit={handleCreateShipment} className="p-6 space-y-8">
-              {/* Branch Selection */}
-              <div className="bg-blue-50 p-5 rounded-xl border border-blue-100">
-                <h3 className="text-sm font-bold text-blue-900 uppercase tracking-wide mb-4 flex items-center gap-2">
-                  <span className="w-2 h-2 rounded-full bg-blue-600"></span>
-                  Route Details
-                </h3>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Origin Branch</label>
-                    <input
-                      type="text"
-                      value={branches.find(b => b._id === originBranchId)?.name || 'Loading...'}
-                      disabled
-                      className="block w-full px-4 py-2.5 bg-white border border-gray-200 rounded-lg text-gray-500 text-sm font-medium"
-                    />
+      {/* Shipments Cards - Mobile */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+            <p className="text-sm text-gray-600">Loading shipments...</p>
+          </div>
+        ) : paginatedShipments.length > 0 ? (
+          paginatedShipments.map((shipment, index) => (
+            <div key={shipment._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-500">#{startIndex + index + 1}</span>
+                    <span className="text-xs font-mono text-blue-600 font-semibold">{shipment.trackingId}</span>
                   </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1.5">Destination Branch <span className="text-red-500">*</span></label>
-                    <select
-                      value={destinationBranchId}
-                      onChange={(e) => setDestinationBranchId(e.target.value)}
-                      className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 transition-shadow"
-                      required
-                    >
-                      <option value="">Select Destination</option>
-                      {branches.filter(b => b._id !== originBranchId).map(branch => (
-                        <option key={branch._id} value={branch._id}>{branch.name}</option>
-                      ))}
-                    </select>
-                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">{shipment.recipient.name}</h3>
+                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{shipment.recipient.address}</p>
                 </div>
+                <StatusBadge status={shipment.status} />
               </div>
 
-              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                {/* Sender Details */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Sender Information</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={senderName}
-                      onChange={(e) => setSenderName(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-red-500">*</span></label>
-                    <input
-                      type="tel"
-                      value={senderPhone}
-                      onChange={(e) => setSenderPhone(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
-                    <textarea
-                      value={senderAddress}
-                      onChange={(e) => setSenderAddress(e.target.value)}
-                      rows={3}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      required
-                    />
-                  </div>
-                </div>
-
-                {/* Recipient Details */}
-                <div className="space-y-4">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Recipient Information</h3>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Full Name <span className="text-red-500">*</span></label>
-                    <input
-                      type="text"
-                      value={recipientName}
-                      onChange={(e) => setRecipientName(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Phone Number <span className="text-red-500">*</span></label>
-                    <input
-                      type="tel"
-                      value={recipientPhone}
-                      onChange={(e) => setRecipientPhone(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Address <span className="text-red-500">*</span></label>
-                    <textarea
-                      value={recipientAddress}
-                      onChange={(e) => setRecipientAddress(e.target.value)}
-                      rows={3}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                      required
-                    />
-                  </div>
-                </div>
-              </div>
-
-              {/* Package Details */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Logistics</h3>
-                <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Weight (kg) <span className="text-red-500">*</span></label>
-                    <input
-                      type="number"
-                      min="0.1"
-                      step="0.1"
-                      value={packageWeight}
-                      onChange={(e) => setPackageWeight(parseFloat(e.target.value))}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Package Type <span className="text-red-500">*</span></label>
-                    <select
-                      value={packageType}
-                      onChange={(e) => setPackageType(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="Parcel">Parcel</option>
-                      <option value="Document">Document</option>
-                      <option value="Fragile">Fragile</option>
-                      <option value="Electronics">Electronics</option>
-                      <option value="Perishable">Perishable</option>
-                      <option value="Others">Others</option>
-                    </select>
-                  </div>
-                  <div>
-                    <label className="block text-sm font-medium text-gray-700 mb-1">Assign Driver (Optional)</label>
-                    <select
-                      value={assignedStaff}
-                      onChange={(e) => setAssignedStaff(e.target.value)}
-                      className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    >
-                      <option value="">Select Driver</option>
-                      {drivers.map(driver => (
-                        <option key={driver._id} value={driver._id}>{driver.name}</option>
-                      ))}
-                    </select>
-                  </div>
+              {/* Details */}
+              <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
+                <div>
+                  <span className="text-gray-500 block mb-0.5">Assigned To</span>
+                  <span className="text-gray-900 font-medium">
+                    {shipment.assignedTo?.name || <span className="text-gray-400 italic">Unassigned</span>}
+                  </span>
                 </div>
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1">Package Description</label>
-                  <textarea
-                    value={packageDetails}
-                    onChange={(e) => setPackageDetails(e.target.value)}
-                    rows={2}
-                    className="block w-full px-4 py-2 border border-gray-300 rounded-lg text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                    placeholder="Optional details about the package content..."
-                  />
+                  <span className="text-gray-500 block mb-0.5">Date</span>
+                  <span className="text-gray-900 font-medium">
+                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: '2-digit'
+                    })}
+                  </span>
                 </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-6 border-t border-gray-100">
+              {/* Actions */}
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <button
+                  onClick={() => openModal('view', shipment)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                >
+                  <Eye size={14} />
+                  View
+                </button>
+                <button
+                  onClick={() => openModal('update', shipment)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-indigo-600 bg-indigo-50 rounded-md hover:bg-indigo-100 transition-colors"
+                >
+                  <Edit size={14} />
+                  Update
+                </button>
+                <button
+                  onClick={() => openModal('delete', shipment)}
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-red-600 bg-red-50 rounded-md hover:bg-red-100 transition-colors"
+                >
+                  <Trash2 size={14} />
+                  Delete
+                </button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
+            <h3 className="text-base font-medium text-gray-900 mb-1">No shipments found</h3>
+            <p className="text-sm text-gray-500 text-center px-4">
+              {shipments.length > 0
+                ? "No shipments match your filters."
+                : "No shipments have been created yet."}
+            </p>
+            {shipments.length === 0 && (
+              <button
+                onClick={() => openModal('create')}
+                className="mt-4 px-4 py-2 text-sm bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors"
+              >
+                Create your first shipment
+              </button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* CREATE MODAL */}
+      {modalType === 'create' && (
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4 overflow-y-auto">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-2xl my-8 transform transition-all flex flex-col">
+            <form onSubmit={handleCreateShipment} className="flex flex-col h-full">
+              <div className="p-3 sm:p-4 border-b border-gray-200 flex-shrink-0">
+                <h2 className="text-base sm:text-lg font-bold text-gray-900">Create New Shipment</h2>
+                <p className="text-xs sm:text-sm text-gray-600 mt-1">Enter sender, recipient, and package details below.</p>
+              </div>
+
+              <div className="px-3 sm:px-4 py-3 sm:py-4 grid grid-cols-1 md:grid-cols-2 gap-3 sm:gap-4 overflow-y-auto flex-grow" style={{ maxHeight: 'calc(80vh - 180px)' }}>
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Sender Details</legend>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="form-label text-xs">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Sender's full name"
+                        value={senderName}
+                        onChange={(e) => setSenderName(e.target.value)}
+                        autoComplete="name"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Full Address</label>
+                      <input
+                        type="text"
+                        placeholder="Sender's full address"
+                        value={senderAddress}
+                        onChange={(e) => setSenderAddress(e.target.value)}
+                        autoComplete="street-address"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="Sender's phone number"
+                        value={senderPhone}
+                        onChange={(e) => setSenderPhone(e.target.value)}
+                        autoComplete="tel"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Recipient Details</legend>
+                  <div className="space-y-2">
+                    <div>
+                      <label className="form-label text-xs">Full Name</label>
+                      <input
+                        type="text"
+                        placeholder="Recipient's full name"
+                        value={recipientName}
+                        onChange={(e) => setRecipientName(e.target.value)}
+                        autoComplete="name"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Full Address</label>
+                      <input
+                        type="text"
+                        placeholder="Recipient's full address"
+                        value={recipientAddress}
+                        onChange={(e) => setRecipientAddress(e.target.value)}
+                        autoComplete="street-address"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Phone Number</label>
+                      <input
+                        type="tel"
+                        placeholder="Recipient's phone number"
+                        value={recipientPhone}
+                        onChange={(e) => setRecipientPhone(e.target.value)}
+                        autoComplete="tel"
+                        className="form-input text-sm py-2 relative z-10"
+                        required
+                      />
+                    </div>
+                  </div>
+                </fieldset>
+
+                <fieldset className="md:col-span-2 space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Branch Details</legend>
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="form-label text-xs">Origin Branch (Current) *</label>
+                      <input
+                        type="text"
+                        value={branches.find(b => b._id === originBranchId)?.name || user?.tenantName || 'Your Branch'}
+                        disabled
+                        className="form-input text-sm py-2 bg-gray-50 cursor-not-allowed"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Destination Branch *</label>
+                      <select
+                        value={destinationBranchId}
+                        onChange={(e) => setDestinationBranchId(e.target.value)}
+                        className="form-select text-sm py-2"
+                        required
+                      >
+                        <option value="">-- Select Destination --</option>
+                        {branches.map((branch: IBranch) => (
+                          <option key={branch._id} value={branch._id}>
+                            {branch.name}
+                          </option>
+                        ))}
+                      </select>
+                    </div>
+                  </div>
+                  {/* Show delivery type info */}
+                  {destinationBranchId && (
+                    <div className={`p-3 rounded-lg border ${isLocalDelivery ? 'bg-green-50 border-green-200' : 'bg-blue-50 border-blue-200'}`}>
+                      <p className={`text-xs font-semibold ${isLocalDelivery ? 'text-green-900' : 'text-blue-900'}`}>
+                        {isLocalDelivery
+                          ? '📍 Local Delivery: This package stays in ' + (branches.find(b => b._id === destinationBranchId)?.name || 'this branch') + '. It can be immediately assigned to a delivery staff member.'
+                          : 'Inter-Branch Transfer: This package will be sent to ' + (branches.find(b => b._id === destinationBranchId)?.name || 'the destination') + '. It will require a manifest dispatch.'
+                        }
+                      </p>
+                    </div>
+                  )}
+                </fieldset>
+
+                <fieldset className="md:col-span-2 space-y-3">
+                  <legend className="text-sm font-semibold text-gray-900">Package Details</legend>
+                  <div className="grid grid-cols-3 gap-3">
+                    <div>
+                      <label className="form-label text-xs">Weight (kg)</label>
+                      <input
+                        type="number"
+                        placeholder="Weight"
+                        value={packageWeight}
+                        onChange={(e) => setPackageWeight(parseFloat(e.target.value))}
+                        className="form-input text-sm py-2"
+                        required
+                        min="0.1"
+                        step="0.1"
+                      />
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Package Type</label>
+                      <select
+                        value={packageType}
+                        onChange={(e) => setPackageType(e.target.value)}
+                        className="form-select text-sm py-2"
+                      >
+                        <option value="Parcel">Parcel</option>
+                        <option value="Document">Document</option>
+                        <option value="Fragile">Fragile</option>
+                      </select>
+                    </div>
+                    <div>
+                      <label className="form-label text-xs">Assign Staff</label>
+                      <select
+                        value={assignedStaff}
+                        onChange={(e) => setAssignedStaff(e.target.value)}
+                        disabled={!isLocalDelivery}
+                        className="form-select text-sm py-2 disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed"
+                      >
+                        <option value="">-- None --</option>
+                        {drivers.map(driver => (
+                          <option key={driver._id} value={driver._id}>
+                            {driver.name}
+                          </option>
+                        ))}
+                      </select>
+                      {!isLocalDelivery && destinationBranchId && (
+                        <p className="text-xs text-gray-500 mt-1 italic">Only available for local deliveries</p>
+                      )}
+                    </div>
+                  </div>
+                </fieldset>
+              </div>
+
+              <div className="flex flex-col-reverse sm:flex-row justify-end gap-2 px-3 sm:px-4 py-3 bg-gray-50 rounded-b-xl border-t border-gray-200 flex-shrink-0">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-100"
+                  className="w-full sm:w-auto px-4 py-2.5 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Creating...' : 'Create Shipment'}
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : 'Create Shipment'}
                 </button>
               </div>
             </form>
@@ -901,77 +1182,84 @@ export default function ShipmentsPage() {
         </div>
       )}
 
-      {/* Update Modal */}
+      {/* UPDATE MODAL */}
       {modalType === 'update' && selectedShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-lg">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">Update Status</h2>
-              <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            <form onSubmit={handleUpdateShipment} className="p-6 space-y-6">
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">New Status</label>
-                <select
-                  value={updateStatus}
-                  onChange={(e) => setUpdateStatus(e.target.value as IShipment['status'])}
-                  className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="At Origin Branch">At Origin Branch</option>
-                  <option value="In Transit to Destination">In Transit to Destination</option>
-                  <option value="At Destination Branch">At Destination Branch</option>
-                  <option value="Assigned">Assigned</option>
-                  <option value="Out for Delivery">Out for Delivery</option>
-                  <option value="Delivered">Delivered</option>
-                  <option value="Failed">Failed</option>
-                </select>
+        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all">
+            <form onSubmit={handleUpdateShipment}>
+              <div className="p-4 sm:p-6 border-b border-gray-200">
+                <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Update Shipment</h2>
+                <p className="text-xs sm:text-base text-gray-600 mt-1">
+                  Update status or assign a driver for <span className="font-semibold">{selectedShipment.trackingId}</span>.
+                </p>
               </div>
 
-              {updateStatus === 'Assigned' && (
+              <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5">
                 <div>
-                  <label className="block text-sm font-medium text-gray-700 mb-1.5">Assign Driver</label>
+                  <label className="form-label">Status</label>
+                  <select
+                    value={updateStatus}
+                    onChange={(e) => setUpdateStatus(e.target.value as IShipment['status'])}
+                    className="form-select"
+                  >
+                    <option value="At Origin Branch">At Origin Branch</option>
+                    <option value="In Transit to Destination">In Transit to Destination</option>
+                    <option value="At Destination Branch">At Destination Branch</option>
+                    <option value="Assigned">Assigned</option>
+                    <option value="Out for Delivery">Out for Delivery</option>
+                    <option value="Delivered">Delivered</option>
+                    <option value="Failed">Failed</option>
+                  </select>
+                </div>
+                <div>
+                  <label className="form-label">Assign to Driver</label>
                   <select
                     value={updateAssignedTo}
                     onChange={(e) => setUpdateAssignedTo(e.target.value)}
-                    className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                    required
+                    className="form-select"
                   >
-                    <option value="">Select Driver</option>
+                    <option value="">-- Unassigned --</option>
                     {drivers.map(driver => (
-                      <option key={driver._id} value={driver._id}>{driver.name}</option>
+                      <option key={driver._id} value={driver._id}>
+                        {driver.name}
+                      </option>
                     ))}
                   </select>
                 </div>
-              )}
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Notes (Optional)</label>
-                <textarea
-                  value={updateNotes}
-                  onChange={(e) => setUpdateNotes(e.target.value)}
-                  rows={3}
-                  className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500 resize-none"
-                  placeholder="Add any relevant notes..."
-                />
+                <div>
+                  <label className="form-label">Notes (Optional)</label>
+                  <textarea
+                    value={updateNotes}
+                    onChange={(e) => setUpdateNotes(e.target.value)}
+                    rows={3}
+                    className="form-input"
+                    placeholder="e.g., Reason for delivery failure"
+                  ></textarea>
+                </div>
               </div>
 
-              <div className="flex items-center justify-end gap-3 pt-2">
+              <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
                 <button
                   type="button"
                   onClick={closeModal}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                  className="px-5 py-2.5 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
                 >
                   Cancel
                 </button>
                 <button
                   type="submit"
                   disabled={isSubmitting}
-                  className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-100"
+                  className="px-5 py-2.5 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
                 >
-                  {isSubmitting ? 'Updating...' : 'Update Status'}
+                  {isSubmitting ? (
+                    <span className="flex items-center">
+                      <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                        <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                        <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                      </svg>
+                      Saving...
+                    </span>
+                  ) : 'Save Changes'}
                 </button>
               </div>
             </form>
@@ -979,189 +1267,188 @@ export default function ShipmentsPage() {
         </div>
       )}
 
-      {/* Delete Confirmation Modal */}
+      {/* DELETE MODAL */}
       {modalType === 'delete' && selectedShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md p-6 text-center space-y-6">
-            <div className="w-16 h-16 bg-red-100 text-red-600 rounded-full flex items-center justify-center mx-auto">
-              <Trash2 size={32} />
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all">
+            <div className="p-6">
+              <div className="flex items-start">
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <Trash2 className="h-6 w-6 text-red-600" aria-hidden="true" />
+                </div>
+                <div className="ml-4">
+                  <h2 className="text-2xl font-bold text-gray-900">Cancel Shipment</h2>
+                  <p className="text-gray-600 mt-1">
+                    Are you sure you want to cancel shipment <span className="font-semibold">{selectedShipment.trackingId}</span>?
+                    This action cannot be undone.
+                  </p>
+                </div>
+              </div>
             </div>
-            <div>
-              <h3 className="text-xl font-bold text-gray-900">Delete Shipment?</h3>
-              <p className="text-gray-500 mt-2">
-                Are you sure you want to delete shipment <span className="font-mono font-bold text-gray-900">{selectedShipment.trackingId}</span>? This action cannot be undone.
-              </p>
-            </div>
-            <div className="flex items-center justify-center gap-3">
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
               <button
                 onClick={closeModal}
-                className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
+                className="px-5 py-2.5 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
-                Cancel
+                No, Keep It
               </button>
               <button
                 onClick={handleDeleteShipment}
                 disabled={isSubmitting}
-                className="px-5 py-2.5 text-sm font-bold text-white bg-red-600 rounded-xl hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-red-100"
+                className="px-5 py-2.5 text-base font-medium text-white bg-red-600 border border-transparent rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
               >
-                {isSubmitting ? 'Deleting...' : 'Delete Shipment'}
+                {isSubmitting ? (
+                  <span className="flex items-center">
+                    <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
+                      <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
+                      <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
+                    </svg>
+                    Cancelling...
+                  </span>
+                ) : 'Yes, Cancel'}
               </button>
             </div>
           </div>
         </div>
       )}
 
-      {/* View Modal */}
+      {/* VIEW MODAL */}
       {modalType === 'view' && selectedShipment && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-3xl max-h-[90vh] overflow-y-auto">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100 sticky top-0 bg-white z-10">
-              <div>
-                <h2 className="text-xl font-bold text-gray-900">Shipment Details</h2>
-                <p className="text-sm text-gray-500 font-mono mt-1">{selectedShipment.trackingId}</p>
-              </div>
-              <button onClick={closeModal} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-                <X size={20} />
-              </button>
+        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
+          <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl transform transition-all max-h-[90vh] flex flex-col">
+            <div className="p-6 border-b border-gray-200">
+              <h2 className="text-2xl font-bold text-gray-900">Shipment Details</h2>
+              <p className="text-gray-600 mt-1">
+                Tracking ID: <span className="font-mono text-gray-800">{selectedShipment.trackingId}</span>
+              </p>
             </div>
 
-            <div className="p-6 space-y-8">
-              {/* Status Banner */}
-              <div className="bg-gray-50 p-6 rounded-xl border border-gray-200 flex flex-col md:flex-row items-center justify-between gap-4">
-                <div>
-                  <p className="text-sm text-gray-500 font-medium mb-1">Current Status</p>
-                  <StatusBadge status={selectedShipment.status} />
-                </div>
-                <div className="text-right">
-                  <p className="text-sm text-gray-500 font-medium mb-1">Created On</p>
-                  <p className="text-gray-900 font-bold">
-                    {new Date(selectedShipment.createdAt).toLocaleString()}
-                  </p>
-                </div>
-              </div>
-
+            <div className="px-6 py-4 overflow-y-auto flex-grow space-y-6">
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                {/* Sender Info */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Sender</h3>
-                  <div className="space-y-1">
-                    <p className="font-bold text-gray-900">{selectedShipment.sender.name}</p>
-                    <p className="text-gray-600">{selectedShipment.sender.phone}</p>
-                    <p className="text-gray-500 text-sm leading-relaxed">{selectedShipment.sender.address}</p>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Sender</h3>
+                  <div className="space-y-2">
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Name:</span> {selectedShipment.sender.name}
+                    </p>
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Address:</span> {selectedShipment.sender.address}
+                    </p>
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Phone:</span> {selectedShipment.sender.phone}
+                    </p>
                   </div>
                 </div>
-
-                {/* Recipient Info */}
-                <div className="space-y-3">
-                  <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Recipient</h3>
-                  <div className="space-y-1">
-                    <p className="font-bold text-gray-900">{selectedShipment.recipient.name}</p>
-                    <p className="text-gray-600">{selectedShipment.recipient.phone}</p>
-                    <p className="text-gray-500 text-sm leading-relaxed">{selectedShipment.recipient.address}</p>
-                  </div>
-                </div>
-              </div>
-
-              {/* Package Info */}
-              <div className="space-y-3">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Package Details</h3>
-                <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Type</p>
-                    <p className="font-medium text-gray-900">{selectedShipment.packageInfo.type}</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg">
-                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Weight</p>
-                    <p className="font-medium text-gray-900">{selectedShipment.packageInfo.weight} kg</p>
-                  </div>
-                  <div className="bg-gray-50 p-3 rounded-lg col-span-2">
-                    <p className="text-xs text-gray-500 uppercase font-bold mb-1">Description</p>
-                    <p className="font-medium text-gray-900">{selectedShipment.packageInfo.details || 'N/A'}</p>
+                <div>
+                  <h3 className="text-lg font-semibold text-gray-800 mb-3">Recipient</h3>
+                  <div className="space-y-2">
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Name:</span> {selectedShipment.recipient.name}
+                    </p>
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Address:</span> {selectedShipment.recipient.address}
+                    </p>
+                    <p className="text-base text-gray-700">
+                      <span className="font-medium">Phone:</span> {selectedShipment.recipient.phone}
+                    </p>
                   </div>
                 </div>
               </div>
 
-              {/* Status History */}
-              <div className="space-y-4">
-                <h3 className="text-sm font-bold text-gray-900 uppercase tracking-wide border-b pb-2">Timeline</h3>
-                <div className="space-y-6 relative before:absolute before:inset-y-0 before:left-2 before:w-0.5 before:bg-gray-200">
-                  {selectedShipment.statusHistory.slice().reverse().map((history, idx) => (
-                    <div key={idx} className="relative pl-8">
-                      <div className="absolute left-0 top-1.5 w-4 h-4 rounded-full bg-white border-2 border-blue-600"></div>
-                      <div>
-                        <p className="font-bold text-gray-900 text-sm">{history.status}</p>
-                        <p className="text-xs text-gray-500 mt-0.5">
-                          {new Date(history.timestamp).toLocaleString()}
-                        </p>
-                        {history.notes && (
-                          <p className="text-sm text-gray-600 mt-1 bg-gray-50 p-2 rounded border border-gray-100">
-                            {history.notes}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Package Information</h3>
+                <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Weight</p>
+                    <p className="text-lg font-medium text-gray-900">{selectedShipment.packageInfo.weight} kg</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Type</p>
+                    <p className="text-lg font-medium text-gray-900">{selectedShipment.packageInfo.type}</p>
+                  </div>
+                  <div className="bg-gray-50 p-4 rounded-lg">
+                    <p className="text-sm text-gray-500">Status</p>
+                    <StatusBadge status={selectedShipment.status} />
+                  </div>
+                </div>
+              </div>
+
+              {/* Status History Timeline */}
+              <div>
+                <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
+                {selectedShipment.statusHistory && selectedShipment.statusHistory.length > 0 ? (
+                  <div className="space-y-4">
+                    {selectedShipment.statusHistory.map((history, index) => (
+                      <div key={index} className="flex">
+                        <div className="flex flex-col items-center mr-4">
+                          <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
+                          {index !== selectedShipment.statusHistory.length - 1 && (
+                            <div className="w-0.5 h-full bg-gray-200 mt-1"></div>
+                          )}
+                        </div>
+                        <div className="pb-4">
+                          <p className="font-semibold text-gray-800">{history.status}</p>
+                          <p className="text-sm text-gray-500">
+                            {new Date(history.timestamp).toLocaleString('en-US', {
+                              month: 'short',
+                              day: 'numeric',
+                              year: 'numeric',
+                              hour: '2-digit',
+                              minute: '2-digit'
+                            })}
                           </p>
-                        )}
+                          {history.notes && (
+                            <p className="text-sm text-gray-600 mt-1 italic">\u201C{history.notes}\u201D</p>
+                          )}
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                ) : (
+                  <div className="text-sm text-gray-500">No history available.</div>
+                )}
+              </div>
+
+              {/* Delivery Proof Section */}
+              {(selectedShipment.status === 'Delivered' || selectedShipment.status === 'Failed') && (
+                <div className="mt-8">
+                  {selectedShipment.status === 'Delivered' && selectedShipment.deliveryProof && (
+                    <div className="bg-green-50 border border-green-200 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-green-900 mb-4">Delivery Proof</h3>
+                      {selectedShipment.deliveryProof.type === 'photo' ? (
+                        <div>
+                          <p className="text-sm text-green-700 mb-3 font-medium">Photo Proof:</p>
+                          <img src={selectedShipment.deliveryProof.url} alt="Delivery proof" className="max-w-full max-h-96 rounded-lg border border-green-300" />
+                        </div>
+                      ) : (
+                        <div>
+                          <p className="text-sm text-green-700 mb-3 font-medium">Signature Proof:</p>
+                          <img src={selectedShipment.deliveryProof.url} alt="Signature" className="max-w-xs max-h-48 rounded-lg border border-green-300" />
+                        </div>
+                      )}
+                    </div>
+                  )}
+
+                  {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
+                    <div className="bg-red-50 border border-red-200 rounded-lg p-6">
+                      <h3 className="text-lg font-semibold text-red-900 mb-3">Delivery Failed</h3>
+                      <div className="bg-white rounded p-3 border border-red-100">
+                        <p className="text-sm text-red-700"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
                       </div>
                     </div>
-                  ))}
+                  )}
                 </div>
-              </div>
+              )}
             </div>
 
-            <div className="p-6 border-t border-gray-100 bg-gray-50 rounded-b-2xl flex justify-end">
+            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
               <button
+                type="button"
                 onClick={closeModal}
-                className="px-5 py-2.5 text-sm font-bold text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-100 focus:outline-none focus:ring-2 focus:ring-gray-200 shadow-sm"
+                className="px-5 py-2.5 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
               >
                 Close
               </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Bulk Assign Modal */}
-      {showBulkAssignModal && (
-        <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/50 backdrop-blur-sm animate-in fade-in">
-          <div className="bg-white rounded-2xl shadow-2xl w-full max-w-md">
-            <div className="flex items-center justify-between p-6 border-b border-gray-100">
-              <h2 className="text-xl font-bold text-gray-900">Bulk Assign Driver</h2>
-              <button onClick={() => setShowBulkAssignModal(false)} className="p-2 text-gray-400 hover:text-gray-600 rounded-full hover:bg-gray-100 transition-colors">
-                <X size={20} />
-              </button>
-            </div>
-
-            <div className="p-6 space-y-6">
-              <p className="text-gray-600">
-                Assigning <span className="font-bold text-gray-900">{selectedShipmentIds.size}</span> shipment(s) to a driver.
-              </p>
-
-              <div>
-                <label className="block text-sm font-medium text-gray-700 mb-1.5">Select Driver</label>
-                <select
-                  value={bulkAssignStaffId}
-                  onChange={(e) => setBulkAssignStaffId(e.target.value)}
-                  className="block w-full px-4 py-2.5 bg-white border border-gray-300 rounded-lg text-gray-900 text-sm focus:ring-2 focus:ring-blue-500 focus:border-blue-500"
-                >
-                  <option value="">Select Driver</option>
-                  {drivers.map(driver => (
-                    <option key={driver._id} value={driver._id}>{driver.name}</option>
-                  ))}
-                </select>
-              </div>
-
-              <div className="flex items-center justify-end gap-3 pt-2">
-                <button
-                  onClick={() => setShowBulkAssignModal(false)}
-                  className="px-5 py-2.5 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-xl hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-gray-200"
-                >
-                  Cancel
-                </button>
-                <button
-                  onClick={handleBulkAssign}
-                  disabled={!bulkAssignStaffId}
-                  className="px-5 py-2.5 text-sm font-bold text-white bg-blue-600 rounded-xl hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed shadow-lg shadow-blue-100"
-                >
-                  Assign Drivers
-                </button>
-              </div>
             </div>
           </div>
         </div>

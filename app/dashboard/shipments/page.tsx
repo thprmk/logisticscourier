@@ -47,6 +47,9 @@ import {
   TableRow,
 } from "@/components/ui/table";
 
+import { Badge } from "@/components/ui/badge";
+
+
 // Define TypeScript interfaces for our data
 interface IAddress {
   name: string;
@@ -120,8 +123,11 @@ export default function ShipmentsPage() {
   const [assignedStaff, setAssignedStaff] = useState(''); // New state for staff assignment
   const [originBranchId, setOriginBranchId] = useState('');
   const [destinationBranchId, setDestinationBranchId] = useState('');
-
+  
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false);
+  const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false);
+  const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false); 
+  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false);
 
   // State for the update form
   const [updateStatus, setUpdateStatus] = useState<IShipment['status']>('At Origin Branch');
@@ -413,6 +419,9 @@ export default function ShipmentsPage() {
   const closeModal = () => {
     setModalType(null);
     resetForms();
+      setIsUpdateDialogOpen(false);
+  setIsDeleteDialogOpen(false);
+  setIsViewDialogOpen(false);
   };
 
   //CRUD Handlers 
@@ -513,7 +522,7 @@ export default function ShipmentsPage() {
       }
 
       toast.success(statusMessage, { id: toastId });
-      closeModal();
+      setIsUpdateDialogOpen(false); 
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to update shipment', { id: toastId });
@@ -530,7 +539,7 @@ export default function ShipmentsPage() {
       const res = await fetch(`/api/shipments/${selectedShipment._id}`, { method: 'DELETE', credentials: 'include' });
       if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
       toast.success(`Shipment ${selectedShipment.trackingId} deleted successfully`, { id: toastId });
-      closeModal();
+      setIsDeleteDialogOpen(false); 
       fetchData();
     } catch (error: any) {
       toast.error(error.message || 'Failed to delete shipment', { id: toastId });
@@ -540,23 +549,21 @@ export default function ShipmentsPage() {
   };
 
   // Helper to render status badges
-  const StatusBadge = ({ status }: { status: string }) => {
-    const styles: { [key: string]: string } = {
-      'At Origin Branch': 'bg-purple-100 text-purple-800',
-      'In Transit to Destination': 'bg-indigo-100 text-indigo-800',
-      'At Destination Branch': 'bg-blue-100 text-blue-800',
-      'Assigned': 'bg-cyan-100 text-cyan-800',
-      'Out for Delivery': 'bg-orange-100 text-orange-800',
-      'Delivered': 'bg-green-100 text-green-800',
-      'Failed': 'bg-red-100 text-red-800',
-    };
-    return (
-      <span className={`px-3 py-1 text-sm font-medium rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
-        {status}
-      </span>
-    );
-  };
 
+const StatusBadge = ({ status }: { status: string }) => {
+  let variant: "default" | "secondary" | "destructive" | "outline" = "outline";
+  
+  if (status === 'Delivered') {
+    // You can customize this further if you define a "success" variant
+    variant = "secondary"; 
+  } else if (status === 'Failed') {
+    variant = "destructive";
+  }
+
+  return (
+    <Badge variant={variant}>{status}</Badge>
+  );
+};
   return (
     <div className="space-y-4">
       {/* Header Section */}
@@ -683,16 +690,23 @@ export default function ShipmentsPage() {
                     </div>
                     <div className="grid gap-2">
                       <Label>Assign Staff {!isLocalDelivery && <span className="text-xs text-gray-500">(Inter-branch only)</span>}</Label>
-                      <Select value={assignedStaff} onValueChange={setAssignedStaff} disabled={!isLocalDelivery}>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Optional - Select Staff" />
-                        </SelectTrigger>
-                        <SelectContent>
-                          {drivers.map(driver => (
-                            <SelectItem key={driver._id} value={driver._id}>{driver.name}</SelectItem>
-                          ))}
-                        </SelectContent>
-                      </Select>
+            
+<Select
+  value={assignedStaff}
+  onValueChange={(value) => setAssignedStaff(value === "none" ? "" : value)} // Smart handler
+  disabled={!isLocalDelivery}
+>
+    <SelectTrigger>
+        <SelectValue placeholder="-- None --" />
+    </SelectTrigger>
+    <SelectContent>
+        {/* The fix is here: value is now "none" */}
+        <SelectItem value="none">-- None --</SelectItem> 
+        {drivers.map(driver => (
+            <SelectItem key={driver._id} value={driver._id}>{driver.name}</SelectItem>
+        ))}
+    </SelectContent>
+</Select>
                       {!isLocalDelivery && destinationBranchId && (
                         <p className="text-xs text-gray-500 mt-1">Staff assignment is only available for local deliveries (same origin and destination branch)</p>
                       )}
@@ -719,13 +733,14 @@ export default function ShipmentsPage() {
                 <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
                   <Search size={18} className="text-gray-400" />
                 </div>
-                <input
-                  type="text"
-                  placeholder="Search tracking, name, phone..."
-                  value={searchQuery}
-                  onChange={(e) => setSearchQuery(e.target.value)}
-                  className="w-full h-10 pl-10 pr-3 text-sm bg-white border border-gray-300 rounded-lg focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent shadow-sm hover:border-gray-400 transition-all placeholder:text-gray-400 font-medium"
-                />
+     
+            <Input
+              type="text"
+              placeholder="Search tracking, name, phone..."
+              value={searchQuery}
+              onChange={(e) => setSearchQuery(e.target.value)}
+              className="h-10 pl-10" // We only need to adjust padding, shadcn handles the rest
+            />
               </div>
 
               {/* Filter Controls - Right Side */}
@@ -823,25 +838,30 @@ export default function ShipmentsPage() {
                   </div>
                 </div>
                 <div className="flex items-center gap-3 flex-wrap">
-                  <div className="relative flex-1 sm:flex-none min-w-[200px]">
-                    <select
-                      value={bulkAssignStaff}
-                      onChange={(e) => setBulkAssignStaff(e.target.value)}
-                      disabled={!canAssignToStaff}
-                      className="h-11 w-full pl-4 pr-10 text-sm bg-white border border-gray-300 rounded-lg appearance-none focus:outline-none focus:ring-2 focus:ring-blue-500 focus:border-transparent disabled:bg-gray-100 disabled:text-gray-500 disabled:cursor-not-allowed font-medium transition-all"
-                    >
-                      <option value="">Select Staff Member</option>
-                      {drivers.map(driver => (
-                        <option key={driver._id} value={driver._id}>
-                          {driver.name}
-                        </option>
-                      ))}
-                    </select>
-                    <div className="absolute right-3 top-1/2 transform -translate-y-1/2 pointer-events-none">
-                      <ChevronDown size={18} className="text-gray-400" />
-                    </div>
-                  </div>
-                  <div className="relative group">
+          
+
+                <div className="flex-1 sm:flex-none min-w-[200px]">
+  <Select
+    value={bulkAssignStaff}
+    onValueChange={(value) => setBulkAssignStaff(value === "none" ? "" : value)} // Smart handler
+    disabled={!canAssignToStaff}
+  >
+    <SelectTrigger className="h-11">
+      <SelectValue placeholder="Select Staff Member" />
+    </SelectTrigger>
+    <SelectContent>
+      {/* The fix is here: value is now "none" */}
+      <SelectItem value="none">Select Staff Member</SelectItem> 
+      {drivers.map((driver) => (
+        <SelectItem key={driver._id} value={driver._id}>
+          {driver.name}
+        </SelectItem>
+      ))}
+    </SelectContent>
+  </Select>
+</div>
+
+           <div className="relative group">
 
                     <Button
                       onClick={handleBulkAssign}
@@ -946,15 +966,195 @@ export default function ShipmentsPage() {
                         </TableCell>
                         <TableCell className="text-right">
                           {/* We can use icon buttons for a cleaner look */}
-                          <Button variant="ghost" size="icon" onClick={() => openModal('view', shipment)} title="View Details">
-                            <Eye size={18} />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => openModal('update', shipment)} title="Update Status/Assign">
-                            <Edit size={18} />
-                          </Button>
-                          <Button variant="ghost" size="icon" onClick={() => openModal('delete', shipment)} title="Cancel Shipment">
-                            <Trash2 size={18} className="text-destructive" />
-                          </Button>
+                          
+
+                          <Dialog open={isViewDialogOpen && selectedShipment?._id === shipment._id} onOpenChange={setIsViewDialogOpen}>
+  <DialogTrigger asChild>
+    <Button variant="ghost" size="icon" onClick={() => {
+      // We'll use the 'view' type in openModal to trigger a fresh data fetch
+      openModal('view', shipment); 
+      setIsViewDialogOpen(true);
+    }} title="View Details">
+      <Eye size={18} />
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-3xl">
+    <DialogHeader>
+      <DialogTitle>Shipment Details</DialogTitle>
+      <DialogDescription>
+        Tracking ID: <span className="font-mono">{selectedShipment?.trackingId}</span>
+      </DialogDescription>
+    </DialogHeader>
+
+    {/* Display Content */}
+    <div className="py-4 space-y-6 max-h-[70vh] overflow-y-auto pr-4">
+      {/* Sender & Recipient */}
+      <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
+        <div>
+          <h3 className="font-semibold mb-2">Sender</h3>
+          <div className="text-sm space-y-1 text-muted-foreground">
+            <p><span className="font-medium text-foreground">Name:</span> {selectedShipment?.sender.name}</p>
+            <p><span className="font-medium text-foreground">Address:</span> {selectedShipment?.sender.address}</p>
+            <p><span className="font-medium text-foreground">Phone:</span> {selectedShipment?.sender.phone}</p>
+          </div>
+        </div>
+        <div>
+          <h3 className="font-semibold mb-2">Recipient</h3>
+          <div className="text-sm space-y-1 text-muted-foreground">
+            <p><span className="font-medium text-foreground">Name:</span> {selectedShipment?.recipient.name}</p>
+            <p><span className="font-medium text-foreground">Address:</span> {selectedShipment?.recipient.address}</p>
+            <p><span className="font-medium text-foreground">Phone:</span> {selectedShipment?.recipient.phone}</p>
+          </div>
+        </div>
+      </div>
+      
+      {/* Package Info */}
+      <div>
+        <h3 className="font-semibold mb-2">Package Information</h3>
+        <div className="grid grid-cols-3 gap-4">
+            {/* ... Your existing package info display logic can go here ... */}
+        </div>
+      </div>
+
+      {/* Status History */}
+      <div>
+        <h3 className="font-semibold mb-2">Status History</h3>
+        <div className="space-y-4">
+          {selectedShipment?.statusHistory?.map((history, index) => (
+            <div key={index} className="flex gap-4">
+              <div className="flex flex-col items-center">
+                <div className="w-3 h-3 bg-primary rounded-full"></div>
+                {index !== selectedShipment.statusHistory.length - 1 && (
+                  <div className="w-0.5 grow bg-border mt-1"></div>
+                )}
+              </div>
+              <div>
+                <p className="font-semibold">{history.status}</p>
+                <p className="text-sm text-muted-foreground">
+                  {new Date(history.timestamp).toLocaleString()}
+                </p>
+              </div>
+            </div>
+          ))}
+        </div>
+      </div>
+      
+       {/* Delivery Proof Section can be copied from your old modal */}
+
+    </div>
+    
+    <DialogFooter>
+      <Button onClick={() => setIsViewDialogOpen(false)}>Close</Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
+
+
+
+                        <Dialog open={isUpdateDialogOpen && selectedShipment?._id === shipment._id} onOpenChange={setIsUpdateDialogOpen}>
+  <DialogTrigger asChild>
+    <Button variant="ghost" size="icon" onClick={() => {
+      // This logic now runs when the user clicks the Edit icon.
+      // It prepares the form state BEFORE the modal opens.
+      setSelectedShipment(shipment);
+      setUpdateStatus(shipment.status);
+      setUpdateAssignedTo(shipment.assignedTo?._id || '');
+      setUpdateNotes('');
+    }} title="Update Status/Assign">
+      <Edit size={18} />
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-[425px]">
+    <form onSubmit={handleUpdateShipment}>
+      <DialogHeader>
+        <DialogTitle>Update Shipment</DialogTitle>
+        <DialogDescription>
+          Make changes to the shipment. Click save when you're done.
+        </DialogDescription>
+      </DialogHeader>
+      <div className="grid gap-4 py-4">
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="status" className="text-right">
+            Status
+          </Label>
+          <div className="col-span-3">
+            <Select value={updateStatus} onValueChange={(value) => setUpdateStatus(value as IShipment['status'])}>
+              <SelectTrigger>
+                <SelectValue placeholder="Select a status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="At Destination Branch">At Destination Branch</SelectItem>
+                <SelectItem value="Assigned">Assigned</SelectItem>
+                <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                <SelectItem value="Delivered">Delivered</SelectItem>
+                <SelectItem value="Failed">Failed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="driver" className="text-right">
+            Assign Driver
+          </Label>
+          <div className="col-span-3">
+            <Select value={updateAssignedTo} onValueChange={setUpdateAssignedTo}>
+              <SelectTrigger>
+                <SelectValue placeholder="-- Unassigned --" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="none">-- Unassigned --</SelectItem>
+                {drivers.map(driver => (
+                  <SelectItem key={driver._id} value={driver._id}>{driver.name}</SelectItem>
+                ))}
+              </SelectContent>
+            </Select>
+          </div>
+        </div>
+        <div className="grid grid-cols-4 items-center gap-4">
+          <Label htmlFor="notes" className="text-right">
+            Notes
+          </Label>
+          <Input 
+            id="notes" 
+            value={updateNotes} 
+            onChange={(e) => setUpdateNotes(e.target.value)} 
+            className="col-span-3" 
+            placeholder="Optional notes for status history"
+          />
+        </div>
+      </div>
+      <DialogFooter>
+        <Button variant="outline" type="button" onClick={() => setIsUpdateDialogOpen(false)}>Cancel</Button>
+        <Button type="submit" disabled={isSubmitting}>
+          {isSubmitting ? 'Saving...' : 'Save Changes'}
+        </Button>
+      </DialogFooter>
+    </form>
+  </DialogContent>
+</Dialog>
+                        <Dialog open={isDeleteDialogOpen && selectedShipment?._id === shipment._id} onOpenChange={setIsDeleteDialogOpen}>
+  <DialogTrigger asChild>
+    <Button variant="ghost" size="icon" onClick={() => setSelectedShipment(shipment)} title="Cancel Shipment">
+      <Trash2 size={18} className="text-destructive" />
+    </Button>
+  </DialogTrigger>
+  <DialogContent className="sm:max-w-md">
+    <DialogHeader>
+      <DialogTitle>Cancel Shipment</DialogTitle>
+      <DialogDescription>
+        Are you sure you want to cancel shipment <span className="font-semibold">{shipment.trackingId}</span>? This action cannot be undone.
+      </DialogDescription>
+    </DialogHeader>
+    <DialogFooter className="sm:justify-start">
+      <Button type="button" variant="secondary" onClick={() => setIsDeleteDialogOpen(false)}>
+        No, Keep It
+      </Button>
+      <Button type="button" variant="destructive" onClick={handleDeleteShipment} disabled={isSubmitting}>
+        {isSubmitting ? 'Cancelling...' : 'Yes, Cancel Shipment'}
+      </Button>
+    </DialogFooter>
+  </DialogContent>
+</Dialog>
                         </TableCell>
                       </TableRow>
                     ))
@@ -1086,280 +1286,6 @@ export default function ShipmentsPage() {
                 </div>
               )}
             </div>
-
-
-
-            {/* UPDATE MODAL */}
-            {modalType === 'update' && selectedShipment && (
-              <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all">
-                  <form onSubmit={handleUpdateShipment}>
-                    <div className="p-4 sm:p-6 border-b border-gray-200">
-                      <h2 className="text-lg sm:text-2xl font-bold text-gray-900">Update Shipment</h2>
-                      <p className="text-xs sm:text-base text-gray-600 mt-1">
-                        Update status or assign a driver for <span className="font-semibold">{selectedShipment.trackingId}</span>.
-                      </p>
-                    </div>
-
-                    <div className="px-4 sm:px-6 py-3 sm:py-4 space-y-4 sm:space-y-5">
-                      <div>
-                        <label className="form-label">Status</label>
-                        <select
-                          value={updateStatus}
-                          onChange={(e) => setUpdateStatus(e.target.value as IShipment['status'])}
-                          className="form-select"
-                        >
-                          <option value="At Origin Branch">At Origin Branch</option>
-                          <option value="In Transit to Destination">In Transit to Destination</option>
-                          <option value="At Destination Branch">At Destination Branch</option>
-                          <option value="Assigned">Assigned</option>
-                          <option value="Out for Delivery">Out for Delivery</option>
-                          <option value="Delivered">Delivered</option>
-                          <option value="Failed">Failed</option>
-                        </select>
-                      </div>
-                      <div>
-                        <label className="form-label">Assign to Driver</label>
-                        <select
-                          value={updateAssignedTo}
-                          onChange={(e) => setUpdateAssignedTo(e.target.value)}
-                          className="form-select"
-                        >
-                          <option value="">-- Unassigned --</option>
-                          {drivers.map(driver => (
-                            <option key={driver._id} value={driver._id}>
-                              {driver.name}
-                            </option>
-                          ))}
-                        </select>
-                      </div>
-                      <div>
-                        <label className="form-label">Notes (Optional)</label>
-                        <textarea
-                          value={updateNotes}
-                          onChange={(e) => setUpdateNotes(e.target.value)}
-                          rows={3}
-                          className="form-input"
-                          placeholder="e.g., Reason for delivery failure"
-                        ></textarea>
-                      </div>
-                    </div>
-
-                    <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
-                      <button
-                        type="button"
-                        onClick={closeModal}
-                        className="px-5 py-2.5 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                      >
-                        Cancel
-                      </button>
-                      <button
-                        type="submit"
-                        disabled={isSubmitting}
-                        className="px-5 py-2.5 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                      >
-                        {isSubmitting ? (
-                          <span className="flex items-center">
-                            <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                              <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                              <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                            </svg>
-                            Saving...
-                          </span>
-                        ) : 'Save Changes'}
-                      </button>
-                    </div>
-                  </form>
-                </div>
-              </div>
-            )}
-
-            {/* DELETE MODAL */}
-            {modalType === 'delete' && selectedShipment && (
-              <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-lg transform transition-all">
-                  <div className="p-6">
-                    <div className="flex items-start">
-                      <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                        <Trash2 className="h-6 w-6 text-red-600" aria-hidden="true" />
-                      </div>
-                      <div className="ml-4">
-                        <h2 className="text-2xl font-bold text-gray-900">Cancel Shipment</h2>
-                        <p className="text-gray-600 mt-1">
-                          Are you sure you want to cancel shipment <span className="font-semibold">{selectedShipment.trackingId}</span>?
-                          This action cannot be undone.
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                  <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
-                    <button
-                      onClick={closeModal}
-                      className="px-5 py-2.5 text-base font-medium text-gray-700 bg-white border border-gray-300 rounded-lg shadow-sm hover:bg-gray-50 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      No, Keep It
-                    </button>
-                    <button
-                      onClick={handleDeleteShipment}
-                      disabled={isSubmitting}
-                      className="px-5 py-2.5 text-base font-medium text-white bg-red-600 border border-transparent rounded-lg shadow-sm hover:bg-red-700 focus:outline-none focus:ring-2 focus:ring-red-500 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed"
-                    >
-                      {isSubmitting ? (
-                        <span className="flex items-center">
-                          <svg className="animate-spin -ml-1 mr-2 h-4 w-4 text-white" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                            <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                            <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-                          </svg>
-                          Cancelling...
-                        </span>
-                      ) : 'Yes, Cancel'}
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
-
-            {/* VIEW MODAL */}
-            {modalType === 'view' && selectedShipment && (
-              <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
-                <div className="bg-white rounded-xl shadow-xl w-full max-w-3xl transform transition-all max-h-[90vh] flex flex-col">
-                  <div className="p-6 border-b border-gray-200">
-                    <h2 className="text-2xl font-bold text-gray-900">Shipment Details</h2>
-                    <p className="text-gray-600 mt-1">
-                      Tracking ID: <span className="font-mono text-gray-800">{selectedShipment.trackingId}</span>
-                    </p>
-                  </div>
-
-                  <div className="px-6 py-4 overflow-y-auto flex-grow space-y-6">
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Sender</h3>
-                        <div className="space-y-2">
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Name:</span> {selectedShipment.sender.name}
-                          </p>
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Address:</span> {selectedShipment.sender.address}
-                          </p>
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Phone:</span> {selectedShipment.sender.phone}
-                          </p>
-                        </div>
-                      </div>
-                      <div>
-                        <h3 className="text-lg font-semibold text-gray-800 mb-3">Recipient</h3>
-                        <div className="space-y-2">
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Name:</span> {selectedShipment.recipient.name}
-                          </p>
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Address:</span> {selectedShipment.recipient.address}
-                          </p>
-                          <p className="text-base text-gray-700">
-                            <span className="font-medium">Phone:</span> {selectedShipment.recipient.phone}
-                          </p>
-                        </div>
-                      </div>
-                    </div>
-
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Package Information</h3>
-                      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-500">Weight</p>
-                          <p className="text-lg font-medium text-gray-900">{selectedShipment.packageInfo.weight} kg</p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-500">Type</p>
-                          <p className="text-lg font-medium text-gray-900">{selectedShipment.packageInfo.type}</p>
-                        </div>
-                        <div className="bg-gray-50 p-4 rounded-lg">
-                          <p className="text-sm text-gray-500">Status</p>
-                          <StatusBadge status={selectedShipment.status} />
-                        </div>
-                      </div>
-                    </div>
-
-                    {/* Status History Timeline */}
-                    <div>
-                      <h3 className="text-lg font-semibold text-gray-800 mb-4">Status History</h3>
-                      {selectedShipment.statusHistory && selectedShipment.statusHistory.length > 0 ? (
-                        <div className="space-y-4">
-                          {selectedShipment.statusHistory.map((history, index) => (
-                            <div key={index} className="flex">
-                              <div className="flex flex-col items-center mr-4">
-                                <div className="w-3 h-3 bg-blue-500 rounded-full"></div>
-                                {index !== selectedShipment.statusHistory.length - 1 && (
-                                  <div className="w-0.5 h-full bg-gray-200 mt-1"></div>
-                                )}
-                              </div>
-                              <div className="pb-4">
-                                <p className="font-semibold text-gray-800">{history.status}</p>
-                                <p className="text-sm text-gray-500">
-                                  {new Date(history.timestamp).toLocaleString('en-US', {
-                                    month: 'short',
-                                    day: 'numeric',
-                                    year: 'numeric',
-                                    hour: '2-digit',
-                                    minute: '2-digit'
-                                  })}
-                                </p>
-                                {history.notes && (
-                                  <p className="text-sm text-gray-600 mt-1 italic">\u201C{history.notes}\u201D</p>
-                                )}
-                              </div>
-                            </div>
-                          ))}
-                        </div>
-                      ) : (
-                        <div className="text-sm text-gray-500">No history available.</div>
-                      )}
-                    </div>
-
-                    {/* Delivery Proof Section */}
-                    {(selectedShipment.status === 'Delivered' || selectedShipment.status === 'Failed') && (
-                      <div className="mt-8">
-                        {selectedShipment.status === 'Delivered' && selectedShipment.deliveryProof && (
-                          <div className="bg-green-50 border border-green-200 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-green-900 mb-4">Delivery Proof</h3>
-                            {selectedShipment.deliveryProof.type === 'photo' ? (
-                              <div>
-                                <p className="text-sm text-green-700 mb-3 font-medium">Photo Proof:</p>
-                                <img src={selectedShipment.deliveryProof.url} alt="Delivery proof" className="max-w-full max-h-96 rounded-lg border border-green-300" />
-                              </div>
-                            ) : (
-                              <div>
-                                <p className="text-sm text-green-700 mb-3 font-medium">Signature Proof:</p>
-                                <img src={selectedShipment.deliveryProof.url} alt="Signature" className="max-w-xs max-h-48 rounded-lg border border-green-300" />
-                              </div>
-                            )}
-                          </div>
-                        )}
-
-                        {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
-                          <div className="bg-red-50 border border-red-200 rounded-lg p-6">
-                            <h3 className="text-lg font-semibold text-red-900 mb-3">Delivery Failed</h3>
-                            <div className="bg-white rounded p-3 border border-red-100">
-                              <p className="text-sm text-red-700"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
-                            </div>
-                          </div>
-                        )}
-                      </div>
-                    )}
-                  </div>
-
-                  <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-xl">
-                    <button
-                      type="button"
-                      onClick={closeModal}
-                      className="px-5 py-2.5 text-base font-medium text-white bg-blue-600 border border-transparent rounded-lg shadow-sm hover:bg-blue-700 focus:outline-none focus:ring-2 focus:ring-blue-500 focus:ring-offset-2"
-                    >
-                      Close
-                    </button>
-                  </div>
-                </div>
-              </div>
-            )}
           </div>
           );
 }

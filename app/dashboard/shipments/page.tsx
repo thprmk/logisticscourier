@@ -3,7 +3,7 @@ import { useState, useEffect, type FormEvent, useMemo } from "react"
 import { useUser } from "../../context/UserContext"
 import toast from "react-hot-toast"
 import { Button } from "@/components/ui/button"
-import { Plus, Edit, Trash2, Eye, Search, Building, PackageIcon, Filter, CheckSquare, Square } from "lucide-react"
+import { Plus, Edit, Trash2, Eye, Search, Building, PackageIcon, Filter, CheckSquare, Square, Download,X } from "lucide-react"
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from "@/components/ui/select"
 
 import {
@@ -15,6 +15,8 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+
+
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 
@@ -26,6 +28,14 @@ import { Popover, PopoverContent, PopoverTrigger } from "@/components/ui/popover
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table"
 
 import { Badge } from "@/components/ui/badge"
+
+import {
+  Sheet,
+  SheetContent,
+  SheetDescription,
+  SheetHeader,
+  SheetTitle,
+} from "@/components/ui/sheet"
 
 // Mock data types for demonstration
 interface Branch {
@@ -163,7 +173,7 @@ export default function ShipmentsPage() {
   const [shipments, setShipments] = useState<Shipment[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [isCreateDialogOpen, setIsCreateDialogOpen] = useState(false)
-  const [isViewDialogOpen, setIsViewDialogOpen] = useState(false)
+  const [isViewSheetOpen, setIsViewSheetOpen] = useState(false)
   const [isUpdateDialogOpen, setIsUpdateDialogOpen] = useState(false)
   const [isDeleteDialogOpen, setIsDeleteDialogOpen] = useState(false)
   const [selectedShipment, setSelectedShipment] = useState<Shipment | null>(null)
@@ -176,6 +186,7 @@ export default function ShipmentsPage() {
   const [selectedIds, setSelectedIds] = useState<Set<string>>(new Set())
   const [bulkAssignStaff, setBulkAssignStaff] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [isImageViewerOpen, setIsImageViewerOpen] = useState(false)
 
   // Create shipment form state
   const [senderName, setSenderName] = useState("")
@@ -253,7 +264,11 @@ export default function ShipmentsPage() {
     let results = shipments
 
     if (searchQuery) {
-      results = results.filter((shipment) => shipment.trackingId.toLowerCase().includes(searchQuery.toLowerCase()))
+      results = results.filter(
+        (shipment) =>
+          shipment.trackingId.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          shipment.recipient.name.toLowerCase().includes(searchQuery.toLowerCase())
+      )
     }
 
     if (statusFilter) {
@@ -530,10 +545,19 @@ export default function ShipmentsPage() {
 
   const openModal = (type: "view" | "update" | "delete", shipment: Shipment) => {
     setSelectedShipment(shipment)
-    if (type === "update") {
+
+     if (type === "view") {
+      setIsViewSheetOpen(true) // We now open the Sheet
+    } 
+
+    else if (type === "update") {
       setUpdateStatus(shipment.status)
       setUpdateAssignedTo(shipment.assignedTo?._id || "")
       setUpdateNotes("") // Reset notes on open
+       setIsUpdateDialogOpen(true)
+    }
+     else if (type === "delete") {
+      setIsDeleteDialogOpen(true)
     }
   }
 
@@ -552,8 +576,8 @@ export default function ShipmentsPage() {
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-6 sm:py-8">
         <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 mb-8">
           <div className="space-y-1">
-            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">Shipments</h1>
-            <p className="text-slate-600 text-sm">Manage and track all deliveries efficiently</p>
+            <h1 className="text-3xl sm:text-4xl font-semibold text-slate-900 tracking-tight">Shipment Management</h1>
+            <p className="text-slate-600 text-sm">Create, track, and manage all shipments for your branch.</p>
           </div>
 
           <Dialog open={isCreateDialogOpen} onOpenChange={setIsCreateDialogOpen}>
@@ -563,243 +587,191 @@ export default function ShipmentsPage() {
                 <span>New Shipment</span>
               </Button>
             </DialogTrigger>
-            <DialogContent className="sm:max-w-4xl max-h-[85vh] overflow-y-auto">
-              <form onSubmit={handleCreateShipment}>
-                <DialogHeader className="mb-4">
-                  <DialogTitle className="text-2xl">Create New Shipment</DialogTitle>
-                  <DialogDescription className="text-sm">Add sender, recipient, and package information</DialogDescription>
-                </DialogHeader>
 
-                <div className="space-y-4 py-3">
-                  {/* Sender & Recipient in grid */}
-                  <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                    {/* Sender Details */}
+          <DialogContent className="sm:max-w-2xl max-h-[90vh] overflow-y-auto p-0 gap-0 bg-white shadow-2xl">
+              <form onSubmit={handleCreateShipment}>
+                
+                {/* Header: Added 'flex justify-between' so the X button sits on the right */}
+                <div className="px-6 py-4 border-b border-slate-100 bg-slate-50/50 sticky top-0 z-10 ">
+                  <div>
+                    <DialogTitle className="text-base sm:text-lg font-bold text-gray-900">Create New Shipment</DialogTitle>
+                    <DialogDescription className="text-xs sm:text-sm text-gray-600 mt-1">
+                      Enter sender, recipient, and package details below.
+                    </DialogDescription>
+                  </div>
+               
+                  {/* <Button 
+                    type="button"
+                    variant="ghost" 
+                    size="icon" 
+                    onClick={() => setIsCreateDialogOpen(false)}
+                    className="h-8 w-8 text-slate-400 hover:text-slate-600 rounded-full"
+                  >
+                    <X size={18} />
+                  </Button> */}
+                </div>
+
+                <div className="p-6 space-y-8">
+                  
+                  {/* 1. SENDER & RECIPIENT ROW */}
+                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                    
+                    {/* Sender Column */}
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-blue-100 flex items-center justify-center">
-                          <span className="text-blue-600 font-semibold text-xs">1</span>
-                        </div>
-                        <h3 className="font-semibold text-slate-900 text-sm">Sender</h3>
-                      </div>
-                      <div className="grid gap-2.5">
-                        <div>
-                          <Label htmlFor="sender-name" className="text-slate-700 text-xs font-medium mb-1">
-                            Full Name
-                          </Label>
-                          <Input
-                            id="sender-name"
-                            value={senderName}
-                            onChange={(e) => setSenderName(e.target.value)}
-                            placeholder="John Doe"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="sender-address" className="text-slate-700 text-xs font-medium mb-1">
-                            Address
-                          </Label>
-                          <Input
-                            id="sender-address"
-                            value={senderAddress}
-                            onChange={(e) => setSenderAddress(e.target.value)}
-                            placeholder="Street address"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="sender-phone" className="text-slate-700 text-xs font-medium mb-1">
-                            Phone
-                          </Label>
-                          <Input
-                            id="sender-phone"
-                            type="tel"
-                            value={senderPhone}
-                            onChange={(e) => setSenderPhone(e.target.value)}
-                            placeholder="+1 (555) 000-0000"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                      </div>
+                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Sender</h3>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="s-name" className="text-[11px] font-medium text-slate-500 uppercase ">Full Name</Label>
+                          <Input id="s-name" placeholder="John Doe" value={senderName} onChange={e => setSenderName(e.target.value)} className="h-9 text-sm" required />
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="s-addr" className="text-[11px] font-medium text-slate-500 uppercase">Full Address</Label>
+                          <Input id="s-addr" placeholder="123 Main St" value={senderAddress} onChange={e => setSenderAddress(e.target.value)} className="h-9 text-sm" required />
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="s-phone" className="text-[11px] font-medium text-slate-500 uppercase">Phone</Label>
+                          <Input id="s-phone" placeholder="+1 234..." value={senderPhone} onChange={e => setSenderPhone(e.target.value)} className="h-9 text-sm" required />
+                       </div>
                     </div>
 
-                    {/* Recipient Details */}
+                    {/* Recipient Column */}
                     <div className="space-y-3">
-                      <div className="flex items-center gap-2 mb-3">
-                        <div className="w-7 h-7 rounded-lg bg-emerald-100 flex items-center justify-center">
-                          <span className="text-emerald-600 font-semibold text-xs">2</span>
-                        </div>
-                        <h3 className="font-semibold text-slate-900 text-sm">Recipient</h3>
-                      </div>
-                      <div className="grid gap-2.5">
-                        <div>
-                          <Label htmlFor="recipient-name" className="text-slate-700 text-xs font-medium mb-1">
-                            Full Name
-                          </Label>
-                          <Input
-                            id="recipient-name"
-                            value={recipientName}
-                            onChange={(e) => setRecipientName(e.target.value)}
-                            placeholder="Jane Smith"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="recipient-address" className="text-slate-700 text-xs font-medium mb-1">
-                            Address
-                          </Label>
-                          <Input
-                            id="recipient-address"
-                            value={recipientAddress}
-                            onChange={(e) => setRecipientAddress(e.target.value)}
-                            placeholder="Street address"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                        <div>
-                          <Label htmlFor="recipient-phone" className="text-slate-700 text-xs font-medium mb-1">
-                            Phone
-                          </Label>
-                          <Input
-                            id="recipient-phone"
-                            type="tel"
-                            value={recipientPhone}
-                            onChange={(e) => setRecipientPhone(e.target.value)}
-                            placeholder="+1 (555) 000-0000"
-                            required
-                            className="h-9 text-sm"
-                          />
-                        </div>
-                      </div>
+                       <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Recipient</h3>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="r-name" className="text-[11px] font-medium text-slate-500 uppercase">Full Name</Label>
+                          <Input id="r-name" placeholder="Jane Smith" value={recipientName} onChange={e => setRecipientName(e.target.value)} className="h-9 text-sm" required />
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="r-addr" className="text-[11px] font-medium text-slate-500 uppercase">Full Address</Label>
+                          <Input id="r-addr" placeholder="456 Oak Ave" value={recipientAddress} onChange={e => setRecipientAddress(e.target.value)} className="h-9 text-sm" required />
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <Label htmlFor="r-phone" className="text-[11px] font-medium text-slate-500 uppercase">Phone</Label>
+                          <Input id="r-phone" placeholder="+1 987..." value={recipientPhone} onChange={e => setRecipientPhone(e.target.value)} className="h-9 text-sm" required />
+                       </div>
                     </div>
                   </div>
 
-                  {/* Branch Details */}
-                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <Building size={16} className="text-slate-600" />
-                      <h3 className="font-semibold text-slate-900 text-sm">Branch</h3>
+                  {/* 2. BRANCH DETAILS */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Route Details</h3>
+                    
+                    <div className="grid grid-cols-1 sm:grid-cols-2 gap-6">
+                       <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-slate-500 uppercase">Origin</Label>
+                          <Input 
+                            disabled 
+                            value={branches.find(b => b._id === originBranchId)?.name || 'Loading...'} 
+                            className="h-9 bg-slate-50 border-slate-200 text-slate-900 font-medium disabled:opacity-100 disabled:cursor-default"
+                          />
+                       </div>
+                       
+                       <div className="space-y-1">
+                          <Label className="text-[11px] font-medium text-slate-500 uppercase">Destination</Label>
+                          <Select 
+                            value={destinationBranchId} 
+                            onValueChange={(val) => {
+                                setDestinationBranchId(val);
+                                if (val !== originBranchId) setAssignedStaff("");
+                            }}
+                          >
+                              <SelectTrigger className="h-9 focus:ring-blue-500 text-slate-900">
+                                <SelectValue placeholder="Select Destination" />
+                              </SelectTrigger>
+                              <SelectContent>
+                                {branches.map((branch) => (
+                                    <SelectItem key={branch._id} value={branch._id}>
+                                      {branch.name}
+                                    </SelectItem>
+                                ))}
+                              </SelectContent>
+                          </Select>
+                       </div>
                     </div>
-                    <div className="grid grid-cols-2 gap-3">
-                      <div>
-                        <Label className="text-slate-700 text-xs font-medium mb-1 block">Origin</Label>
-                        <Select value={originBranchId} onValueChange={setOriginBranchId}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="Select origin branch" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches.map((branch) => (
-                              <SelectItem key={branch._id} value={branch._id}>
-                                {branch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-slate-700 text-xs font-medium mb-1 block">Destination</Label>
-                        <Select value={destinationBranchId} onValueChange={setDestinationBranchId}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="Select branch" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            {branches.map((branch) => (
-                              <SelectItem key={branch._id} value={branch._id}>
-                                {branch.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
-                    </div>
+
+                    {/* Compact Alert - Fixed dynamic text for Local Delivery */}
                     {destinationBranchId && (
-                      <div
-                        className={`mt-3 p-2 rounded-lg text-xs font-medium ${
-                          isLocalDelivery
-                            ? "bg-emerald-50 text-emerald-900 border border-emerald-200"
-                            : "bg-blue-50 text-blue-900 border border-blue-200"
-                        }`}
-                      >
-                        {isLocalDelivery ? (
-                          <span>✓ Local delivery - can assign staff immediately</span>
-                        ) : (
-                          <span>→ Inter-branch transfer required</span>
-                        )}
+                      <div className={`mt-2 p-2.5 rounded-md text-xs font-medium border flex items-center gap-2 animate-in fade-in slide-in-from-top-1 ${
+                        isLocalDelivery 
+                          ? 'bg-emerald-50 border-emerald-100 text-emerald-700' 
+                          : 'bg-blue-50 border-blue-100 text-blue-700'
+                      }`}>
+                         {isLocalDelivery 
+                          ? `📍 Local Delivery: This package stays in ${branches.find(b => b._id === destinationBranchId)?.name || 'this branch'}. Assign a driver below.`
+                          : `🚚 Inter-Branch Transfer: This package will be sent to ${branches.find(b => b._id === destinationBranchId)?.name}. It will require a manifest dispatch.`
+                         }
                       </div>
                     )}
                   </div>
 
-                  {/* Package Details */}
-                  <div className="bg-slate-50 rounded-lg p-3 border border-slate-200">
-                    <div className="flex items-center gap-2 mb-3">
-                      <PackageIcon size={16} className="text-slate-600" />
-                      <h3 className="font-semibold text-slate-900 text-sm">Package</h3>
-                    </div>
-                    <div className="grid grid-cols-3 gap-2.5">
-                      <div>
-                        <Label className="text-slate-700 text-xs font-medium mb-1 block">Weight (kg)</Label>
-                        <Input
-                          type="number"
-                          value={packageWeight}
-                          onChange={(e) => setPackageWeight(Number.parseFloat(e.target.value))}
-                          required
-                          className="h-9 text-sm"
-                        />
-                      </div>
-                      <div>
-                        <Label className="text-slate-700 text-xs font-medium mb-1 block">Type</Label>
-                        <Select value={packageType} onValueChange={setPackageType}>
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="Select type" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="Parcel">Parcel</SelectItem>
-                            <SelectItem value="Document">Document</SelectItem>
-                            <SelectItem value="Fragile">Fragile</SelectItem>
-                          </SelectContent>
-                        </Select>
-                      </div>
-                      <div>
-                        <Label className="text-slate-700 text-xs font-medium mb-1 block">
-                          Staff{" "}
-                          {!isLocalDelivery && <span className="text-xs font-normal text-slate-500">(local only)</span>}
-                        </Label>
-                        <Select
-                          value={assignedStaff}
-                          onValueChange={(value) => setAssignedStaff(value === "unassigned" ? "" : value)}
-                          disabled={!isLocalDelivery}
-                        >
-                          <SelectTrigger className="h-9 text-sm">
-                            <SelectValue placeholder="None" />
-                          </SelectTrigger>
-                          <SelectContent>
-                            <SelectItem value="unassigned">None</SelectItem>
-                            {drivers.map((driver) => (
-                              <SelectItem key={driver._id} value={driver._id}>
-                                {driver.name}
-                              </SelectItem>
-                            ))}
-                          </SelectContent>
-                        </Select>
-                      </div>
+                  {/* 3. PACKAGE DETAILS */}
+                  <div className="space-y-3">
+                    <h3 className="text-xs font-bold text-slate-900 uppercase tracking-wider border-b border-slate-100 pb-2">Package Info</h3>
+                    
+                    <div className="grid grid-cols-3 gap-4">
+                        <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-slate-500 uppercase">Weight (kg)</Label>
+                            <Input 
+                              type="number" 
+                              value={packageWeight || ''} 
+                              onChange={e => setPackageWeight(parseFloat(e.target.value))}
+                              className="h-9"
+                              placeholder="0.0"
+                              min="0.1" step="0.1" required
+                            />
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-slate-500 uppercase">Type</Label>
+                            <Select value={packageType} onValueChange={setPackageType}>
+                                <SelectTrigger className="h-9"><SelectValue placeholder="Type" /></SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="Parcel">Parcel</SelectItem>
+                                    <SelectItem value="Document">Document</SelectItem>
+                                    <SelectItem value="Fragile">Fragile</SelectItem>
+                                </SelectContent>
+                            </Select>
+                        </div>
+                        <div className="space-y-1">
+                            <Label className="text-[11px] font-medium text-slate-500 uppercase">Assign Staff</Label>
+                            <Select 
+                              value={assignedStaff} 
+                              onValueChange={setAssignedStaff} 
+                              disabled={!isLocalDelivery}
+                            >
+                                <SelectTrigger className={`h-9 ${!isLocalDelivery ? "bg-slate-50 opacity-60" : ""}`}>
+                                   <SelectValue placeholder={!isLocalDelivery ? "N/A" : "Select Staff"} />
+                                </SelectTrigger>
+                                <SelectContent>
+                                    <SelectItem value="unassigned">-- Unassigned --</SelectItem>
+                                    {drivers.map(d => (
+                                      <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>
+                                    ))}
+                                </SelectContent>
+                            </Select>
+                        </div>
                     </div>
                   </div>
+
                 </div>
 
-                <DialogFooter className="mt-6">
-                  <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(false)} className="text-sm">
+                {/* Footer with background */}
+                <DialogFooter className="px-6 py-4 bg-slate-50 border-t border-slate-100 sm:justify-end gap-3">
+                  <Button variant="outline" type="button" onClick={() => setIsCreateDialogOpen(false)} className="h-9 px-4 text-xs font-medium bg-white hover:bg-slate-50">
                     Cancel
                   </Button>
-                  <Button type="submit" disabled={isSubmitting} className="text-sm">
+                  <Button type="submit" disabled={isSubmitting} className="h-9 px-6 bg-blue-600 hover:bg-blue-700 text-white text-xs font-medium shadow-sm">
                     {isSubmitting ? "Creating..." : "Create Shipment"}
                   </Button>
                 </DialogFooter>
+
               </form>
             </DialogContent>
+
           </Dialog>
         </div>
 
@@ -853,8 +825,6 @@ export default function ShipmentsPage() {
                 </SelectContent>
               </Select>
             </div>
-
-            {/* ... existing code ...
 
             {/* Date Range */}
             <div className="lg:col-span-3">
@@ -973,9 +943,9 @@ export default function ShipmentsPage() {
                     )}
                   </Button>
                 </TableHead>
-                <TableHead className="py-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">ID</TableHead>
+                <TableHead className="py-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">S/No</TableHead>
                 <TableHead className="py-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">
-                  Tracking
+                  Tracking ID
                 </TableHead>
                 <TableHead className="py-4 text-xs font-semibold text-slate-600 uppercase tracking-wide">
                   Recipient
@@ -1042,299 +1012,34 @@ export default function ShipmentsPage() {
                       {shipment.assignedTo?.name ? (
                         <span className="text-slate-900 font-medium">{shipment.assignedTo.name}</span>
                       ) : (
-                        <span className="text-slate-400 italic">—</span>
+                        <span className="text-slate-400 italic">Unassigned</span>
                       )}
                     </TableCell>
                     <TableCell className="py-3 text-sm text-slate-600">
                       {new Date(shipment.createdAt).toLocaleDateString("en-US", {
                         month: "short",
                         day: "numeric",
+                        year: "numeric",
                       })}
                     </TableCell>
-                    <TableCell className="py-3 text-right">
-                      <div className="flex items-center justify-end gap-1">
-                        <Dialog
-                          open={isViewDialogOpen && selectedShipment?._id === shipment._id}
-                          onOpenChange={setIsViewDialogOpen}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                openModal("view", shipment)
-                                setIsViewDialogOpen(true)
-                              }}
-                              className="h-8 w-8"
-                              title="View"
-                            >
-                              <Eye size={16} />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-3xl max-h-[85vh] overflow-y-auto">
-                            <DialogHeader>
-                              <DialogTitle className="text-xl">Shipment Details - {selectedShipment?.trackingId}</DialogTitle>
-                            </DialogHeader>
-
-                            <div className="py-3 space-y-4 text-sm">
-                              {/* Tracking & Status Info */}
-                              <div className="grid grid-cols-4 gap-3 bg-slate-50 rounded-lg p-4">
-                                <div>
-                                  <p className="text-slate-600 text-xs mb-1">Tracking ID</p>
-                                  <p className="font-semibold text-slate-900 text-sm">{selectedShipment?.trackingId}</p>
-                                </div>
-                                <div>
-                                  <p className="text-slate-600 text-xs mb-2">Status</p>
-                                  <StatusBadge status={selectedShipment?.status || ""} />
-                                </div>
-                                <div>
-                                  <p className="text-slate-600 text-xs mb-1">Created Date</p>
-                                  <p className="font-medium text-slate-900 text-sm">{selectedShipment?.createdAt ? new Date(selectedShipment.createdAt).toLocaleDateString() : 'N/A'}</p>
-                                </div>
-                                <div>
-                                  <p className="text-slate-600 text-xs mb-1">Assigned Staff</p>
-                                  <p className="font-medium text-slate-900 text-sm">{selectedShipment?.assignedTo?.name || 'Unassigned'}</p>
-                                </div>
-                              </div>
-
-                              {/* Sender Info */}
-                              <div className="bg-blue-50 rounded-lg p-4 border border-blue-200">
-                                <h4 className="font-semibold text-blue-900 mb-3 flex items-center gap-2">
-                                  <span className="w-6 h-6 rounded-full bg-blue-600 flex items-center justify-center text-white text-xs font-bold">S</span>
-                                  Sender Information
-                                </h4>
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex justify-between">
-                                    <span className="text-blue-700">Name:</span>
-                                    <span className="font-medium text-blue-900">{selectedShipment?.sender.name}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-blue-700">Address:</span>
-                                    <span className="font-medium text-blue-900 text-right">{selectedShipment?.sender.address}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-blue-700">Phone:</span>
-                                    <span className="font-medium text-blue-900">{selectedShipment?.sender.phone}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Recipient Info */}
-                              <div className="bg-emerald-50 rounded-lg p-4 border border-emerald-200">
-                                <h4 className="font-semibold text-emerald-900 mb-3 flex items-center gap-2">
-                                  <span className="w-6 h-6 rounded-full bg-emerald-600 flex items-center justify-center text-white text-xs font-bold">R</span>
-                                  Recipient Information
-                                </h4>
-                                <div className="space-y-2 text-sm">
-                                  <div className="flex justify-between">
-                                    <span className="text-emerald-700">Name:</span>
-                                    <span className="font-medium text-emerald-900">{selectedShipment?.recipient.name}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-emerald-700">Address:</span>
-                                    <span className="font-medium text-emerald-900 text-right">{selectedShipment?.recipient.address}</span>
-                                  </div>
-                                  <div className="flex justify-between">
-                                    <span className="text-emerald-700">Phone:</span>
-                                    <span className="font-medium text-emerald-900">{selectedShipment?.recipient.phone}</span>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Package & Branch Info */}
-                              <div className="grid grid-cols-2 gap-4">
-                                <div className="bg-slate-50 rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-900 mb-3 text-sm">Package Details</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div>
-                                      <span className="text-slate-600 block text-xs mb-1">Weight</span>
-                                      <span className="font-semibold text-slate-900">{selectedShipment?.packageInfo.weight} kg</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-slate-600 block text-xs mb-1">Type</span>
-                                      <span className="font-semibold text-slate-900">{selectedShipment?.packageInfo.type}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                                <div className="bg-slate-50 rounded-lg p-4">
-                                  <h4 className="font-semibold text-slate-900 mb-3 text-sm">Branch Info</h4>
-                                  <div className="space-y-2 text-sm">
-                                    <div>
-                                      <span className="text-slate-600 block text-xs mb-1">Origin Branch</span>
-                                      <span className="font-semibold text-slate-900">{selectedShipment?.originBranch?.name}</span>
-                                    </div>
-                                    <div>
-                                      <span className="text-slate-600 block text-xs mb-1">Destination Branch</span>
-                                      <span className="font-semibold text-slate-900">{selectedShipment?.destinationBranch?.name || 'N/A'}</span>
-                                    </div>
-                                  </div>
-                                </div>
-                              </div>
-
-                              {/* Status History Timeline */}
-                              {selectedShipment?.statusHistory && selectedShipment.statusHistory.length > 0 && (
-                                <div className="border-t pt-4">
-                                  <h4 className="font-semibold text-slate-900 mb-4">Status History</h4>
-                                  <div className="relative space-y-4">
-                                    {selectedShipment.statusHistory.map((history: any, index: number) => (
-                                      <div key={index} className="flex gap-4">
-                                        {/* Timeline dot and line */}
-                                        <div className="flex flex-col items-center">
-                                          <div className="w-4 h-4 rounded-full bg-blue-500 ring-4 ring-blue-100 z-10"></div>
-                                          {index !== (selectedShipment?.statusHistory?.length ?? 0) - 1 && (
-                                            <div className="w-1 h-12 bg-gradient-to-b from-blue-300 to-blue-100 mt-2"></div>
-                                          )}
-                                        </div>
-                                        {/* Timeline content */}
-                                        <div className="flex-1 pb-2">
-                                          <div className="flex items-center justify-between">
-                                            <div>
-                                              <p className="font-semibold text-slate-900">{history.status}</p>
-                                              <p className="text-xs text-slate-500 mt-1">
-                                                {new Date(history.timestamp).toLocaleString('en-US', {
-                                                  month: 'short',
-                                                  day: 'numeric',
-                                                  year: 'numeric',
-                                                  hour: '2-digit',
-                                                  minute: '2-digit'
-                                                })}
-                                              </p>
-                                            </div>
-                                          </div>
-                                          {history.notes && (
-                                            <p className="text-xs text-slate-600 mt-2 italic bg-slate-100 p-2 rounded">
-                                              "{history.notes}"
-                                            </p>
-                                          )}
-                                        </div>
-                                      </div>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                            </div>
-                          </DialogContent>
-                        </Dialog>
-
-                        <Dialog
-                          open={isUpdateDialogOpen && selectedShipment?._id === shipment._id}
-                          onOpenChange={setIsUpdateDialogOpen}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                openModal("update", shipment)
-                                setIsUpdateDialogOpen(true)
-                                setUpdateStatus(shipment.status)
-                              }}
-                              className="h-8 w-8"
-                              title="Edit"
-                            >
-                              <Edit size={16} />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-md">
-                            <DialogHeader>
-                              <DialogTitle>Update Shipment</DialogTitle>
-                            </DialogHeader>
-                            <form onSubmit={handleUpdateShipment} className="space-y-4">
-                              <div>
-                                <Label className="text-slate-700 font-medium mb-1.5">Status</Label>
-                                <Select value={updateStatus} onValueChange={setUpdateStatus}>
-                                  <SelectTrigger className="h-10">
-                                    <SelectValue />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="At Origin Branch">At Origin</SelectItem>
-                                    <SelectItem value="In Transit">In Transit</SelectItem>
-                                    <SelectItem value="At Destination Branch">At Destination</SelectItem>
-                                    <SelectItem value="Assigned">Assigned</SelectItem>
-                                    <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
-                                    <SelectItem value="Delivered">Delivered</SelectItem>
-                                    <SelectItem value="Failed">Failed</SelectItem>
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label className="text-slate-700 font-medium mb-1.5">Assign Staff</Label>
-                                <Select value={updateAssignedTo} onValueChange={setUpdateAssignedTo}>
-                                  <SelectTrigger className="h-10">
-                                    <SelectValue placeholder="Select staff" />
-                                  </SelectTrigger>
-                                  <SelectContent>
-                                    <SelectItem value="unassigned">None</SelectItem>
-                                    {drivers.map((driver) => (
-                                      <SelectItem key={driver._id} value={driver._id}>
-                                        {driver.name}
-                                      </SelectItem>
-                                    ))}
-                                  </SelectContent>
-                                </Select>
-                              </div>
-                              <div>
-                                <Label htmlFor="notes" className="text-slate-700 font-medium mb-1.5">
-                                  Notes
-                                </Label>
-                                <Input
-                                  id="notes"
-                                  value={updateNotes}
-                                  onChange={(e) => setUpdateNotes(e.target.value)}
-                                  placeholder="Optional notes..."
-                                  className="h-10"
-                                />
-                              </div>
-                              <DialogFooter className="mt-6">
-                                <Button variant="outline" type="button" onClick={() => setIsUpdateDialogOpen(false)}>
-                                  Cancel
-                                </Button>
-                                <Button type="submit" disabled={isSubmitting}>
-                                  {isSubmitting ? "Updating..." : "Update"}
-                                </Button>
-                              </DialogFooter>
-                            </form>
-                          </DialogContent>
-                        </Dialog>
-
-                        <Dialog
-                          open={isDeleteDialogOpen && selectedShipment?._id === shipment._id}
-                          onOpenChange={setIsDeleteDialogOpen}
-                        >
-                          <DialogTrigger asChild>
-                            <Button
-                              variant="ghost"
-                              size="icon"
-                              onClick={() => {
-                                openModal("delete", shipment)
-                                setIsDeleteDialogOpen(true)
-                              }}
-                              className="h-8 w-8"
-                              title="Delete"
-                            >
-                              <Trash2 size={16} className="text-red-500" />
-                            </Button>
-                          </DialogTrigger>
-                          <DialogContent className="sm:max-w-sm">
-                            <DialogHeader>
-                              <DialogTitle>Delete Shipment?</DialogTitle>
-                              <DialogDescription>
-                                This will permanently delete shipment {selectedShipment?.trackingId}. This cannot be
-                                undone.
-                              </DialogDescription>
-                            </DialogHeader>
-                            <DialogFooter>
-                              <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>
-                                Cancel
-                              </Button>
-                              <Button variant="destructive" onClick={handleDeleteShipment} disabled={isSubmitting}>
-                                {isSubmitting ? "Deleting..." : "Delete"}
-                              </Button>
-                            </DialogFooter>
-                          </DialogContent>
-                        </Dialog>
-                      </div>
-                    </TableCell>
+               <TableCell className="text-right">
+   <div className="flex justify-end gap-1">
+      {/* View Button */}
+      <Button variant="ghost" size="icon" onClick={() => openModal("view", shipment)} className="h-8 w-8 hover:text-blue-600">
+         <Eye size={16} />
+      </Button>
+      
+      {/* Edit Button */}
+      <Button variant="ghost" size="icon" onClick={() => openModal("update", shipment)} className="h-8 w-8 hover:text-orange-600">
+         <Edit size={16} />
+      </Button>
+      
+      {/* Delete Button */}
+      <Button variant="ghost" size="icon" onClick={() => openModal("delete", shipment)} className="h-8 w-8 hover:text-red-600">
+         <Trash2 size={16} />
+      </Button>
+   </div>
+</TableCell>
                   </TableRow>
                 ))
               ) : (
@@ -1385,6 +1090,284 @@ export default function ShipmentsPage() {
           )}
         </div>
       </div>
-    </div>
+
+       <Sheet open={isViewSheetOpen} onOpenChange={setIsViewSheetOpen}>
+        <SheetContent className="sm:max-w-2xl w-[90vw] overflow-y-auto bg-white p-0">
+          
+          {/* Sticky Header */}
+          <SheetHeader className="px-6 py-4 border-b border-slate-100 sticky top-0 bg-white/80 backdrop-blur-md z-10">
+             <SheetTitle className="text-xl font-bold text-slate-900">Shipment Details</SheetTitle>
+             <SheetDescription className="flex items-center gap-2">
+                Tracking ID: 
+                <span className="font-mono text-blue-600 font-bold bg-blue-50 px-2 py-0.5 rounded text-xs">
+                  {selectedShipment?.trackingId}
+                </span>
+             </SheetDescription>
+          </SheetHeader>
+          
+          {selectedShipment && (
+             <div className="px-6 py-6 space-y-8">
+                
+                {/* 1. Status Section (Hero Card) */}
+                <div className="bg-slate-50 rounded-xl border border-slate-200 p-5 flex flex-col sm:flex-row sm:items-center justify-between gap-4">
+                    <div>
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Current Status</p>
+                        <StatusBadge status={selectedShipment.status} />
+                    </div>
+                    <div className="sm:text-right">
+                        <p className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-1.5">Assigned Driver</p>
+                        {selectedShipment.assignedTo ? (
+                          <div className="flex items-center sm:justify-end gap-2">
+                            <div className="w-6 h-6 rounded-full bg-slate-200 flex items-center justify-center text-xs font-bold text-slate-600">
+                              {selectedShipment.assignedTo.name.charAt(0)}
+                            </div>
+                            <span className="font-medium text-slate-900">{selectedShipment.assignedTo.name}</span>
+                          </div>
+                        ) : (
+                          <span className="text-slate-400 italic text-sm">Unassigned</span>
+                        )}
+                    </div>
+                </div>
+
+                {/* 2. Addresses (Grid Layout with Equal Heights) */}
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
+                    {/* Sender Card */}
+                    <div className="flex flex-col h-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-slate-50/50 px-4 py-3 border-b border-slate-100">
+                           <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-blue-500"></div> Sender
+                           </h4>
+                        </div>
+                        <div className="p-4 flex-1">
+                            <p className="font-semibold text-slate-900 text-sm">{selectedShipment.sender.name}</p>
+                            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{selectedShipment.sender.address}</p>
+                            <div className="mt-3 pt-3 border-t border-slate-50">
+                               <p className="text-xs text-slate-400 font-medium">Phone</p>
+                               <p className="text-sm text-slate-700">{selectedShipment.sender.phone}</p>
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Recipient Card */}
+                    <div className="flex flex-col h-full bg-white border border-slate-200 rounded-xl overflow-hidden shadow-sm">
+                        <div className="bg-slate-50/50 px-4 py-3 border-b border-slate-100">
+                           <h4 className="text-sm font-semibold text-slate-700 flex items-center gap-2">
+                              <div className="w-2 h-2 rounded-full bg-emerald-500"></div> Recipient
+                           </h4>
+                        </div>
+                        <div className="p-4 flex-1">
+                            <p className="font-semibold text-slate-900 text-sm">{selectedShipment.recipient.name}</p>
+                            <p className="text-sm text-slate-600 mt-1 leading-relaxed">{selectedShipment.recipient.address}</p>
+                            <div className="mt-3 pt-3 border-t border-slate-50">
+                               <p className="text-xs text-slate-400 font-medium">Phone</p>
+                               <p className="text-sm text-slate-700">{selectedShipment.recipient.phone}</p>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+
+                {/* 3. Package Info */}
+                <div>
+                   <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Package Details</h4>
+                   <div className="grid grid-cols-2 gap-4">
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                         <p className="text-xs text-slate-400 mb-1">Type</p>
+                         <p className="font-medium text-slate-900">{selectedShipment.packageInfo.type}</p>
+                      </div>
+                      <div className="bg-slate-50 p-4 rounded-lg border border-slate-100">
+                         <p className="text-xs text-slate-400 mb-1">Weight</p>
+                         <p className="font-medium text-slate-900">{selectedShipment.packageInfo.weight} kg</p>
+                      </div>
+                   </div>
+                </div>
+
+
+            {selectedShipment.deliveryProof && selectedShipment.deliveryProof.url && (
+                   <div>
+                      <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-3">Proof of Delivery</h4>
+                      
+                      <div 
+                        className="flex items-start gap-4 p-3 bg-slate-50 rounded-xl border border-slate-200 group hover:border-blue-300 transition-colors cursor-pointer"
+                        onClick={() => setIsImageViewerOpen(true)}
+                      >
+                         {/* Thumbnail */}
+                         <div className="relative w-24 h-20 shrink-0 rounded-lg overflow-hidden border border-slate-200 bg-white">
+                             <img 
+                               src={selectedShipment.deliveryProof.url} 
+                               alt="Proof" 
+                               className="w-full h-full object-cover transition-transform duration-500 group-hover:scale-110"
+                             />
+                             <div className="absolute inset-0 bg-black/0 group-hover:bg-black/10 transition-colors flex items-center justify-center">
+                                <Eye className="text-white opacity-0 group-hover:opacity-100 drop-shadow-md" size={20} />
+                             </div>
+                         </div>
+
+                         {/* Text & Button */}
+                         <div className="flex flex-col justify-between h-20 py-0.5">
+                             <div>
+                                <p className="text-sm font-semibold text-slate-900 group-hover:text-blue-700 transition-colors">Delivery Photo</p>
+                                <p className="text-xs text-slate-500 capitalize">{selectedShipment.deliveryProof.type} verification</p>
+                             </div>
+                             <div className="text-xs font-medium text-blue-600 flex items-center gap-1">
+                                Click to view
+                             </div>
+                         </div>
+                      </div>
+                   </div>
+                )}
+
+
+                {/* 4. Timeline (Fixed Alignment) */}
+                <div className="pb-10">
+                    <h4 className="text-xs font-semibold text-slate-500 uppercase tracking-wider mb-4">Tracking History</h4>
+                    <div className="ml-2">
+                        {selectedShipment.statusHistory?.map((history, idx) => (
+                            <div key={idx} className="relative pl-8 pb-8 last:pb-0">
+                                {/* Line */}
+                                {idx !== (selectedShipment.statusHistory?.length || 0) - 1 && (
+                                  <div className="absolute left-[7px] top-2 h-full w-[2px] bg-slate-200"></div>
+                                )}
+                                
+                                {/* Dot */}
+                                <div className={`absolute left-0 top-1 h-4 w-4 rounded-full border-2 ${idx === 0 ? 'border-blue-600 bg-blue-600' : 'border-slate-300 bg-white'} z-10`}></div>
+                                
+                                {/* Content */}
+                                <div>
+                                    <p className={`text-sm font-medium ${idx === 0 ? 'text-blue-700' : 'text-slate-900'}`}>
+                                      {history.status}
+                                    </p>
+                                    <p className="text-xs text-slate-500 mt-0.5">
+                                        {format(new Date(history.timestamp), "MMM dd, yyyy • hh:mm a")}
+                                    </p>
+                                    {history.notes && (
+                                        <div className="mt-2 bg-amber-50 text-amber-800 text-xs p-2.5 rounded border border-amber-100 inline-block">
+                                            {history.notes}
+                                        </div>
+                                    )}
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+             </div>
+          )}
+        </SheetContent>
+      </Sheet>
+
+      {/* 2. UPDATE DIALOG */}
+      <Dialog open={isUpdateDialogOpen} onOpenChange={setIsUpdateDialogOpen}>
+         <DialogContent>
+            <DialogHeader>
+               <DialogTitle>Update Status</DialogTitle>
+               <DialogDescription>Change status for {selectedShipment?.trackingId}</DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateShipment} className="space-y-4">
+               <div>
+                  <Label>Status</Label>
+                  <Select value={updateStatus} onValueChange={setUpdateStatus}>
+                     <SelectTrigger><SelectValue /></SelectTrigger>
+                     <SelectContent>
+                        <SelectItem value="At Origin Branch">At Origin Branch</SelectItem>
+                        <SelectItem value="In Transit">In Transit</SelectItem>
+                        <SelectItem value="At Destination Branch">At Destination Branch</SelectItem>
+                        <SelectItem value="Assigned">Assigned</SelectItem>
+                        <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                        <SelectItem value="Delivered">Delivered</SelectItem>
+                        <SelectItem value="Failed">Failed</SelectItem>
+                     </SelectContent>
+                  </Select>
+               </div>
+               <div>
+                   <Label>Assign Staff</Label>
+                   <Select value={updateAssignedTo} onValueChange={setUpdateAssignedTo}>
+                      <SelectTrigger><SelectValue placeholder="Unassigned" /></SelectTrigger>
+                      <SelectContent>
+                         <SelectItem value="unassigned">Unassigned</SelectItem>
+                         {drivers.map(d => <SelectItem key={d._id} value={d._id}>{d.name}</SelectItem>)}
+                      </SelectContent>
+                   </Select>
+               </div>
+               <div>
+                  <Label>Notes</Label>
+                  <Input value={updateNotes} onChange={e => setUpdateNotes(e.target.value)} placeholder="Optional notes" />
+               </div>
+               <DialogFooter>
+                   <Button type="button" variant="outline" onClick={() => setIsUpdateDialogOpen(false)}>Cancel</Button>
+                   <Button type="submit" disabled={isSubmitting}>Update</Button>
+               </DialogFooter>
+            </form>
+         </DialogContent>
+      </Dialog>
+
+      {/* 3. DELETE DIALOG */}
+      <Dialog open={isDeleteDialogOpen} onOpenChange={setIsDeleteDialogOpen}>
+          <DialogContent>
+             <DialogHeader>
+                <DialogTitle>Delete Shipment</DialogTitle>
+                <DialogDescription>Are you sure you want to delete {selectedShipment?.trackingId}? This cannot be undone.</DialogDescription>
+             </DialogHeader>
+             <DialogFooter>
+                 <Button variant="outline" onClick={() => setIsDeleteDialogOpen(false)}>Cancel</Button>
+                 <Button variant="destructive" onClick={handleDeleteShipment} disabled={isSubmitting}>Delete</Button>
+             </DialogFooter>
+          </DialogContent>
+      </Dialog>
+
+
+      <Dialog open={isImageViewerOpen} onOpenChange={setIsImageViewerOpen}>
+        <DialogContent className="sm:max-w-screen-lg w-auto bg-transparent border-none shadow-none p-0 flex flex-col items-center justify-center gap-4">
+            
+            {/* The Image */}
+            <div className="relative rounded-lg overflow-hidden shadow-2xl bg-black/50 backdrop-blur-sm">
+                {selectedShipment?.deliveryProof?.url && (
+                    <img 
+                        src={selectedShipment.deliveryProof.url} 
+                        alt="Full proof" 
+                        className="max-h-[80vh] w-auto object-contain rounded-md"
+                    />
+                )}
+            </div>
+
+            {/* Action Buttons */}
+            <div className="flex gap-2">
+                <Button 
+                    variant="secondary" 
+                    onClick={async () => {
+                        if (!selectedShipment?.deliveryProof?.url) return;
+                        try {
+                            const response = await fetch(selectedShipment.deliveryProof.url);
+                            const blob = await response.blob();
+                            const url = window.URL.createObjectURL(blob);
+                            const link = document.createElement('a');
+                            link.href = url;
+                            link.download = `proof-${selectedShipment.trackingId}.jpg`;
+                            document.body.appendChild(link);
+                            link.click();
+                            document.body.removeChild(link);
+                            toast.success("Download started");
+                        } catch (e) {
+                            console.error(e);
+                            // Fallback if fetch fails (CORS issues etc)
+                            window.open(selectedShipment.deliveryProof.url, '_blank');
+                        }
+                    }}
+                    className="bg-white/90 hover:bg-white text-slate-900 shadow-lg"
+                >
+                    <Download size={16} className="mr-2" /> Download
+                </Button>
+                
+                <Button 
+                    variant="default" 
+                    onClick={() => setIsImageViewerOpen(false)}
+                    className="bg-slate-900 text-white shadow-lg border border-slate-700"
+                >
+                    Close
+                </Button>
+            </div>
+        </DialogContent>
+      </Dialog>
+
+
+    </div> 
   )
 }

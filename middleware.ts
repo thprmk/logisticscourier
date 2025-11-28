@@ -29,7 +29,7 @@ const SUPERADMIN_ROUTES = ['/superadmin'];
 /**
  * Protected routes that require authentication
  */
-const PROTECTED_ROUTES = ['/dashboard', '/deliverystaff', '/api'];
+const PROTECTED_ROUTES = ['/dashboard', '/deliverystaff'];
 
 /**
  * Check if a route is public
@@ -73,6 +73,13 @@ export async function middleware(request: NextRequest) {
 
   // Log incoming request
   console.log(`[Middleware] Processing request to: ${pathname}`);
+
+  // Allow API routes to pass through without authentication
+  // API routes handle their own authentication
+  if (pathname.startsWith('/api')) {
+    console.log(`[Middleware] API route, allowing access: ${pathname}`);
+    return NextResponse.next();
+  }
 
   // Allow public routes without authentication
   if (isPublicRoute(pathname)) {
@@ -119,7 +126,7 @@ export async function middleware(request: NextRequest) {
   }
 
   // Prevent superadmin from accessing regular admin/staff routes
-  if (!isSuperAdminRoute(pathname) && !pathname.startsWith('/api') && payload.role === 'superAdmin') {
+  if (!isSuperAdminRoute(pathname) && payload.role === 'superAdmin') {
     console.log(`[Middleware] Superadmin trying to access regular route: ${pathname}, redirecting to superadmin dashboard`);
     return NextResponse.redirect(new URL('/superadmin/dashboard', request.url));
   }

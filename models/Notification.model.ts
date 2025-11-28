@@ -3,15 +3,15 @@
 import { Schema, model, models, Document } from 'mongoose';
 
 export interface INotification extends Document {
-  tenantId: Schema.Types.ObjectId;      // The branch this notification belongs to
-  userId: Schema.Types.ObjectId;        // The user who should receive this notification
-  type: 'assignment' | 'status_update'; // Type of notification
-  shipmentId: Schema.Types.ObjectId;    // The related shipment
-  trackingId: string;                   // For easy reference
-  message: string;                      // The notification message
-  read: boolean;                        // Whether the notification has been read
-  createdAt: Date;
-  updatedAt: Date;
+  tenantId: Schema.Types.ObjectId;      // Associated branch
+  userId: Schema.Types.ObjectId;        // Recipient user
+  type: 'assignment' | 'status_update'; // Event type
+  shipmentId: Schema.Types.ObjectId;    // Related shipment
+  trackingId: string;                   // Tracking reference
+  message: string;                      // Notification content
+  read: boolean;                        // Read status
+  createdAt?: Date;                     // Auto-generated
+  updatedAt?: Date;                     // Auto-generated
 }
 
 const NotificationSchema = new Schema<INotification>({
@@ -25,10 +25,9 @@ const NotificationSchema = new Schema<INotification>({
   shipmentId: { type: Schema.Types.ObjectId, ref: 'Shipment', required: true },
   trackingId: { type: String, required: true },
   message: { type: String, required: true },
-  read: { type: Boolean, default: false },
+  read: { type: Boolean, default: false, index: true },
 }, { timestamps: true });
 
-// Index for efficient querying
 NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
 
 const Notification = models.Notification || model<INotification>('Notification', NotificationSchema);

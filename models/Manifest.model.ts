@@ -2,20 +2,20 @@
 
 import { Schema, model, models, Document } from 'mongoose';
 
-// Interface for the Manifest document
 export interface IManifest extends Document {
-  fromBranchId: Schema.Types.ObjectId;      // The origin branch (e.g., Chennai)
-  toBranchId: Schema.Types.ObjectId;        // The destination branch (e.g., Madurai)
-  shipmentIds: Schema.Types.ObjectId[];     // Array of shipment IDs being transported
-  status: 'In Transit' | 'Completed';       // Manifest status
-  vehicleNumber?: string;                   // Optional: Truck/vehicle identifier
-  driverName?: string;                      // Optional: Driver name
-  dispatchedAt: Date;                       // When the manifest was created/dispatched
-  receivedAt?: Date;                        // When the manifest was received at destination
-  notes?: string;                           // Optional: Additional notes
+  fromBranchId: Schema.Types.ObjectId;      // Source branch
+  toBranchId: Schema.Types.ObjectId;        // Destination branch
+  shipmentIds: Schema.Types.ObjectId[];     // Shipments in manifest
+  status: 'In Transit' | 'Completed';       // Current status
+  vehicleNumber?: string;                   // Vehicle identifier
+  driverName?: string;                      // Driver details
+  dispatchedAt: Date;                       // Dispatch timestamp
+  receivedAt?: Date;                        // Delivery timestamp
+  notes?: string;                           // Additional notes
+  createdAt?: Date;                         // Auto-generated
+  updatedAt?: Date;                         // Auto-generated
 }
 
-// Mongoose Schema for Manifest
 const ManifestSchema = new Schema<IManifest>({
   fromBranchId: { 
     type: Schema.Types.ObjectId, 
@@ -40,18 +40,17 @@ const ManifestSchema = new Schema<IManifest>({
     default: 'In Transit',
     required: true,
   },
-  vehicleNumber: { type: String },
-  driverName: { type: String },
+  vehicleNumber: String,
+  driverName: String,
   dispatchedAt: { 
     type: Date, 
     default: Date.now, 
     required: true 
   },
-  receivedAt: { type: Date },
-  notes: { type: String },
+  receivedAt: Date,
+  notes: String,
 }, { timestamps: true });
 
-// Prevent model re-compilation on every code change
 const Manifest = models.Manifest || model<IManifest>('Manifest', ManifestSchema);
 
 export default Manifest;

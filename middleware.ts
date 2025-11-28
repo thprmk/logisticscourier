@@ -58,7 +58,7 @@ function isProtectedRoute(pathname: string): boolean {
 async function verifyToken(token: string): Promise<JWTPayload | null> {
   try {
     const { payload } = await jwtVerify(token, secret);
-    return payload as JWTPayload;
+    return payload as unknown as JWTPayload;
   } catch (error) {
     console.error('Token verification failed:', error);
     return null;

@@ -2,21 +2,21 @@
 
 import { Schema, model, models, Document } from 'mongoose';
 
-// This interface defines the shape of a tenant document for TypeScript
 export interface ITenant extends Document {
-  name: string;
+  name: string;                             // Unique branch name
+  createdAt?: Date;                         // Auto-generated
+  updatedAt?: Date;                         // Auto-generated
 }
 
-// This is the Mongoose schema that defines the rules for the database
-const TenantSchema = new Schema({
+const TenantSchema = new Schema<ITenant>({
   name: {
     type: String,
-    required: [true, 'Branch name is required.'],
-    unique: true, // Each branch must have a unique name
+    required: true,
+    unique: true,
+    trim: true,
   },
-}, { timestamps: true }); // Automatically adds createdAt and updatedAt fields
+}, { timestamps: true });
 
-// This prevents the model from being re-compiled on every code change in development
 const Tenant = models.Tenant || model<ITenant>('Tenant', TenantSchema);
 
 export default Tenant;

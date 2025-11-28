@@ -8,6 +8,7 @@ export interface IUser extends Document {
   password?: string; // The '?' makes it optional, as we won't always send it
   role: 'superAdmin' | 'admin' | 'staff'; // Defines the allowed roles
   tenantId?: Schema.Types.ObjectId; // The link to the Tenant/Branch
+  isManager: boolean;
 }
 
 const UserSchema = new Schema({
@@ -26,6 +27,11 @@ const UserSchema = new Schema({
   tenantId: {
     type: Schema.Types.ObjectId,
     ref: 'Tenant', // This tells Mongoose that this ID refers to a document in the 'Tenant' collection
+  },
+
+  isManager: {
+    type: Boolean,
+    default: false, // Default is FALSE (Safety first)
   },
 }, { timestamps: true });
 

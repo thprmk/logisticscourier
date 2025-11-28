@@ -25,10 +25,12 @@ export interface IShipment extends Document {
   currentBranchId: Schema.Types.ObjectId;    // The branch currently holding the shipment
   status: 'At Origin Branch' | 'In Transit to Destination' | 'At Destination Branch' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed'; // Controlled list of statuses
   assignedTo?: Schema.Types.ObjectId;     // Optional: The User ID of the assigned driver
+  createdBy: Schema.Types.ObjectId;
   statusHistory: {
     status: string;
     timestamp: Date;
     notes?: string;
+    updatedBy?: Schema.Types.ObjectId;
   }[];                                    // A log of all status changes
   deliveryProof?: {
     type: 'signature' | 'photo';
@@ -65,6 +67,10 @@ const ShipmentSchema = new Schema<IShipment>({
     required: true,
   },
   assignedTo: { type: Schema.Types.ObjectId, ref: 'User' }, // This links to a User document
+
+  createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
+
+  
   statusHistory: [{
     status: String,
     timestamp: Date,

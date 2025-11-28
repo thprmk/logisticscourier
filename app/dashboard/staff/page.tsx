@@ -43,9 +43,9 @@ export default function StaffManagementPage() {
         });
         if (!staffRes.ok) throw new Error('Failed to load staff data.');
         const staffData = await staffRes.json();
-        // Filter out admin users - only show delivery staff
-        const deliveryStaff = staffData.filter((member: IUser) => member.role === 'staff');
-        setStaff(deliveryStaff);
+
+      setStaff(staffData);
+
       } catch (err: any) {
         setError(err.message);
         toast.error(err.message);
@@ -326,12 +326,15 @@ export default function StaffManagementPage() {
                     id="staffRole"
                     value={staffRole}
                     onChange={(e) => setStaffRole(e.target.value as 'staff' | 'admin')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-gray-50"
-                    disabled
+                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
                   >
                     <option value="staff">Delivery Staff</option>
+                    <option value="admin">Branch Admin (Manager)</option>
                   </select>
-                  <p className="mt-1 text-xs text-gray-500">New staff members are created as delivery staff by default.</p>
+                  <p className="mt-1 text-xs text-gray-500">
+                    <strong>Delivery Staff:</strong> Uses mobile app.<br/>
+                    <strong>Branch Admin:</strong> Access to dashboard.
+                  </p>
                 </div>
               </div>
               

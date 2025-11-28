@@ -45,7 +45,8 @@ export async function GET(request: NextRequest) {
     // CRUCIAL: Filter shipments by the tenantId from the user's token
     const shipments = await Shipment.find(query)
       .sort({ createdAt: -1 }) // Show newest first
-      .populate('assignedTo', 'name email'); // Later, this will fetch the driver's name
+      .populate('assignedTo', 'name email') // Later, this will fetch the driver's name
+      .populate('createdBy', 'name');
 
     return NextResponse.json(shipments);
   } catch (error) {
@@ -88,6 +89,7 @@ export async function POST(request: NextRequest) {
     const newShipment = new Shipment({
       ...shipmentData,
       trackingId: trackingId,
+      createdBy: payload.id || payload.sub,
       status: 'At Origin Branch', // Set initial status
       tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId (current/origin branch)
       originBranchId, // The branch where this shipment was created

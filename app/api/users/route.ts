@@ -64,7 +64,39 @@ export async function POST(request: NextRequest) {
     }
 
     try {
+
+        const creator = await User.findById(payload.id || payload.sub);
+        
+        if (!creator) {
+            return NextResponse.json({ message: 'User not found' }, { status: 404 });
+        }
+
         const { name, email, password, role } = await request.json();
+
+        if (role === 'superAdmin') {
+            return NextResponse.json(
+                { message: 'Forbidden: Cannot create Super Admin.' }, 
+                { status: 403 }
+            );
+        }
+
+        // Rule B: Only a "Manager" can create other "Admins"
+        if (role === 'admin') {
+            if (creator.isManager !== true) {
+                return NextResponse.json(
+                    { message: 'Permission Denied: Only the Branch Manager can create other Admins.' }, 
+                    { status: 403 }
+                );
+            }
+        }
+
+        // Rule C: Validate Role Input
+        if (!['admin', 'staff'].includes(role)) {
+            return NextResponse.json(
+                { message: 'Invalid role.' }, 
+                { status: 400 }
+            );
+        }
 
         // Hash the new user's password
         const hashedPassword = await bcrypt.hash(password, 10);
@@ -76,6 +108,7 @@ export async function POST(request: NextRequest) {
             password: hashedPassword,
             role, // e.g., 'staff'
             tenantId: payload.tenantId, // Inherits tenantId from the creator
+            isManager: false, 
         });
         await newUser.save();
         

@@ -33,6 +33,12 @@ interface IShipment {
       _id: string;
       name: string;
   }
+
+  createdBy?: {
+    _id: string;
+    name: string;
+  };
+
   statusHistory: IStatusHistory[];
   createdAt: string;
   packageInfo: {
@@ -43,6 +49,7 @@ interface IShipment {
     type: 'signature' | 'photo';
     url: string;  // Vercel Blob URL
   };
+
   failureReason?: string;
 }
 
@@ -405,6 +412,7 @@ export default function ShipmentsPage() {
               <th scope="col" className="table-header">Tracking ID</th>
               <th scope="col" className="table-header">Recipient</th>
               <th scope="col" className="table-header">Status</th>
+              <th scope="col" className="table-header">Created By</th>
               <th scope="col" className="table-header">Assigned To</th>
               <th scope="col" className="table-header">Date</th>
               <th scope="col" className="table-header text-right">Actions</th>
@@ -432,6 +440,12 @@ export default function ShipmentsPage() {
                   <td className="table-cell">
                     <StatusBadge status={shipment.status} />
                   </td>
+
+                  <td className="table-cell text-grey-700">
+                    {shipment.createdBy?.name || <span className ="text-gray-400 italic">System</span>}
+                  </td>
+
+
                   <td className="table-cell text-gray-700">
                     {shipment.assignedTo?.name || (
                       <span className="text-gray-400 italic">Unassigned</span>
@@ -527,6 +541,14 @@ export default function ShipmentsPage() {
                     {shipment.assignedTo?.name || <span className="text-gray-400 italic">Unassigned</span>}
                   </span>
                 </div>
+
+                <div>
+                <span className="text-gray-500 block mb-0.5">Created By</span>
+                  <span className="text-gray-900 font-medium">
+                    {shipment.createdBy?.name || 'System'}
+                  </span>
+                </div>
+
                 <div>
                   <span className="text-gray-500 block mb-0.5">Date</span>
                   <span className="text-gray-900 font-medium">

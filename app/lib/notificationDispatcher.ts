@@ -160,25 +160,20 @@ async function handleManifestDispatched(context: NotificationContext) {
   }));
 
   // Notify destination branch admins/dispatchers (if different)
-  let destNotifications = [];
-  if (toBranch) {
-    const destUsers = await User.find({
-      // In a multi-branch system, you'd query the destination tenant
-      // For now, assuming same system
-      tenantId,
-      role: { $in: ['admin', 'dispatcher'] }
-    }).select('_id').lean();
-
-    destNotifications = destUsers.map(user => ({
-      tenantId,
-      userId: user._id,
-      type: 'manifest_dispatched' as const,
-      manifestId,
-      trackingId,
-      message: `Manifest arriving from ${fromBranch || 'origin'} - ${trackingId}`,
-      read: false,
-    }));
-  }
+  const destNotifications = (toBranch
+    ? (await User.find({
+        tenantId,
+        role: { $in: ['admin', 'dispatcher'] }
+      }).select('_id').lean()).map(user => ({
+        tenantId,
+        userId: user._id,
+        type: 'manifest_dispatched' as const,
+        manifestId,
+        trackingId,
+        message: `Manifest arriving from ${fromBranch || 'origin'} - ${trackingId}`,
+        read: false,
+      }))
+    : []) as any[];
 
   const allNotifications = [...originNotifications, ...destNotifications];
   if (allNotifications.length > 0) {

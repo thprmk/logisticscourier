@@ -16,7 +16,7 @@ async function getUserPayload(request: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
-    return payload;
+    return payload as any;
   } catch (error) {
     return null;
   }
@@ -131,9 +131,9 @@ export async function POST(request: NextRequest) {
       event: 'shipment_created',
       shipmentId: newShipment._id.toString(),
       trackingId: newShipment.trackingId,
-      tenantId: payload.tenantId,
-      createdBy: payload.userId || payload.id || payload.sub,
-    }).catch(err => {
+      tenantId: payload.tenantId as string,
+      createdBy: (payload.userId || payload.id || payload.sub) as string,
+    } as any).catch(err => {
       console.error('Error dispatching shipment_created notification:', err);
     });
     

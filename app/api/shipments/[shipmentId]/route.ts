@@ -13,7 +13,7 @@ async function getUserPayload(request: NextRequest) {
     try {
         const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
         const { payload } = await jwtVerify(token, secret);
-        return payload;
+        return payload as any;
     } catch (error) {
         return null;
     }
@@ -114,10 +114,10 @@ export async function PATCH(request: NextRequest) {
             event: 'delivery_assigned',
             shipmentId: shipment._id.toString(),
             trackingId: shipment.trackingId,
-            tenantId: payload.tenantId,
+            tenantId: payload.tenantId as string,
             assignedStaffId: assignedTo,
-            createdBy: payload.userId,
-          }).catch(err => {
+            createdBy: payload.userId as string,
+          } as any).catch(err => {
             console.error('Error dispatching delivery_assigned notification:', err);
           });
         }
@@ -199,10 +199,10 @@ export async function PATCH(request: NextRequest) {
           event: notificationEvent,
           shipmentId: shipment._id.toString(),
           trackingId: shipment.trackingId,
-          tenantId: payload.tenantId,
+          tenantId: payload.tenantId as string,
           assignedStaffId: shipment.assignedTo?.toString(),
-          createdBy: payload.userId,
-        }).catch(err => {
+          createdBy: payload.userId as string,
+        } as any).catch(err => {
           console.error(`Error dispatching ${notificationEvent} notification:`, err);
         });
       }

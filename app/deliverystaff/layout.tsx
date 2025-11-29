@@ -8,6 +8,7 @@ import { usePathname, useRouter } from 'next/navigation';
 import { LogOut, Package, User as UserIcon, Truck, Building, Bell, Menu, X, ChevronDown } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
+import PWASetup from '@/app/components/PWASetup';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -117,6 +118,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
 
   return (
     <div className="min-h-screen bg-gray-50">
+      <PWASetup />
       {/* Top Header */}
       <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">

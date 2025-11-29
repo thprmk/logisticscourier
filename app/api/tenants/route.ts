@@ -6,6 +6,7 @@ import Tenant from '@/models/Tenant.model';
 import User from '@/models/User.model';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
+import { sanitizeInput, isValidEmail } from '@/lib/sanitize';
 
 // Helper function to get and verify the token
 async function verifyAuth(request: NextRequest) {
@@ -97,20 +98,31 @@ export async function POST(request: NextRequest) {
     try {
         const { branchName, adminName, adminEmail, adminPassword } = await request.json();
 
-        // 1. Create the new Tenant (Branch)
-        const newTenant = new Tenant({ name: branchName });
+        // Sanitize inputs to prevent XSS
+        const sanitizedBranchName = sanitizeInput(branchName, 100);
+        const sanitizedAdminName = sanitizeInput(adminName, 100);
+        const sanitizedAdminEmail = adminEmail?.toLowerCase().trim();
+        
+        // Validate email format
+        if (!isValidEmail(sanitizedAdminEmail)) {
+          return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
+        }
+
+        // 1. Create the new Tenant (Branch) with sanitized data
+        const newTenant = new Tenant({ name: sanitizedBranchName });
         await newTenant.save();
 
         // 2. Hash the new admin's password
         const hashedPassword = await bcrypt.hash(adminPassword, 10);
 
-        // 3. Create the new Tenant Admin user
+        // 3. Create the new Tenant Admin user with sanitized data
         const newAdmin = new User({
-            name: adminName,
-            email: adminEmail,
+            name: sanitizedAdminName,
+            email: sanitizedAdminEmail,
             password: hashedPassword,
             role: 'admin',
             tenantId: newTenant._id, // Link the user to the new tenant
+            isManager: true, 
         });
         await newAdmin.save();
         

@@ -5,6 +5,7 @@ import dbConnect from '@/lib/dbConnect';
 import Manifest from '@/models/Manifest.model';
 import Shipment from '@/models/Shipment.model';
 import { jwtVerify } from 'jose';
+import { sanitizeInput } from '@/lib/sanitize';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -19,7 +20,7 @@ async function getUserPayload(request: NextRequest) {
   }
 }
 
-// GET: Fetch manifests (with filtering options)
+// GET: Fetch manifests (with filtering and pagination options)
 export async function GET(request: NextRequest) {
   await dbConnect();
   const payload = await getUserPayload(request);
@@ -32,6 +33,9 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'incoming' or 'outgoing'
     const status = searchParams.get('status');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
+    const skip = (page - 1) * limit;
 
     let query: any = {};
 
@@ -47,12 +51,26 @@ export async function GET(request: NextRequest) {
       query.status = status;
     }
 
+    // Get total count for pagination
+    const total = await Manifest.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+
     const manifests = await Manifest.find(query)
       .populate('fromBranchId', 'name')
       .populate('toBranchId', 'name')
-      .sort({ dispatchedAt: -1 });
+      .sort({ dispatchedAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return NextResponse.json(manifests);
+    return NextResponse.json({
+      data: manifests,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error('Error fetching manifests:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
@@ -77,6 +95,11 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { toBranchId, shipmentIds, vehicleNumber, driverName, notes } = body;
 
+    // Sanitize string inputs to prevent XSS
+    const sanitizedVehicleNumber = vehicleNumber ? sanitizeInput(vehicleNumber, 50) : undefined;
+    const sanitizedDriverName = driverName ? sanitizeInput(driverName, 100) : undefined;
+    const sanitizedNotes = notes ? sanitizeInput(notes, 500) : undefined;
+
     // Validate required fields
     if (!toBranchId || !shipmentIds || !Array.isArray(shipmentIds) || shipmentIds.length === 0) {
       return NextResponse.json(
@@ -99,14 +122,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create the manifest
+    // Create the manifest with sanitized data
     const manifest = new Manifest({
       fromBranchId: payload.tenantId,
       toBranchId,
       shipmentIds,
-      vehicleNumber,
-      driverName,
-      notes,
+      vehicleNumber: sanitizedVehicleNumber,
+      driverName: sanitizedDriverName,
+      notes: sanitizedNotes,
       status: 'In Transit',
       dispatchedAt: new Date(),
     });

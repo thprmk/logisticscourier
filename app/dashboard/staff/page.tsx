@@ -2,10 +2,37 @@
 
 "use client";
 
-import { useState, useEffect, FormEvent } from 'react';
+import { useState, useEffect, FormEvent, useCallback } from 'react';
 import { useUser } from '../../context/UserContext';
-import { Plus, User as UserIcon, Edit, Trash2, Building } from 'lucide-react';
+import { Plus, User as UserIcon, Edit, Trash2, Building, Loader, Search } from 'lucide-react';
 import toast from 'react-hot-toast';
+import { Button } from '@/components/ui/button';
+import { Input } from '@/components/ui/input';
+import { Label } from '@/components/ui/label';
+import { Badge } from '@/components/ui/badge';
+import {
+  Dialog,
+  DialogContent,
+  DialogDescription,
+  DialogFooter,
+  DialogHeader,
+  DialogTitle,
+} from '@/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/components/ui/select';
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from '@/components/ui/table';
 
 // Interface for user data
 interface IUser { 
@@ -13,6 +40,7 @@ interface IUser {
   name: string; 
   email: string; 
   role: 'admin' | 'staff';
+  isManager?: boolean;
 }
 
 export default function StaffManagementPage() {
@@ -34,27 +62,33 @@ export default function StaffManagementPage() {
   const [showDeleteModal, setShowDeleteModal] = useState(false);
   const [staffToDelete, setStaffToDelete] = useState<{ id: string; name: string } | null>(null);
 
-  useEffect(() => {
-    const fetchStaff = async () => {
-      setIsLoading(true);
-      try {
-        const staffRes = await fetch('/api/users', {
-          credentials: 'include',
-        });
-        if (!staffRes.ok) throw new Error('Failed to load staff data.');
-        const staffData = await staffRes.json();
+  // Search, filter, and pagination state
+  const [searchQuery, setSearchQuery] = useState('');
+  const [roleFilter, setRoleFilter] = useState('');
+  const [currentPage, setCurrentPage] = useState(1);
+  const itemsPerPage = 10;
+  const [selectedStaffIds, setSelectedStaffIds] = useState<Set<string>>(new Set());
 
+  const fetchStaff = useCallback(async () => {
+    setIsLoading(true);
+    try {
+      const staffRes = await fetch('/api/users', {
+        credentials: 'include',
+      });
+      if (!staffRes.ok) throw new Error('Failed to load staff data.');
+      const staffData = await staffRes.json();
       setStaff(staffData);
-
-      } catch (err: any) {
-        setError(err.message);
-        toast.error(err.message);
-      } finally {
-        setIsLoading(false);
-      }
-    };
-    fetchStaff();
+    } catch (err: any) {
+      setError(err.message);
+      toast.error(err.message);
+    } finally {
+      setIsLoading(false);
+    }
   }, []);
+
+  useEffect(() => {
+    fetchStaff();
+  }, [fetchStaff]);
 
   const handleAddStaff = async (event: FormEvent) => {
     event.preventDefault(); 
@@ -74,6 +108,7 @@ export default function StaffManagementPage() {
           ...(isEditingStaff ? {} : { password: staffPassword }),
           role: staffRole 
         }),
+        credentials: 'include',
       });
       
       const data = await response.json();
@@ -139,11 +174,90 @@ export default function StaffManagementPage() {
     }
   };
 
+  // Filter and search logic
+  const filteredStaff = staff.filter(member => {
+    // Apply role filter
+    if (roleFilter && member.role !== roleFilter) {
+      return false;
+    }
+    // Apply search query
+    if (searchQuery) {
+      const lowercasedQuery = searchQuery.toLowerCase();
+      return (
+        member.name.toLowerCase().includes(lowercasedQuery) ||
+        member.email.toLowerCase().includes(lowercasedQuery)
+      );
+    }
+    return true;
+  });
+
+  // Pagination calculations
+  const totalPages = Math.ceil(filteredStaff.length / itemsPerPage);
+  const startIndex = (currentPage - 1) * itemsPerPage;
+  const endIndex = startIndex + itemsPerPage;
+  const paginatedStaff = filteredStaff.slice(startIndex, endIndex);
+
+  const handleSelectStaff = (staffId: string) => {
+    const newSelected = new Set(selectedStaffIds);
+    if (newSelected.has(staffId)) {
+      newSelected.delete(staffId);
+    } else {
+      newSelected.add(staffId);
+    }
+    setSelectedStaffIds(newSelected);
+  };
+
+  const handleSelectAll = () => {
+    if (selectedStaffIds.size === filteredStaff.length) {
+      setSelectedStaffIds(new Set());
+    } else {
+      const allIds = new Set(filteredStaff.map(s => s._id));
+      setSelectedStaffIds(allIds);
+    }
+  };
+
+  const handleBulkDelete = async () => {
+    if (selectedStaffIds.size === 0) {
+      toast.error('Please select at least one staff member');
+      return;
+    }
+
+    setIsSubmittingStaff(true);
+    const toastId = toast.loading(`Deleting ${selectedStaffIds.size} staff members...`);
+
+    try {
+      const deletePromises = Array.from(selectedStaffIds).map(staffId =>
+        fetch(`/api/users/${staffId}`, {
+          method: 'DELETE',
+          credentials: 'include'
+        })
+      );
+
+      const responses = await Promise.all(deletePromises);
+      const allOk = responses.every(res => res.ok);
+
+      if (!allOk) throw new Error('Some deletions failed');
+
+      toast.success(`Successfully deleted ${selectedStaffIds.size} staff members`, { id: toastId });
+      setSelectedStaffIds(new Set());
+      fetchStaff();
+    } catch (error: any) {
+      toast.error(error.message || 'Failed to delete staff members', { id: toastId });
+    } finally {
+      setIsSubmittingStaff(false);
+    }
+  };
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [roleFilter, searchQuery]);
+
   if (error) return (
     <div className="flex h-64 items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
       <div className="text-center">
-        <div className="mx-auto h-12 w-12 text-red-500 mb-3">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-red-600">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
@@ -153,30 +267,202 @@ export default function StaffManagementPage() {
     </div>
   );
 
-  const getRoleBadge = (role: string) => {
-    if (role === 'admin') {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-blue-100 text-blue-800">Admin</span>;
+  const getRoleBadge = (member: IUser) => {
+    if (member.role === 'admin') {
+      if (member.isManager) {
+        return <Badge className="bg-purple-100 text-purple-800">Branch Manager</Badge>;
+      } else {
+        return <Badge className="bg-blue-100 text-blue-800">Dispatcher</Badge>;
+      }
     } else {
-      return <span className="inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium bg-green-100 text-green-800">Delivery Staff</span>;
+      return <Badge className="bg-green-100 text-green-800">Delivery Staff</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">User & Role Management</h1>
-        <p className="text-gray-600 mt-2">Manage staff members and their roles within your branch.</p>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User & Role Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage staff members and their roles within your branch.</p>
       </div>
 
-      {/* Staff Management Section */}
-      <div className="bg-white rounded-xl shadow-sm border border-gray-200 overflow-hidden">
-        <div className="p-6 border-b border-gray-200">
-          <div className="flex flex-col md:flex-row md:items-center md:justify-between gap-4">
-            <div>
-              <h2 className="text-xl font-semibold text-gray-900">Staff Members</h2>
-              <p className="text-gray-600 mt-1">Manage your team members and their access levels</p>
+      {/* Action Bar */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+        {/* Search Bar */}
+        <div className="relative w-full sm:w-80">
+          <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
+            <Search size={18} className="text-gray-400" />
+          </div>
+          <Input
+            type="text"
+            placeholder="Search by name or email..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            className="pl-10"
+          />
+        </div>
+
+        {/* Filters and Button */}
+        <div className="flex flex-col gap-4 w-full">
+          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+            {/* Filter by Role */}
+            <div className="flex-1 min-w-[150px]">
+              <Label htmlFor="role-filter" className="text-xs block mb-1">Filter by Role</Label>
+              <Select value={roleFilter || 'all'} onValueChange={(val) => setRoleFilter(val === 'all' ? '' : val)}>
+                <SelectTrigger id="role-filter" className="h-9 text-sm">
+                  <SelectValue placeholder="All Roles" />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="all">All Roles</SelectItem>
+                  <SelectItem value="admin">Admin (Dispatcher)</SelectItem>
+                  <SelectItem value="staff">Delivery Staff</SelectItem>
+                </SelectContent>
+              </Select>
             </div>
-            <button 
+
+            {/* Clear and Add Buttons */}
+            <div className="flex items-end gap-2">
+              {(searchQuery || roleFilter) && (
+                <Button
+                  size="sm"
+                  variant="outline"
+                  onClick={() => {
+                    setSearchQuery('');
+                    setRoleFilter('');
+                  }}
+                  className="h-9 text-xs"
+                >
+                  Clear
+                </Button>
+              )}
+              
+              <Button
+                onClick={() => {
+                  setStaffName('');
+                  setStaffEmail('');
+                  setStaffPassword('');
+                  setStaffRole('staff');
+                  setIsEditingStaff(false);
+                  setEditingStaffId('');
+                  setIsStaffModalOpen(true);
+                }}
+                className="h-9 gap-2 whitespace-nowrap text-sm"
+              >
+                <Plus size={16} />
+                <span className="hidden sm:inline">Add New</span>
+                <span className="sm:hidden">Add</span>
+              </Button>
+            </div>
+          </div>
+        </div>
+      </div>
+
+      {/* Bulk Actions Toolbar */}
+      {selectedStaffIds.size > 0 && (
+        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+          <div className="flex items-center gap-4">
+            <span className="text-sm font-medium text-gray-900">
+              {selectedStaffIds.size} staff member{selectedStaffIds.size > 1 ? 's' : ''} selected
+            </span>
+            <Button
+              size="sm"
+              variant="destructive"
+              onClick={handleBulkDelete}
+              className="gap-2"
+            >
+              <Trash2 size={16} />
+              Delete Selected
+            </Button>
+          </div>
+          <Button
+            size="sm"
+            variant="outline"
+            onClick={() => setSelectedStaffIds(new Set())}
+          >
+            Clear
+          </Button>
+        </div>
+      )}
+        
+        {isLoading ? (
+          <div className="py-12 flex justify-center">
+            <div className="text-center">
+              <Loader className="mx-auto h-8 w-8 animate-spin text-blue-500 mb-3" />
+              <p className="text-gray-600">Loading staff members...</p>
+            </div>
+          </div>
+        ) : filteredStaff.length > 0 ? (
+          <div className="hidden md:block table-container border rounded-lg">
+            <Table className="text-base">
+              <TableHeader>
+                <TableRow className="bg-gray-50 h-16">
+                  <TableHead className="w-16 text-sm font-semibold">
+                    <input
+                      type="checkbox"
+                      checked={selectedStaffIds.size === filteredStaff.length && filteredStaff.length > 0}
+                      onChange={handleSelectAll}
+                      className="w-4 h-4 cursor-pointer"
+                      title="Select all"
+                    />
+                  </TableHead>
+                  <TableHead className="w-16 text-sm font-semibold">S/No</TableHead>
+                  <TableHead>User</TableHead>
+                  <TableHead>Email</TableHead>
+                  <TableHead>Role</TableHead>
+                  <TableHead className="text-right">Actions</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedStaff.map((member, index) => (
+                  <TableRow key={member._id} className="h-20 hover:bg-gray-50">
+                    <TableCell>
+                      <input
+                        type="checkbox"
+                        checked={selectedStaffIds.has(member._id)}
+                        onChange={() => handleSelectStaff(member._id)}
+                        className="w-4 h-4 cursor-pointer"
+                      />
+                    </TableCell>
+                    <TableCell className="font-medium text-base">{startIndex + index + 1}</TableCell>
+                    <TableCell>
+                      <div className="flex items-center gap-3">
+                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
+                          <UserIcon className="h-5 w-5 text-gray-500" />
+                        </div>
+                        <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                      </div>
+                    </TableCell>
+                    <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                    <TableCell className="text-base">{getRoleBadge(member)}</TableCell>
+                    <TableCell className="text-right space-x-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleEditStaff(member)}
+                        title="Edit Staff Member"
+                      >
+                        <Edit size={16} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDeleteStaff(member._id, member.name)}
+                        title="Remove Staff Member"
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </TableCell>
+                  </TableRow>
+                ))}
+              </TableBody>
+            </Table>
+          </div>
+        ) : (
+          <div className="py-12 text-center">
+            <UserIcon className="mx-auto h-12 w-12 text-gray-300" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900">No staff members</h3>
+            <p className="mt-1 text-gray-500 mb-6">Get started by adding a new staff member.</p>
+            <Button
               onClick={() => {
                 setStaffName('');
                 setStaffEmail('');
@@ -185,222 +471,198 @@ export default function StaffManagementPage() {
                 setIsEditingStaff(false);
                 setEditingStaffId('');
                 setIsStaffModalOpen(true);
-              }} 
-              className="flex items-center gap-2 h-12 px-4 bg-blue-600 text-white font-medium rounded-lg hover:bg-blue-700 transition-colors shadow-sm"
+              }}
+              className="gap-2"
             >
-              <Plus size={20} />
-              <span>Add Staff Member</span>
-            </button>
-          </div>
-        </div>
-        
-        {isLoading ? (
-          <div className="py-12 flex justify-center">
-            <div className="text-center">
-              <div className="inline-block animate-spin rounded-full h-10 w-10 border-t-2 border-b-2 border-blue-500 mb-3"></div>
-              <p className="text-gray-600">Loading staff members...</p>
-            </div>
-          </div>
-        ) : staff.length > 0 ? (
-          <div className="overflow-x-auto">
-            <table className="min-w-full divide-y divide-gray-200">
-              <thead className="bg-gray-50">
-                <tr>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">User</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Email</th>
-                  <th scope="col" className="px-6 py-3 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Role</th>
-                  <th scope="col" className="px-6 py-3 text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</th>
-                </tr>
-              </thead>
-              <tbody className="bg-white divide-y divide-gray-200">
-                {staff.map((member) => (
-                  <tr key={member._id} className="hover:bg-gray-50">
-                    <td className="px-6 py-4 whitespace-nowrap">
-                      <div className="flex items-center">
-                        <div className="flex-shrink-0 h-10 w-10 flex items-center justify-center rounded-full bg-gray-100">
-                          <UserIcon className="h-5 w-5 text-gray-500" />
-                        </div>
-                        <div className="ml-4">
-                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
-                        </div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 whitespace-nowrap text-sm text-gray-500">{member.email}</td>
-                    <td className="px-6 py-4 whitespace-nowrap">{getRoleBadge(member.role)}</td>
-                    <td className="px-6 py-4 whitespace-nowrap text-right text-sm font-medium space-x-2">
-                      <button 
-                        onClick={() => handleEditStaff(member)}
-                        className="text-indigo-600 hover:text-indigo-900"
-                        title="Edit Staff Member"
-                      >
-                        <Edit size={18} />
-                      </button>
-                      <button 
-                        onClick={() => handleDeleteStaff(member._id, member.name)}
-                        className="text-red-600 hover:text-red-900"
-                        title="Remove Staff Member"
-                      >
-                        <Trash2 size={18} />
-                      </button>
-                    </td>
-                  </tr>
-                ))}
-              </tbody>
-            </table>
-          </div>
-        ) : (
-          <div className="py-12 text-center">
-            <UserIcon className="mx-auto h-12 w-12 text-gray-400" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No staff members</h3>
-            <p className="mt-1 text-gray-500">Get started by adding a new staff member.</p>
+              <Plus size={16} />
+              Add First Staff Member
+            </Button>
           </div>
         )}
-      </div>
-
-      {/* Add/Edit Staff Modal */}
-      {isStaffModalOpen && (
-        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
-            <form onSubmit={handleAddStaff}>
-              <div className="p-6">
-                <h2 className="text-xl font-semibold text-gray-900">
-                  {isEditingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
-                </h2>
-                <p className="text-gray-600 mt-1">
-                  {isEditingStaff 
-                    ? 'Update the details for this staff member.' 
-                    : 'Fill in the details to add a new staff member to your branch.'}
-                </p>
-              </div>
-              
-              <div className="px-6 pb-6 space-y-4">
-                <div>
-                  <label htmlFor="staffName" className="block text-sm font-medium text-gray-700 mb-1">
-                    Full Name
-                  </label>
-                  <input
-                    type="text"
-                    id="staffName"
-                    value={staffName}
-                    onChange={(e) => setStaffName(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                <div>
-                  <label htmlFor="staffEmail" className="block text-sm font-medium text-gray-700 mb-1">
-                    Email Address
-                  </label>
-                  <input
-                    type="email"
-                    id="staffEmail"
-                    value={staffEmail}
-                    onChange={(e) => setStaffEmail(e.target.value)}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                    required
-                  />
-                </div>
-                
-                {!isEditingStaff && (
-                  <div>
-                    <label htmlFor="staffPassword" className="block text-sm font-medium text-gray-700 mb-1">
-                      Temporary Password
-                    </label>
-                    <input
-                      type="password"
-                      id="staffPassword"
-                      value={staffPassword}
-                      onChange={(e) => setStaffPassword(e.target.value)}
-                      className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500"
-                      required
-                    />
-                  </div>
-                )}
-                
-                <div>
-                  <label htmlFor="staffRole" className="block text-sm font-medium text-gray-700 mb-1">
-                    Role
-                  </label>
-                  <select
-                    id="staffRole"
-                    value={staffRole}
-                    onChange={(e) => setStaffRole(e.target.value as 'staff' | 'admin')}
-                    className="w-full px-3 py-2 border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-blue-500 focus:border-blue-500 bg-white"
-                  >
-                    <option value="staff">Delivery Staff</option>
-                    <option value="admin">Branch Admin (Manager)</option>
-                  </select>
-                  <p className="mt-1 text-xs text-gray-500">
-                    <strong>Delivery Staff:</strong> Uses mobile app.<br/>
-                    <strong>Branch Admin:</strong> Access to dashboard.
-                  </p>
-                </div>
-              </div>
-              
-              <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
-                <button
-                  type="button"
-                  onClick={() => setIsStaffModalOpen(false)}
-                  className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
-                >
-                  Cancel
-                </button>
-                <button
-                  type="submit"
-                  disabled={isSubmittingStaff}
-                  className="px-4 py-2 text-sm font-medium text-white bg-blue-600 border border-transparent rounded-md shadow-sm hover:bg-blue-700 focus:outline-none disabled:bg-blue-400"
-                >
-                  {isSubmittingStaff 
-                    ? (isEditingStaff ? 'Updating...' : 'Adding...') 
-                    : (isEditingStaff ? 'Update Staff' : 'Add Staff')}
-                </button>
-              </div>
-            </form>
+        
+        {filteredStaff.length > 0 && (
+          <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white border border-gray-200 rounded-lg">
+          <div className="text-base text-gray-600">
+            Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredStaff.length)}</span> of <span className="font-medium">{filteredStaff.length}</span> staff members
           </div>
-        </div>
-      )}
-
-      {/* Delete Confirmation Modal */}
-      {showDeleteModal && staffToDelete && (
-        <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md transform transition-all">
-            <div className="p-6">
-              <div className="flex items-center gap-4">
-                <div className="flex-shrink-0 w-12 h-12 rounded-full bg-red-100 flex items-center justify-center">
-                  <Trash2 className="h-6 w-6 text-red-600" />
-                </div>
-                <div className="flex-1">
-                  <h3 className="text-lg font-semibold text-gray-900">Remove Staff Member</h3>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Are you sure you want to remove <span className="font-semibold">{staffToDelete.name}</span> from your branch?
-                  </p>
-                </div>
-              </div>
+          
+          <div className="flex items-center gap-2">
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
+              disabled={currentPage === 1}
+              className="text-sm px-4"
+            >
+              Previous
+            </Button>
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+                <Button
+                  key={page}
+                  variant={currentPage === page ? "default" : "outline"}
+                  size="sm"
+                  onClick={() => setCurrentPage(page)}
+                  className="text-sm w-10 h-10 p-0"
+                >
+                  {page}
+                </Button>
+              ))}
             </div>
             
-            <div className="flex justify-end gap-3 px-6 py-4 bg-gray-50 rounded-b-lg">
-              <button
-                type="button"
-                onClick={() => {
-                  setShowDeleteModal(false);
-                  setStaffToDelete(null);
-                }}
-                className="px-4 py-2 text-sm font-medium text-gray-700 bg-white border border-gray-300 rounded-md shadow-sm hover:bg-gray-50 focus:outline-none"
-              >
-                Cancel
-              </button>
-              <button
-                type="button"
-                onClick={confirmDeleteStaff}
-                className="px-4 py-2 text-sm font-medium text-white bg-red-600 border border-transparent rounded-md shadow-sm hover:bg-red-700 focus:outline-none"
-              >
-                Remove Staff
-              </button>
-            </div>
+            <Button
+              variant="outline"
+              size="sm"
+              onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
+              disabled={currentPage === totalPages}
+              className="text-sm px-4"
+            >
+              Next
+            </Button>
           </div>
         </div>
       )}
+
+      <Dialog open={isStaffModalOpen} onOpenChange={setIsStaffModalOpen}>
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+          <DialogHeader>
+            <DialogTitle>
+              {isEditingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
+            </DialogTitle>
+            <DialogDescription>
+              {isEditingStaff 
+                ? 'Update the details for this staff member.' 
+                : 'Fill in the details to add a new staff member to your branch.'}
+            </DialogDescription>
+          </DialogHeader>
+          
+          <form onSubmit={handleAddStaff} autoComplete="off" className="space-y-4">
+            <div>
+              <Label htmlFor="staffName" className="text-sm">Full Name</Label>
+              <Input
+                id="staffName"
+                type="text"
+                value={staffName}
+                onChange={(e) => setStaffName(e.target.value)}
+                autoComplete="off"
+                placeholder="Enter staff member's name"
+                required
+                className="mt-2"
+              />
+            </div>
+            
+            <div>
+              <Label htmlFor="staffEmail" className="text-sm">Email Address</Label>
+              <Input
+                id="staffEmail"
+                type="email"
+                value={staffEmail}
+                onChange={(e) => setStaffEmail(e.target.value)}
+                autoComplete="off"
+                placeholder="Enter email address"
+                required
+                className="mt-2"
+              />
+            </div>
+                        
+            {!isEditingStaff && (
+              <div>
+                <Label htmlFor="staffPassword" className="text-sm">Temporary Password</Label>
+                <Input
+                  id="staffPassword"
+                  type="password"
+                  value={staffPassword}
+                  onChange={(e) => setStaffPassword(e.target.value)}
+                  autoComplete="new-password"
+                  placeholder="Enter temporary password"
+                  required
+                  className="mt-2"
+                />
+              </div>
+            )}
+                        
+            <div>
+              <Label htmlFor="staffRole" className="text-sm">Role</Label>
+              <Select value={staffRole} onValueChange={(val) => setStaffRole(val as 'staff' | 'admin')}>
+                <SelectTrigger id="staffRole" className="mt-2">
+                  <SelectValue />
+                </SelectTrigger>
+                <SelectContent>
+                  <SelectItem value="staff">Delivery Staff (Driver)</SelectItem>
+                  <SelectItem value="admin">Dispatcher (Admin)</SelectItem>
+                </SelectContent>
+              </Select>
+              <p className="mt-2 text-xs text-gray-500 flex items-start gap-2">
+                <span className="text-blue-500 font-bold flex-shrink-0 mt-0.5"></span>
+                <span>
+                  <strong>Delivery Staff:</strong> Drivers - uses mobile app, makes deliveries.<br/>
+                  <strong>Dispatcher:</strong> Can manage shipments, manifests, and drivers.
+                </span>
+              </p>
+            </div>
+            
+            <DialogFooter>
+              <Button
+                type="button"
+                variant="outline"
+                onClick={() => setIsStaffModalOpen(false)}
+                disabled={isSubmittingStaff}
+              >
+                Cancel
+              </Button>
+              <Button
+                type="submit"
+                disabled={isSubmittingStaff}
+              >
+                {isSubmittingStaff 
+                  ? (isEditingStaff ? 'Updating...' : 'Adding...') 
+                  : (isEditingStaff ? 'Update Staff' : 'Add Staff')}
+              </Button>
+            </DialogFooter>
+          </form>
+        </DialogContent>
+      </Dialog>
+
+      {/* Delete Confirmation Modal */}
+      <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
+        <DialogContent className="max-w-md">
+          <DialogHeader>
+            <DialogTitle>Remove Staff Member</DialogTitle>
+          </DialogHeader>
+          
+          <div className="flex items-center gap-4 py-4">
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
+              <Trash2 className="h-6 w-6 text-red-600" />
+            </div>
+            <div className="flex-1">
+              <p className="text-sm text-gray-600">
+                Are you sure you want to remove <span className="font-semibold">{staffToDelete?.name}</span> from your branch?
+              </p>
+            </div>
+          </div>
+          
+          <DialogFooter>
+            <Button
+              type="button"
+              variant="outline"
+              onClick={() => {
+                setShowDeleteModal(false);
+                setStaffToDelete(null);
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              type="button"
+              variant="destructive"
+              onClick={confirmDeleteStaff}
+            >
+              Remove Staff
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   );
 }

@@ -6,6 +6,7 @@ import Shipment from '@/models/Shipment.model';
 import User from '@/models/User.model'; // We'll need this later for assigning
 import { jwtVerify } from 'jose';
 import { customAlphabet } from 'nanoid';
+import { sanitizeInput, sanitizeObject, isValidEmail, isValidPhone, isValidAddress } from '@/lib/sanitize';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -72,6 +73,29 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { assignedTo, originBranchId, destinationBranchId, ...shipmentData } = body;
 
+    // Sanitize all string inputs to prevent XSS
+    const sanitized = sanitizeObject(shipmentData);
+
+    // Validate email and phone formats
+    if (sanitized.sender?.email && !isValidEmail(sanitized.sender.email)) {
+      return NextResponse.json({ message: 'Invalid sender email format' }, { status: 400 });
+    }
+    if (sanitized.recipient?.email && !isValidEmail(sanitized.recipient.email)) {
+      return NextResponse.json({ message: 'Invalid recipient email format' }, { status: 400 });
+    }
+    if (sanitized.sender?.phone && !isValidPhone(sanitized.sender.phone)) {
+      return NextResponse.json({ message: 'Invalid sender phone format' }, { status: 400 });
+    }
+    if (sanitized.recipient?.phone && !isValidPhone(sanitized.recipient.phone)) {
+      return NextResponse.json({ message: 'Invalid recipient phone format' }, { status: 400 });
+    }
+    if (sanitized.sender?.address && !isValidAddress(sanitized.sender.address)) {
+      return NextResponse.json({ message: 'Invalid sender address (5-200 chars)' }, { status: 400 });
+    }
+    if (sanitized.recipient?.address && !isValidAddress(sanitized.recipient.address)) {
+      return NextResponse.json({ message: 'Invalid recipient address (5-200 chars)' }, { status: 400 });
+    }
+
     // Validate that branch IDs are provided
     if (!originBranchId || !destinationBranchId) {
       console.error('Missing branch IDs:', { originBranchId, destinationBranchId });
@@ -85,11 +109,11 @@ export async function POST(request: NextRequest) {
     const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 10);
     const trackingId = `TRK-${nanoid()}`;
 
-    // Create the new shipment
+    // Create the new shipment with sanitized data
     const newShipment = new Shipment({
-      ...shipmentData,
+      ...sanitized,
       trackingId: trackingId,
-      createdBy: payload.id || payload.sub,
+      createdBy:payload.userId || payload.id || payload.sub,
       status: 'At Origin Branch', // Set initial status
       tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId (current/origin branch)
       originBranchId, // The branch where this shipment was created

@@ -3,6 +3,8 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Manifest from '@/models/Manifest.model';
+import Shipment from '@/models/Shipment.model';
+import Tenant from '@/models/Tenant.model';
 import { jwtVerify } from 'jose';
 
 // Helper to get the logged-in user's payload from their token

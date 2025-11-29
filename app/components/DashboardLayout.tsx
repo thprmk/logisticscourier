@@ -2,7 +2,7 @@
 "use client";
 
 import { useUser } from '../context/UserContext';
-import { useEffect, useState } from 'react';
+import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
@@ -18,9 +18,18 @@ import {
   Store,
   Boxes,
   Menu,
-  X
+  X,
+  ChevronDown
 } from 'lucide-react'; 
 import toast from 'react-hot-toast';
+import { Button } from '@/app/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/app/components/ui/dropdown-menu';
 
 interface NavLink { href: string; label: string; icon: React.ElementType; }
 interface DashboardLayoutProps { children: React.ReactNode; }
@@ -35,6 +44,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notificationList, setNotificationList] = useState<any[]>([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const fetchedRef = useRef(false);
 
   useEffect(() => {
     // This effect runs on the client to fetch user data if it's not already there
@@ -61,14 +71,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         }
     };
 
-    // Only run the fetch if we don't already have the user data in our context
-    if (!user) {
-        fetchUser();
-    } else if (user.role === 'staff') {
+    // Only fetch once on mount
+    if (!fetchedRef.current) {
+        fetchedRef.current = true;
+        if (!user) {
+            fetchUser();
+        }
+    } else if (user?.role === 'staff') {
         // Redirect delivery staff to their page immediately
         router.replace('/deliverystaff');
     }
-  }, [user, router, setUser]);
+  }, []);
 
   // Fetch notifications for admin and delivery staff
   useEffect(() => {
@@ -171,12 +184,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="flex items-center justify-between h-16">
             {/* Mobile Menu Button */}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="md:hidden"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            </Button>
             
             {/* Logo */}
             <div className="flex items-center gap-2 sm:gap-3">
@@ -199,7 +214,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   href={link.href} 
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard') 
-                      ? 'bg-blue-600 text-white shadow-md' 
+                      ? 'bg-blue-600 text-white shadow-md hover:shadow-lg hover:bg-blue-700' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
@@ -210,41 +225,61 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Notification Bell */}
               {(user.role === 'admin' || user.role === 'staff') && (
-                <button
+                <Button
+                  variant="ghost"
+                  size="icon"
                   onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                  className="relative h-10 w-10"
                 >
                   <Bell className="h-5 w-5" strokeWidth={2} />
                   {notifications > 0 && (
-                    <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                       {notifications}
                     </span>
                   )}
-                </button>
+                </Button>
               )}
               
-              {/* User Info - Desktop */}
-              <div className="hidden lg:flex items-center gap-3 pl-2">
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{userRole}</p>
-                </div>
-                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
-                  <UserIconComponent size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-              </div>
+              {/* Branch Manager Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-3 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
+                      <UserIcon className="h-4 w-4 text-white" strokeWidth={2} />
+                    </div>
+                    <div className="text-left min-w-max">
+                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500 -mt-0.5">{userRole}</p>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500 ml-1 flex-shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">{userRole}</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
-              {/* Sign Out Button */}
-              <button 
-                onClick={handleLogout} 
-                className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
+              {/* Sign Out Button - Mobile */}
+              <Button 
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="lg:hidden text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5 h-10 flex-shrink-0"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2} />
                 <span className="hidden sm:inline">Sign Out</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>

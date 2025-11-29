@@ -11,6 +11,7 @@ export interface User {
   role: string;
   tenantId?: string;
   tenantName?: string;
+  isManager?: boolean;
 }
 
 // Define the shape of the CONTEXT VALUE

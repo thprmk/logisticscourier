@@ -5,6 +5,7 @@ import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User.model';
 import bcrypt from 'bcryptjs';
 import { jwtVerify } from 'jose';
+import { sanitizeInput, isValidEmail } from '@/lib/sanitize';
 
 async function getUserPayload(request: NextRequest) {
   const token = request.cookies.get('token')?.value;
@@ -41,6 +42,15 @@ export async function PATCH(request: NextRequest) {
         const userId = getUserIdFromUrl(request.url);
         const { name, email, role, password } = await request.json();
 
+        // Sanitize inputs to prevent XSS
+        const sanitizedName = sanitizeInput(name, 100);
+        const sanitizedEmail = email?.toLowerCase().trim();
+        
+        // Validate email format if provided
+        if (sanitizedEmail && !isValidEmail(sanitizedEmail)) {
+          return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
+        }
+
         // Check if user exists and belongs to the same tenant
         const user = await User.findOne({ _id: userId, tenantId: payload.tenantId });
         
@@ -48,10 +58,12 @@ export async function PATCH(request: NextRequest) {
             return NextResponse.json({ message: 'User not found or access denied' }, { status: 404 });
         }
 
-        // Update user fields
-        user.name = name;
-        user.email = email;
+        // Update user fields with sanitized data
+        user.name = sanitizedName;
+        user.email = sanitizedEmail;
         user.role = role;
+        // Set isManager based on role
+        user.isManager = role === 'admin' ? true : false;
         
         // Hash password if it's being updated
         if (password && password.trim() !== '') {

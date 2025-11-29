@@ -1,5 +1,11 @@
 // lib/dbConnect.ts
 import mongoose from 'mongoose';
+import Manifest from '@/models/Manifest.model';
+import Shipment from '@/models/Shipment.model';
+import Tenant from '@/models/Tenant.model';
+import User from '@/models/User.model';
+import Notification from '@/models/Notification.model';
+import PushSubscription from '@/models/PushSubscription.model';
 
 const MONGODB_URI = process.env.MONGODB_URI;
 

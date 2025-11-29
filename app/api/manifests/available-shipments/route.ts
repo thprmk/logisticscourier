@@ -19,7 +19,7 @@ async function getUserPayload(request: NextRequest) {
 }
 
 // GET: Get shipments available for dispatch at the origin branch
-// Query params: destinationBranchId (optional - to filter by destination)
+// Query params: destinationBranchId (optional - to filter by destination), page, limit (for pagination)
 export async function GET(request: NextRequest) {
   await dbConnect();
   const payload = await getUserPayload(request);
@@ -31,6 +31,9 @@ export async function GET(request: NextRequest) {
   try {
     const { searchParams } = new URL(request.url);
     const destinationBranchId = searchParams.get('destinationBranchId');
+    const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
+    const limit = Math.min(100, Math.max(1, parseInt(searchParams.get('limit') || '50', 10)));
+    const skip = (page - 1) * limit;
 
     let query: any = {
       currentBranchId: payload.tenantId,
@@ -42,12 +45,26 @@ export async function GET(request: NextRequest) {
       query.destinationBranchId = destinationBranchId;
     }
 
+    // Get total count for pagination
+    const total = await Shipment.countDocuments(query);
+    const totalPages = Math.ceil(total / limit);
+
     const shipments = await Shipment.find(query)
       .populate('originBranchId', 'name')
       .populate('destinationBranchId', 'name')
-      .sort({ createdAt: -1 });
+      .sort({ createdAt: -1 })
+      .skip(skip)
+      .limit(limit);
 
-    return NextResponse.json(shipments);
+    return NextResponse.json({
+      data: shipments,
+      pagination: {
+        page,
+        limit,
+        total,
+        totalPages,
+      },
+    });
   } catch (error) {
     console.error('Error fetching available shipments:', error);
     return NextResponse.json({ message: 'Internal server error' }, { status: 500 });

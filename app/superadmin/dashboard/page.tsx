@@ -202,7 +202,7 @@ closeModal();
 {modalType === 'create' && (
     <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
       <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all">
-        <form onSubmit={handleCreateTenant}>
+        <form onSubmit={handleCreateTenant} autoComplete="off">
           {/* Header */}
           <div className="p-6">
             <h2 className="text-xl font-semibold text-gray-900">Create New Branch</h2>
@@ -216,7 +216,7 @@ closeModal();
                 <div className="grid grid-cols-1">
                     <div>
                         <label htmlFor="branchName" className="block text-sm font-medium text-gray-700">Branch Name</label>
-                        <input type="text" id="branchName" value={branchName} onChange={(e) => setBranchName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                        <input type="text" id="branchName" value={branchName} onChange={(e) => setBranchName(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm placeholder-gray-400 focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
                     </div>
                 </div>
             </fieldset>
@@ -226,11 +226,11 @@ closeModal();
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                      <div>
                         <label htmlFor="adminName" className="block text-sm font-medium text-gray-700">Admin Full Name</label>
-                        <input type="text" id="adminName" value={adminName} onChange={(e) => setAdminName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
+                        <input type="text" id="adminName" value={adminName} onChange={(e) => setAdminName(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
                     </div>
                      <div>
                         <label htmlFor="adminEmail" className="block text-sm font-medium text-gray-700">Admin Email</label>
-                        <input type="email" id="adminEmail" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
+                        <input type="email" id="adminEmail" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
                     </div>
                     <div className="md:col-span-2">
     <label htmlFor="adminPassword" className="block text-sm font-medium text-gray-700">Temporary Password</label>
@@ -240,6 +240,7 @@ closeModal();
             id="adminPassword" 
             value={adminPassword} 
             onChange={(e) => setAdminPassword(e.target.value)} 
+            autoComplete="new-password"
             className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm pr-10" 
             required 
         />
@@ -275,7 +276,7 @@ closeModal();
 {modalType === 'edit' && selectedTenant && (
     <div className="fixed inset-0 bg-gray-900/20 [backdrop-filter:blur(4px)] flex items-center justify-center z-50 p-4">
         <div className="bg-white rounded-lg shadow-xl w-full max-w-2xl transform transition-all">
-            <form onSubmit={handleEditTenant}>
+            <form onSubmit={handleEditTenant} autoComplete="off">
                 {/* Header */}
                 <div className="p-6">
                     <h2 className="text-xl font-semibold text-gray-900">Edit Branch</h2>
@@ -288,7 +289,7 @@ closeModal();
                         <legend className="text-base font-medium text-gray-900 mb-2">Branch Details</legend>
                         <div>
                             <label htmlFor="editBranchName" className="block text-sm font-medium text-gray-700">Branch Name</label>
-                            <input type="text" id="editBranchName" value={branchName} onChange={(e) => setBranchName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
+                            <input type="text" id="editBranchName" value={branchName} onChange={(e) => setBranchName(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm focus:outline-none focus:ring-indigo-500 focus:border-indigo-500 sm:text-sm" required />
                         </div>
                     </fieldset>
 
@@ -297,11 +298,11 @@ closeModal();
                         <div className="grid grid-cols-1 md:grid-cols-2 gap-x-6 gap-y-4">
                             <div>
                                 <label htmlFor="editAdminName" className="block text-sm font-medium text-gray-700">Admin Full Name</label>
-                                <input type="text" id="editAdminName" value={adminName} onChange={(e) => setAdminName(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
+                                <input type="text" id="editAdminName" value={adminName} onChange={(e) => setAdminName(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
                             </div>
                             <div>
                                 <label htmlFor="editAdminEmail" className="block text-sm font-medium text-gray-700">Admin Email</label>
-                                <input type="email" id="editAdminEmail" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
+                                <input type="email" id="editAdminEmail" value={adminEmail} onChange={(e) => setAdminEmail(e.target.value)} autoComplete="off" className="mt-1 block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm" required />
                             </div>
                          
                          <div className="md:col-span-2">
@@ -312,6 +313,7 @@ closeModal();
             id="editAdminPassword" 
             value={adminPassword} 
             onChange={(e) => setAdminPassword(e.target.value)} 
+            autoComplete="new-password"
             className="block w-full px-3 py-2 bg-white border border-gray-300 rounded-md shadow-sm pr-10" 
             placeholder="Leave blank to keep current password" 
         />

@@ -5,22 +5,45 @@ import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
+import { sanitizeInput } from '@/lib/sanitize';
+import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
 
 export async function POST(request: NextRequest) {
+  // Check rate limit
+  const clientIp = getClientIp(request);
+  const rateLimitResult = checkRateLimit(clientIp, 'LOGIN');
+  
+  if (!rateLimitResult.allowed) {
+    return NextResponse.json(
+      { message: 'Too many login attempts. Please try again later.' },
+      { 
+        status: 429,
+        headers: {
+          'Retry-After': Math.ceil(rateLimitResult.resetTime / 1000).toString(),
+          'X-RateLimit-Limit': rateLimitResult.limit.toString(),
+          'X-RateLimit-Remaining': '0',
+          'X-RateLimit-Reset': (Date.now() + rateLimitResult.resetTime).toString(),
+        }
+      }
+    );
+  }
+
   await dbConnect();
 
   try {
     const { email, password } = await request.json();
 
-    console.log('Login attempt for email:', email);
+    // Sanitize inputs
+    const sanitizedEmail = email?.toLowerCase().trim();
+    const sanitizedPassword = password?.trim();
 
-    if (!email || !password) {
+    if (!sanitizedEmail || !sanitizedPassword) {
       return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
     }
 
     // Find the user by email, REGARDLESS of their role.
     // Explicitly select the password for comparison.
-    const user = await User.findOne({ email }).select('+password');
+    const user = await User.findOne({ email: sanitizedEmail }).select('+password');
 
     if (!user) {
       console.log('User not found:', email);
@@ -47,8 +70,10 @@ export async function POST(request: NextRequest) {
     if (user.role === 'superAdmin') {
       // If the user is a Super Admin
       tokenPayload = {
-        userId: user._id,
+        id: user._id,
+        sub: user._id,
         role: user.role,
+        tenantId: user.tenantId,
       };
       redirectTo = '/superadmin/dashboard';
     } else {
@@ -57,6 +82,7 @@ export async function POST(request: NextRequest) {
         userId: user._id,
         role: user.role,
         tenantId: user.tenantId, // Include tenantId for branch users
+        isManager: user.isManager, // Include isManager flag for permission checks
       };
       redirectTo = '/dashboard';
     }
@@ -84,6 +110,10 @@ export async function POST(request: NextRequest) {
     };
 
     response.cookies.set('token', token, cookieOptions);
+    
+    // Add rate limit headers
+    response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
+    response.headers.set('X-RateLimit-Limit', rateLimitResult.limit.toString());
     
     console.log('Cookie set successfully');
 

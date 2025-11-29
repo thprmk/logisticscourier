@@ -5,8 +5,16 @@ import { useUser } from '../context/UserContext';
 import { useEffect, useState } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import { LogOut, Package, User as UserIcon, Truck, Building, Bell, Menu, X } from 'lucide-react'; 
+import { LogOut, Package, User as UserIcon, Truck, Building, Bell, Menu, X, ChevronDown } from 'lucide-react'; 
 import toast from 'react-hot-toast';
+import { Button } from '@/app/components/ui/button';
+import {
+  DropdownMenu,
+  DropdownMenuContent,
+  DropdownMenuItem,
+  DropdownMenuTrigger,
+  DropdownMenuSeparator,
+} from '@/app/components/ui/dropdown-menu';
 
 interface NavLink { href: string; label: string; icon: React.ElementType; }
 interface DeliveryStaffLayoutProps { children: React.ReactNode; }
@@ -114,21 +122,25 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
         <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
           <div className="flex items-center justify-between h-16">
             {/* Mobile Menu Button */}
-            <button
+            <Button
+              variant="ghost"
+              size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden p-2 rounded-lg text-gray-600 hover:bg-gray-100 transition-colors"
+              className="md:hidden"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
-            </button>
+            </Button>
             
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
+              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-orange-500 to-orange-600 rounded-xl shadow-md hover:shadow-lg transition-shadow">
                 <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
               </div>
-              <div>
+              <div className="hidden sm:block">
                 <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
-                <p className="text-xs text-gray-500 font-medium hidden sm:block">Delivery Portal</p>
+                {user?.tenantName && (
+                  <p className="text-xs text-gray-500 font-medium">{user.tenantName}</p>
+                )}
               </div>
             </div>
             
@@ -140,7 +152,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
                   href={link.href} 
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     pathname === link.href 
-                      ? 'bg-orange-600 text-white shadow-md' 
+                      ? 'bg-orange-600 text-white shadow-md hover:shadow-lg hover:bg-orange-700' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
@@ -151,39 +163,59 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-1 sm:gap-2">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
               {/* Notification Bell */}
-              <button
+              <Button
+                variant="ghost"
+                size="icon"
                 onClick={() => setShowNotifications(!showNotifications)}
-                className="relative p-2 text-gray-600 hover:bg-gray-100 rounded-lg transition-colors"
+                className="relative h-10 w-10"
               >
                 <Bell className="h-5 w-5" strokeWidth={2} />
                 {notifications > 0 && (
-                  <span className="absolute -top-0.5 -right-0.5 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                     {notifications}
                   </span>
                 )}
-              </button>
+              </Button>
               
-              {/* User Info - Desktop */}
-              <div className="hidden lg:flex items-center gap-3 pl-2">
-                <div className="text-right">
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">Delivery Staff</p>
-                </div>
-                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-orange-500 to-orange-600 rounded-lg shadow-md">
-                  <Truck size={18} className="text-white" strokeWidth={2.5} />
-                </div>
-              </div>
+              {/* Delivery Staff Dropdown */}
+              <DropdownMenu>
+                <DropdownMenuTrigger asChild>
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-3 flex-shrink-0">
+                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-orange-500 to-orange-600 flex items-center justify-center flex-shrink-0">
+                      <Truck className="h-4 w-4 text-white" strokeWidth={2} />
+                    </div>
+                    <div className="text-left min-w-max">
+                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500 -mt-0.5">Delivery Staff</p>
+                    </div>
+                    <ChevronDown className="h-4 w-4 text-gray-500 ml-1 flex-shrink-0" />
+                  </Button>
+                </DropdownMenuTrigger>
+                <DropdownMenuContent align="end" className="w-56">
+                  <div className="px-4 py-3 border-b border-gray-100">
+                    <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500 mt-1">Delivery Staff</p>
+                  </div>
+                  <DropdownMenuSeparator />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
+                    <LogOut className="h-4 w-4 mr-2" />
+                    Sign Out
+                  </DropdownMenuItem>
+                </DropdownMenuContent>
+              </DropdownMenu>
               
-              {/* Sign Out Button */}
-              <button 
-                onClick={handleLogout} 
-                className="flex items-center gap-2 px-2 sm:px-3 py-2 rounded-lg text-sm font-medium text-red-600 hover:bg-red-50 transition-colors duration-150"
+              {/* Sign Out Button - Mobile */}
+              <Button 
+                onClick={handleLogout}
+                variant="ghost"
+                size="sm"
+                className="lg:hidden text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5 h-10 flex-shrink-0"
               >
                 <LogOut className="h-4 w-4" strokeWidth={2} />
                 <span className="hidden sm:inline">Sign Out</span>
-              </button>
+              </Button>
             </div>
           </div>
         </div>

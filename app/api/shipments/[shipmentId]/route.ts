@@ -7,6 +7,7 @@ import Notification from '@/models/Notification.model';
 import User from '@/models/User.model';
 import { jwtVerify } from 'jose';
 import { sendShipmentNotification } from '@/app/lib/notifications';
+import { sanitizeInput } from '@/lib/sanitize';
 
 // Helper to get user payload (Your existing function, no changes)
 async function getUserPayload(request: NextRequest) {
@@ -40,7 +41,7 @@ export async function GET(request: NextRequest) {
         // FIX: Use the reliable URL parsing method
         const shipmentId = getShipmentIdFromUrl(request.url);
 
-        const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId }).populate('assignedTo', 'name');
+        const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId }).populate('assignedTo', 'name').populate('createdBy', 'name');
         if (!shipment) {
             return NextResponse.json({ message: "Shipment not found or access denied" }, { status: 404 });
         }
@@ -66,18 +67,33 @@ export async function PATCH(request: NextRequest) {
     const body = await request.json();
     const { status, assignedTo, notes, failureReason, deliveryProof } = body;
 
+    // Sanitize string inputs to prevent XSS
+    const sanitizedNotes = notes ? sanitizeInput(notes, 500) : undefined;
+    const sanitizedFailureReason = failureReason ? sanitizeInput(failureReason, 500) : undefined;
+
     // Find the shipment
-    const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId });
+    const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId }).populate('createdBy', '_id name');
 
     if (!shipment) {
       return NextResponse.json({ message: 'Shipment not found or access denied.' }, { status: 404 });
     }
     
-    // Check permissions:
-    // 1. Admins can update any shipment
-    // 2. Delivery staff can only update shipments assigned to them
-    if (payload.role !== 'admin' && (!shipment.assignedTo || shipment.assignedTo.toString() !== payload.userId)) {
-      return NextResponse.json({ message: 'Unauthorized or Forbidden' }, { status: 403 });
+    // Check permissions based on role:
+    // - Admins can only update their own created shipments
+    // - Delivery staff (role='staff') can update if assigned to them
+    if (payload.role === 'admin') {
+      // Admin: must be the creator
+      if (shipment.createdBy && shipment.createdBy._id.toString() !== payload.userId) {
+        return NextResponse.json({ message: 'Only the creator can update this shipment.' }, { status: 403 });
+      }
+    } else if (payload.role === 'staff') {
+      // Delivery staff: must be assigned to this shipment
+      if (!shipment.assignedTo || shipment.assignedTo.toString() !== payload.userId) {
+        return NextResponse.json({ message: 'You are not assigned to this shipment.' }, { status: 403 });
+      }
+    } else {
+      // Other roles cannot update
+      return NextResponse.json({ message: 'You do not have permission to update this shipment.' }, { status: 403 });
     }
     
     // Update assignedTo if provided (only admins can do this)
@@ -186,7 +202,7 @@ export async function PATCH(request: NextRequest) {
       
       // Add failure reason to shipment if provided
       if (failureReason) {
-        shipment.failureReason = failureReason;
+        shipment.failureReason = sanitizedFailureReason;
       }
       
       // Add delivery proof if provided
@@ -261,6 +277,21 @@ export async function DELETE(request: NextRequest) {
     // FIX: Use the reliable URL parsing method
     const shipmentId = getShipmentIdFromUrl(request.url);
 
+    // First, find the shipment with creator info
+    const shipment = await Shipment.findOne({
+      _id: shipmentId,
+      tenantId: payload.tenantId,
+    }).populate('createdBy', '_id name');
+
+    if (!shipment) {
+      return NextResponse.json({ message: "Shipment not found or access denied" }, { status: 404 });
+    }
+
+    // Check if user is the creator (only creator can delete)
+    if (shipment.createdBy && shipment.createdBy._id.toString() !== payload.userId) {
+      return NextResponse.json({ message: 'Only the creator can delete this shipment.' }, { status: 403 });
+    }
+
     const deletedShipment = await Shipment.findOneAndDelete({
       _id: shipmentId,
       tenantId: payload.tenantId,
@@ -275,4 +306,4 @@ export async function DELETE(request: NextRequest) {
   } catch (error: any) {
     return NextResponse.json({ message: error.message }, { status: 500 });
   }
-} 
+}

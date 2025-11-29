@@ -1,0 +1,312 @@
+================================================================================
+NOTIFICATION SYSTEM - EVENT MATRIX REFERENCE
+================================================================================
+
+Complete mapping of which user roles receive notifications for each event.
+
+================================================================================
+EVENT: Shipment Created
+================================================================================
+Description: Admin creates a new shipment
+API Endpoint: POST /api/shipments
+Triggered By: Shipment.save()
+Push Notification: NO
+
+Recipients:
+  ✓ Admin        - "New shipment created - [TRACKING_ID]"
+  ✓ Dispatcher   - "New shipment created - [TRACKING_ID]"  
+  ✗ Staff        - Not notified
+
+Implementation:
+  Function: handleShipmentCreated()
+  Location: app/lib/notificationDispatcher.ts:85-108
+  Database: Creates notification records for all admins + dispatchers
+
+================================================================================
+EVENT: Manifest Created
+================================================================================
+Description: Admin creates manifest and dispatches shipments
+API Endpoint: POST /api/manifests
+Triggered By: Manifest.save()
+Push Notification: NO
+
+Recipients:
+  ✓ Admin        - "New manifest created - [MANIFEST_ID]"
+  ✓ Dispatcher   - "New manifest created - [MANIFEST_ID]"
+  ✗ Staff        - Not notified
+
+Implementation:
+  Function: handleManifestCreated()
+  Location: app/lib/notificationDispatcher.ts:114-137
+  Database: Creates notification records for all admins + dispatchers
+  File: app/api/manifests/route.ts (Added notification dispatch)
+
+================================================================================
+EVENT: Manifest Dispatched
+================================================================================
+Description: Manifest leaves origin branch heading to destination
+API Endpoint: POST /api/manifests
+Triggered By: During manifest creation (part of dispatch process)
+Push Notification: NO
+
+Recipients:
+  ✓ Admin @ Origin Branch      - "Manifest dispatched to [DESTINATION]"
+  ✓ Dispatcher @ Origin Branch - "Manifest dispatched to [DESTINATION]"
+  ✓ Admin @ Dest Branch        - "Manifest arriving from [ORIGIN]"
+  ✓ Dispatcher @ Dest Branch   - "Manifest arriving from [ORIGIN]"
+  ✗ Staff                      - Not notified
+
+Implementation:
+  Function: handleManifestDispatched()
+  Location: app/lib/notificationDispatcher.ts:143-188
+  Database: Creates separate notifications for origin and destination branches
+  Note: Destination branch gets custom message about incoming manifest
+
+================================================================================
+EVENT: Manifest Arrived
+================================================================================
+Description: Manifest received at destination branch
+API Endpoint: PUT /api/manifests/[manifestId]/receive
+Triggered By: Manifest status change to "Completed"
+Push Notification: NO
+
+Recipients:
+  ✓ Admin        - "Manifest arrived at branch - [MANIFEST_ID]"
+  ✓ Dispatcher   - "Manifest arrived at branch - [MANIFEST_ID]"
+  ✗ Staff        - Not notified
+
+Implementation:
+  Function: handleManifestArrived()
+  Location: app/lib/notificationDispatcher.ts:194-217
+  Database: Creates notification records for all admins + dispatchers
+  File: app/api/manifests/[manifestId]/receive/route.ts (Added notification dispatch)
+
+================================================================================
+EVENT: 🚚 Local Delivery Assigned [PUSH ALERT]
+================================================================================
+Description: Admin assigns shipment to delivery staff member
+API Endpoint: PATCH /api/shipments/[shipmentId]
+Triggered By: assignedTo field is set during shipment update
+Push Notification: YES ✓
+
+Recipients:
+  ✓ Admin        - "Delivery assigned to staff - [TRACKING_ID]"
+  ✓ Dispatcher   - "Delivery assigned to staff - [TRACKING_ID]"
+  ✓ Staff        - "New delivery assigned to you - [TRACKING_ID]" (PUSH 🔔)
+
+Implementation:
+  Function: handleDeliveryAssigned()
+  Location: app/lib/notificationDispatcher.ts:223-277
+  Database: Creates notification records for admins, dispatchers, and staff
+  Push: Calls sendShipmentNotification() for immediate alert
+  File: app/api/shipments/[shipmentId]/route.ts (Status change to "Assigned")
+
+Staff Action: Receives push notification, sees in-app notification
+
+================================================================================
+EVENT: Out for Delivery
+================================================================================
+Description: Delivery staff member starts delivery route
+API Endpoint: PATCH /api/shipments/[shipmentId]
+Triggered By: Status change to "Out for Delivery"
+Push Notification: YES ✓
+
+Recipients:
+  ✓ Admin        - "Delivery out for delivery - [TRACKING_ID]"
+  ✓ Dispatcher   - "Delivery out for delivery - [TRACKING_ID]"
+  ✓ Staff        - "Your delivery is out for delivery - [TRACKING_ID]" (PUSH 🔔)
+
+Implementation:
+  Function: handleOutForDelivery()
+  Location: app/lib/notificationDispatcher.ts:283-330
+  Database: Creates notification records for all three groups
+  Push: Sends to assigned staff member
+  File: app/api/shipments/[shipmentId]/route.ts (Status change)
+
+Staff Action: Gets status update, can see current delivery assignment
+
+================================================================================
+EVENT: Delivered
+================================================================================
+Description: Shipment successfully delivered to recipient
+API Endpoint: PATCH /api/shipments/[shipmentId]
+Triggered By: Status change to "Delivered"
+Push Notification: YES ✓
+
+Recipients:
+  ✓ Admin        - "Delivery completed - [TRACKING_ID]"
+  ✓ Dispatcher   - "Delivery completed - [TRACKING_ID]"
+  ✓ Staff        - "Delivery completed successfully - [TRACKING_ID]" (PUSH 🔔)
+
+Implementation:
+  Function: handleDelivered()
+  Location: app/lib/notificationDispatcher.ts:336-383
+  Database: Creates notification records for all three groups
+  Push: Sends to delivering staff member
+  File: app/api/shipments/[shipmentId]/route.ts (Status change)
+
+Staff Action: Gets confirmation push, can mark delivery complete
+
+================================================================================
+EVENT: Delivery Failed
+================================================================================
+Description: Delivery attempt failed (customer not available, etc.)
+API Endpoint: PATCH /api/shipments/[shipmentId]
+Triggered By: Status change to "Failed" with failureReason
+Push Notification: YES ✓
+
+Recipients:
+  ✓ Admin        - "Delivery failed - [TRACKING_ID]"
+  ✓ Dispatcher   - "Delivery failed - [TRACKING_ID]"
+  ✓ Staff        - "Delivery attempt failed - [TRACKING_ID]" (PUSH 🔔)
+
+Implementation:
+  Function: handleDeliveryFailed()
+  Location: app/lib/notificationDispatcher.ts:389-436
+  Database: Creates notification records for all three groups
+  Push: Sends to delivering staff member
+  File: app/api/shipments/[shipmentId]/route.ts (Status change)
+
+Staff Action: Gets alert, can retry delivery or escalate issue
+
+================================================================================
+NOTIFICATION DISPATCHER CONTEXT
+================================================================================
+
+All dispatchNotification() calls use this interface:
+
+export interface NotificationContext {
+  event: NotificationEvent;           // Type of event (see above)
+  shipmentId?: string;                // Associated shipment
+  manifestId?: string;                // Associated manifest
+  trackingId: string;                 // Shipment tracking ID
+  tenantId: string;                   // Current branch/tenant
+  fromBranch?: string;                // Origin branch (for dispatches)
+  toBranch?: string;                  // Destination branch (for dispatches)
+  assignedStaffId?: string;           // Staff member (for assignments)
+  createdBy?: string;                 // Admin/Dispatcher ID
+}
+
+================================================================================
+API INTEGRATION POINTS
+================================================================================
+
+1. app/api/shipments/route.ts (POST)
+   ↓ dispatchNotification({ event: 'shipment_created', ... })
+
+2. app/api/manifests/route.ts (POST)
+   ↓ dispatchNotification({ event: 'manifest_created', ... })
+   ↓ dispatchNotification({ event: 'manifest_dispatched', ... })
+
+3. app/api/manifests/[manifestId]/receive/route.ts (PUT)
+   ↓ dispatchNotification({ event: 'manifest_arrived', ... })
+
+4. app/api/shipments/[shipmentId]/route.ts (PATCH)
+   ↓ dispatchNotification({ event: 'delivery_assigned', ... })
+   ↓ dispatchNotification({ event: 'out_for_delivery', ... })
+   ↓ dispatchNotification({ event: 'delivered', ... })
+   ↓ dispatchNotification({ event: 'delivery_failed', ... })
+
+================================================================================
+NOTIFICATION DELIVERY METHODS
+================================================================================
+
+1. Database Notifications (All Events)
+   - Stored in Notification collection
+   - Fetched via GET /api/notifications
+   - Can be marked as read via PATCH /api/notifications/[id]
+   - Accessible in UI notification bell
+
+2. Push Notifications (4 Events)
+   - Delivery Assigned ✓
+   - Out for Delivery ✓
+   - Delivered ✓
+   - Failed ✓
+   - Requires: Valid PWA subscription with VAPID keys
+   - Sent via: sendShipmentNotification() from app/lib/notifications.ts
+   - Browser displays: Native OS notification
+
+3. Real-time Updates (UI)
+   - Web socket or polling in future
+   - Currently via manual refresh or scheduled polling
+   - Notification badge shows unread count
+
+================================================================================
+TESTING CHECKLIST
+================================================================================
+
+□ Shipment Created
+  - Create shipment via admin panel
+  - Check admin notifications
+  - Check dispatcher notifications
+
+□ Manifest Created & Dispatched
+  - Create manifest with shipments
+  - Check origin branch notifications
+  - Check destination branch notifications
+  - Verify separate messages for origin vs destination
+
+□ Manifest Arrived
+  - Receive manifest at destination
+  - Check notifications appear
+  - Verify shipments transferred to destination branch
+
+□ Delivery Assigned (PUSH)
+  - Assign shipment to staff member
+  - Check staff push notification (🔔)
+  - Check in-app notification
+  - Verify admin/dispatcher see notification
+
+□ Out for Delivery (PUSH)
+  - Update shipment to "Out for Delivery"
+  - Check staff receives push
+  - Verify status visible to all roles
+
+□ Delivered (PUSH)
+  - Complete delivery with proof
+  - Check staff receives delivery confirmation
+  - Verify signature/photo stored
+
+□ Delivery Failed (PUSH)
+  - Mark as failed with reason
+  - Check all roles notified
+  - Verify reason is included
+
+================================================================================
+ENVIRONMENT SETUP
+================================================================================
+
+Required for Push Notifications:
+  - VAPID_PUBLIC_KEY=your_public_key
+  - VAPID_PRIVATE_KEY=your_private_key
+  - Stored in .env.local
+
+Generate VAPID keys:
+  npm run generate-vapid-keys
+  (or use web-push CLI)
+
+================================================================================
+TROUBLESHOOTING
+================================================================================
+
+Push not working?
+  1. Check VAPID keys in .env.local
+  2. Verify service worker is registered (check DevTools)
+  3. Check browser notification permission (should be "Allow")
+  4. Check browser console for errors
+  5. Verify PWA subscription exists in DB
+
+Notifications not appearing?
+  1. Check notification permissions in UI
+  2. Verify user is logged in (tenantId set)
+  3. Check Notification collection in MongoDB
+  4. Look for errors in API logs
+  5. Verify event dispatcher is called
+
+Missing a role?
+  1. Check NotificationContext interface
+  2. Verify handler function includes the role
+  3. Check User.find() query includes correct filters
+  4. Verify tenantId matches user's branch
+
+================================================================================

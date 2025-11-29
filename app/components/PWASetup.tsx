@@ -17,6 +17,9 @@ export default function PWASetup() {
         .register('/sw.js')
         .then((registration) => {
           console.log('Service Worker registered:', registration);
+          // Also load push notification handlers
+          registration.scope;
+          // The push handlers will be loaded from next-pwa's sw.js
         })
         .catch((error) => {
           console.error('Service Worker registration failed:', error);
@@ -31,7 +34,7 @@ export default function PWASetup() {
 
   // Request notification permission when user logs in as delivery staff
   useEffect(() => {
-    if (user && user.role === 'delivery_staff' && !isInstalled) {
+    if (user && (user.role === 'delivery_staff' || user.role === 'staff') && !isInstalled) {
       // Wait a moment before showing the prompt for better UX
       const timer = setTimeout(() => {
         if ('Notification' in window && Notification.permission === 'default') {
@@ -70,6 +73,7 @@ export default function PWASetup() {
     try {
       if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
         console.warn('Push notifications not supported');
+        toast.error('Push notifications are not supported on this device');
         return;
       }
 
@@ -80,37 +84,49 @@ export default function PWASetup() {
 
       if (!subscription) {
         // Subscribe to push notifications
-        // Note: VAPID_PUBLIC_KEY should be set in environment variables
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
         if (!vapidPublicKey) {
           console.warn('VAPID public key not configured');
+          toast.error('Notification system not properly configured');
           return;
         }
 
-        subscription = await registration.pushManager.subscribe({
-          userVisibleOnly: true,
-          applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
-        });
+        try {
+          subscription = await registration.pushManager.subscribe({
+            userVisibleOnly: true,
+            applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
+          });
+        } catch (subError: any) {
+          console.error('Failed to subscribe to push manager:', subError);
+          toast.error('Failed to enable push notifications');
+          return;
+        }
       }
 
       // Send subscription to backend
-      const response = await fetch('/api/notifications/subscribe', {
-        method: 'POST',
-        headers: {
-          'Content-Type': 'application/json',
-        },
-        credentials: 'include',
-        body: JSON.stringify({
-          subscription: subscription.toJSON(),
-        }),
-      });
+      try {
+        const response = await fetch('/api/notifications/subscribe', {
+          method: 'POST',
+          headers: {
+            'Content-Type': 'application/json',
+          },
+          credentials: 'include',
+          body: JSON.stringify({
+            subscription: subscription.toJSON(),
+          }),
+        });
 
-      if (!response.ok) {
-        throw new Error('Failed to save subscription');
+        if (!response.ok) {
+          const errorData = await response.json().catch(() => ({}));
+          throw new Error(errorData.message || 'Failed to save subscription');
+        }
+
+        console.log('Subscription saved successfully');
+      } catch (fetchError: any) {
+        console.error('Error saving subscription to backend:', fetchError);
+        throw fetchError;
       }
-
-      console.log('Subscription saved successfully');
     } catch (error) {
       console.error('Error subscribing to notifications:', error);
       throw error;

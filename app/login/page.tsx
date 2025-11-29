@@ -25,15 +25,23 @@ export default function LoginPage() {
         method: 'POST',
         headers: { 'Content-Type': 'application/json' },
         body: JSON.stringify({ email, password }),
-        credentials: 'include', // Ensure cookies are included
+        credentials: 'include',
       });
+      
+      // Check if response is valid JSON before parsing
+      const contentType = response.headers.get('content-type');
+      if (!contentType?.includes('application/json')) {
+        throw new Error('Server returned invalid response format');
+      }
+      
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Login failed');
       
       // Use window.location for a full page reload to ensure cookies are set
-      window.location.href = '/dashboard';
+      window.location.href = data.redirectTo || '/dashboard';
     } catch (error: any) {
-      setError(error.message);
+      console.error('Login error:', error);
+      setError(error.message || 'An unexpected error occurred. Please try again.');
     } finally {
       setIsLoading(false);
     }

@@ -3,10 +3,11 @@
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Shipment from '@/models/Shipment.model';
-import User from '@/models/User.model'; // We'll need this later for assigning
+import User from '@/models/User.model';
 import { jwtVerify } from 'jose';
 import { customAlphabet } from 'nanoid';
 import { sanitizeInput, sanitizeObject, isValidEmail, isValidPhone, isValidAddress } from '@/lib/sanitize';
+import { dispatchNotification } from '@/app/lib/notificationDispatcher';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -124,6 +125,17 @@ export async function POST(request: NextRequest) {
     });
 
     await newShipment.save();
+    
+    // Dispatch 'shipment_created' notification
+    await dispatchNotification({
+      event: 'shipment_created',
+      shipmentId: newShipment._id.toString(),
+      trackingId: newShipment.trackingId,
+      tenantId: payload.tenantId,
+      createdBy: payload.userId || payload.id || payload.sub,
+    }).catch(err => {
+      console.error('Error dispatching shipment_created notification:', err);
+    });
     
     return NextResponse.json(newShipment, { status: 201 });
 

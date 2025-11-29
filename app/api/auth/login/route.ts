@@ -9,6 +9,15 @@ import { sanitizeInput } from '@/lib/sanitize';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
 
 export async function POST(request: NextRequest) {
+  // Validate Content-Type
+  const contentType = request.headers.get('content-type');
+  if (!contentType?.includes('application/json')) {
+    return NextResponse.json(
+      { message: 'Content-Type must be application/json' },
+      { status: 400 }
+    );
+  }
+
   // Check rate limit
   const clientIp = getClientIp(request);
   const rateLimitResult = checkRateLimit(clientIp, 'LOGIN');
@@ -31,7 +40,18 @@ export async function POST(request: NextRequest) {
   await dbConnect();
 
   try {
-    const { email, password } = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch (parseError) {
+      console.error('JSON parse error:', parseError);
+      return NextResponse.json(
+        { message: 'Invalid request format. Please send valid JSON.' },
+        { status: 400 }
+      );
+    }
+
+    const { email, password } = body;
 
     // Sanitize inputs
     const sanitizedEmail = email?.toLowerCase().trim();
@@ -121,6 +141,18 @@ export async function POST(request: NextRequest) {
 
   } catch (error) {
     console.error('Unified Login Error:', error);
-    return NextResponse.json({ message: 'An internal server error occurred.' }, { status: 500 });
+    
+    // Only return JSON if we haven't already sent a response
+    if (error instanceof SyntaxError) {
+      return NextResponse.json(
+        { message: 'Invalid JSON in request body.' },
+        { status: 400 }
+      );
+    }
+    
+    return NextResponse.json(
+      { message: 'An internal server error occurred.' },
+      { status: 500 }
+    );
   }
 }

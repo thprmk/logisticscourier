@@ -22,7 +22,10 @@ export async function POST(request: NextRequest) {
     
     const payload = await getUserPayload(request);
     
-    if (!payload || !payload.userId) {
+    // Support both userId (regular users) and id/sub (superAdmin)
+    const userId = payload?.userId || payload?.id || payload?.sub;
+    
+    if (!payload || !userId) {
       return NextResponse.json({ message: 'Unauthorized' }, { status: 401 });
     }
 
@@ -35,13 +38,11 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    await dbConnect();
-
     // Delete subscription
     const result = await PushSubscription.deleteOne({ endpoint });
 
     console.log('Push subscription deleted:', {
-      userId: payload.userId,
+      userId: userId.toString(),
       endpoint,
       deletedCount: result.deletedCount,
     });

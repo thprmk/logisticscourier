@@ -15,21 +15,24 @@ export async function GET(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
 
-    if (!payload.userId) {
+    // Support both userId (regular users) and id/sub (superAdmin)
+    const userId = payload.userId || payload.id || payload.sub;
+    
+    if (!userId) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
-    console.log('Fetching notifications for user:', payload.userId);
+    console.log('Fetching notifications for user:', userId);
 
     await dbConnect();
 
     // Fetch notifications for the logged-in user, sorted by newest first
-    const notifications = await Notification.find({ userId: payload.userId })
+    const notifications = await Notification.find({ userId })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
 
-    console.log(`Found ${notifications.length} notifications for user ${payload.userId}`);
+    console.log(`Found ${notifications.length} notifications for user ${userId}`);
 
     return NextResponse.json(notifications);
   } catch (error: any) {
@@ -49,7 +52,10 @@ export async function PATCH(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
 
-    if (!payload.userId) {
+    // Support both userId (regular users) and id/sub (superAdmin)
+    const userId = payload.userId || payload.id || payload.sub;
+    
+    if (!userId) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
@@ -58,7 +64,7 @@ export async function PATCH(request: NextRequest) {
     await dbConnect();
 
     const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, userId: payload.userId },
+      { _id: notificationId, userId },
       { read: true },
       { new: true }
     );
@@ -85,14 +91,17 @@ export async function POST(request: NextRequest) {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
 
-    if (!payload.userId) {
+    // Support both userId (regular users) and id/sub (superAdmin)
+    const userId = payload.userId || payload.id || payload.sub;
+    
+    if (!userId) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
     await dbConnect();
 
     await Notification.updateMany(
-      { userId: payload.userId, read: false },
+      { userId, read: false },
       { read: true }
     );
 

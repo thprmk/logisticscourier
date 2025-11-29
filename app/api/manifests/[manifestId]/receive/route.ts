@@ -5,6 +5,7 @@ import dbConnect from '@/lib/dbConnect';
 import Manifest from '@/models/Manifest.model';
 import Shipment from '@/models/Shipment.model';
 import { jwtVerify } from 'jose';
+import { dispatchNotification } from '@/app/lib/notificationDispatcher';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -13,7 +14,7 @@ async function getUserPayload(request: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
-    return payload;
+    return payload as any;
   } catch (error) {
     return null;
   }
@@ -77,17 +78,17 @@ export async function PUT(
       {
         $set: {
           status: 'At Destination Branch',
-          currentBranchId: payload.tenantId, // Update currentBranchId to destination branch
-          tenantId: payload.tenantId, // CRUCIAL: Transfer shipment to destination branch tenant
+          currentBranchId: payload.tenantId,
+          tenantId: payload.tenantId,
         },
         $push: {
           statusHistory: {
             status: 'At Destination Branch',
             timestamp: new Date(),
-            notes: `Received via Manifest ${manifest._id}`,
-          },
+            notes: `Received via Manifest ${manifest._id.toString()}`,
+          } as any,
         },
-      }
+      } as any
     );
     
     console.log('Update result:', updateResult.modifiedCount, 'shipments updated');
@@ -95,6 +96,16 @@ export async function PUT(
     // Return updated manifest and the updated shipments
     const updatedShipments = await Shipment.find({ _id: { $in: manifest.shipmentIds } });
     console.log('Verified shipments after update:', updatedShipments.map(s => ({ id: s._id, status: s.status, tenantId: s.tenantId })));
+
+    // Dispatch 'manifest_arrived' notification
+    await dispatchNotification({
+      event: 'manifest_arrived',
+      manifestId: manifest._id.toString(),
+      trackingId: manifest._id.toString(),
+      tenantId: payload.tenantId,
+    } as any).catch(err => {
+      console.error('Error dispatching manifest_arrived notification:', err);
+    });
 
     return NextResponse.json({ manifest, updatedShipments });
   } catch (error: any) {

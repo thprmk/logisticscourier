@@ -6,6 +6,7 @@ import Manifest from '@/models/Manifest.model';
 import Shipment from '@/models/Shipment.model';
 import { jwtVerify } from 'jose';
 import { sanitizeInput } from '@/lib/sanitize';
+import { dispatchNotification } from '@/app/lib/notificationDispatcher';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -14,7 +15,7 @@ async function getUserPayload(request: NextRequest) {
   try {
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
-    return payload;
+    return payload as any;
   } catch (error) {
     return null;
   }
@@ -136,6 +137,17 @@ export async function POST(request: NextRequest) {
 
     await manifest.save();
 
+    // Dispatch 'manifest_created' notification
+    await dispatchNotification({
+      event: 'manifest_created',
+      manifestId: manifest._id.toString(),
+      trackingId: manifest._id.toString(),
+      tenantId: payload.tenantId,
+      createdBy: payload.userId || payload.id || payload.sub,
+    } as any).catch(err => {
+      console.error('Error dispatching manifest_created notification:', err);
+    });
+
     // Update all shipments to "In Transit to Destination"
     await Shipment.updateMany(
       { _id: { $in: shipmentIds } },
@@ -143,13 +155,25 @@ export async function POST(request: NextRequest) {
         status: 'In Transit to Destination',
         $push: {
           statusHistory: {
-            status: 'In Transit to Destination',
+            status: 'In Transit to Destination' as const,
             timestamp: new Date(),
-            notes: `Dispatched via Manifest ${manifest._id}`,
-          },
+            notes: `Dispatched via Manifest ${manifest._id.toString()}`,
+          } as any,
         },
-      }
+      } as any
     );
+
+    // Dispatch 'manifest_dispatched' notification
+    await dispatchNotification({
+      event: 'manifest_dispatched',
+      manifestId: manifest._id.toString(),
+      trackingId: manifest._id.toString(),
+      tenantId: payload.tenantId,
+      toBranch: toBranchId,
+      createdBy: payload.userId || payload.id || payload.sub,
+    } as any).catch(err => {
+      console.error('Error dispatching manifest_dispatched notification:', err);
+    });
 
     return NextResponse.json(manifest, { status: 201 });
   } catch (error: any) {

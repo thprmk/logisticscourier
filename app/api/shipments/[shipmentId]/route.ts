@@ -97,6 +97,7 @@ export async function PATCH(request: NextRequest) {
     if (assignedTo !== undefined) {
       if (payload.role === 'admin') {
         const previousAssignedTo = shipment.assignedTo;
+        const staffChanged = assignedTo !== previousAssignedTo;
         shipment.assignedTo = assignedTo;
         
         // If assigning to a staff and current status is 'Pending' or 'At Destination Branch', update status to 'Assigned'
@@ -108,14 +109,26 @@ export async function PATCH(request: NextRequest) {
             notes: 'Shipment assigned to delivery staff'
           };
           shipment.statusHistory.unshift(newHistoryEntry);
-          
+        }
+        
+        // Dispatch notification if staff assignment changed (either assigned or reassigned)
+        if (assignedTo && staffChanged) {
           // Dispatch 'delivery_assigned' notification using the dispatcher
+          console.log('[Shipment Assignment] Dispatching notification:', {
+            assignedTo,
+            assignedToType: typeof assignedTo,
+            trackingId: shipment.trackingId,
+            shipmentId: shipment._id,
+            previousAssignedTo,
+            staffChanged
+          });
+          
           await dispatchNotification({
             event: 'delivery_assigned',
             shipmentId: shipment._id.toString(),
             trackingId: shipment.trackingId,
             tenantId: payload.tenantId as string,
-            assignedStaffId: assignedTo,
+            assignedStaffId: assignedTo.toString(),
             createdBy: payload.userId as string,
           } as any).catch(err => {
             console.error('Error dispatching delivery_assigned notification:', err);

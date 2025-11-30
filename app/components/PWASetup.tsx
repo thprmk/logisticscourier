@@ -53,81 +53,107 @@ export default function PWASetup() {
     }
 
     try {
+      // Check if permission was already denied
+      if (Notification.permission === 'denied') {
+        toast.error('Notification permission was denied. Please enable it in browser settings.');
+        setShowPermissionPrompt(false);
+        return;
+      }
+
+      // Request permission
       const permission = await Notification.requestPermission();
+      console.log('Permission result:', permission);
 
       if (permission === 'granted') {
         console.log('Notification permission granted');
-        await subscribeToNotifications();
-        toast.success('Notifications enabled successfully');
-        setShowPermissionPrompt(false);
+        try {
+          await subscribeToNotifications();
+          toast.success('Notifications enabled successfully');
+          setShowPermissionPrompt(false);
+        } catch (subError: any) {
+          console.error('Subscription error:', subError);
+          toast.error(`Subscription failed: ${subError.message}`);
+        }
       } else if (permission === 'denied') {
-        toast.error('Notification permission denied');
+        toast.error('You denied notification permission. Enable it in browser settings.');
+      } else {
+        toast.error('Notification permission dismissed');
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error requesting notification permission:', error);
-      toast.error('Failed to request notification permission');
+      toast.error(`Permission error: ${error.message}`);
     }
   };
 
   const subscribeToNotifications = async () => {
     try {
-      if (!('serviceWorker' in navigator) || !('PushManager' in window)) {
-        console.warn('Push notifications not supported');
-        toast.error('Push notifications are not supported on this device');
-        return;
+      if (!('serviceWorker' in navigator)) {
+        console.error('Service Worker not supported');
+        throw new Error('Service workers are not supported in this browser');
+      }
+      
+      if (!('PushManager' in window)) {
+        console.error('PushManager not available');
+        throw new Error('Push notifications are not supported in this browser');
       }
 
+      // Wait for service worker to be ready
       const registration = await navigator.serviceWorker.ready;
+      console.log('Service Worker ready:', registration);
 
       // Check if already subscribed
       let subscription = await registration.pushManager.getSubscription();
+      console.log('Existing subscription:', subscription);
 
       if (!subscription) {
         // Subscribe to push notifications
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
 
         if (!vapidPublicKey) {
-          console.warn('VAPID public key not configured');
-          toast.error('Notification system not properly configured');
-          return;
+          console.error('VAPID public key not found in environment');
+          throw new Error('VAPID public key not configured. Contact administrator.');
         }
 
+        console.log('VAPID key found, subscribing...');
         try {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
           });
+          console.log('Successfully subscribed to push:', subscription);
         } catch (subError: any) {
-          console.error('Failed to subscribe to push manager:', subError);
-          toast.error('Failed to enable push notifications');
-          return;
+          console.error('Push subscription failed:', subError.message);
+          throw new Error(`Failed to subscribe: ${subError.message}`);
         }
+      } else {
+        console.log('Already subscribed, skipping push subscription');
       }
 
       // Send subscription to backend
       try {
+        console.log('Saving subscription to backend...');
+        console.log('Subscription data:', subscription.toJSON());
         const response = await fetch('/api/notifications/subscribe', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify({
-            subscription: subscription.toJSON(),
-          }),
+          body: JSON.stringify(subscription.toJSON()),
         });
 
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          throw new Error(errorData.message || 'Failed to save subscription');
+          console.error('Backend error:', errorData);
+          throw new Error(errorData.message || `Server error: ${response.status}`);
         }
 
-        console.log('Subscription saved successfully');
+        console.log('Subscription saved successfully to backend');
       } catch (fetchError: any) {
         console.error('Error saving subscription to backend:', fetchError);
-        throw fetchError;
+        throw new Error(`Failed to save subscription: ${fetchError.message}`);
       }
-    } catch (error) {
+    } catch (error: any) {
       console.error('Error subscribing to notifications:', error);
       throw error;
     }
@@ -145,6 +171,8 @@ export default function PWASetup() {
 
     return outputArray;
   };
+
+  // ... existing code ...
 
   if (!showPermissionPrompt) {
     return null;

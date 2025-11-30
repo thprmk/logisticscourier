@@ -23,6 +23,8 @@ import {
 } from 'lucide-react'; 
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
+import NotificationItem from '@/app/components/NotificationItem';
+import { getNotificationPresentation, formatNotificationTime } from '@/app/lib/notificationPresentation';
 import {
   DropdownMenu,
   DropdownMenuContent,
@@ -85,7 +87,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   // Fetch notifications for admin and delivery staff
   useEffect(() => {
-    if (user && (user.role === 'admin' || user.role === 'staff')) {
+    if (user && (user.role === 'admin' || user.role === 'dispatcher')) {
       const fetchNotifications = async () => {
         try {
           const res = await fetch('/api/notifications', {
@@ -102,8 +104,8 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         }
       };
       fetchNotifications();
-      // Refresh notifications every 30 seconds
-      const interval = setInterval(fetchNotifications, 30000);
+      // Refresh notifications every 10 seconds for faster updates
+      const interval = setInterval(fetchNotifications, 10000);
       return () => clearInterval(interval);
     }
   }, [user]);
@@ -111,10 +113,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // While we are fetching the user for the first time, show a loading screen.
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-lg font-medium text-gray-700">Loading your session...</p>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="relative w-24 h-24">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{
+              animation: 'spin 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}></div>
+          </div>
         </div>
       </div>
     );
@@ -123,10 +129,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // If user is delivery staff, don't render this layout at all (they should be redirected)
   if (user.role === 'staff') {
     return (
-      <div className="flex h-screen items-center justify-center bg-gray-50">
-        <div className="text-center">
-          <div className="inline-block animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-blue-500 mb-4"></div>
-          <p className="text-lg font-medium text-gray-700">Redirecting...</p>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="relative w-24 h-24">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{
+              animation: 'spin 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
+            }}></div>
+          </div>
         </div>
       </div>
     );
@@ -158,6 +168,28 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     ];
   }
   
+  const handleNotificationDropdownOpen = async () => {
+    setShowNotifications(true);
+    // Mark all unread as read when dropdown opens
+    const unreadNotifs = notificationList.filter((n: any) => !n.read);
+    
+    // Send all mark-as-read requests in parallel
+    await Promise.all(
+      unreadNotifs.map((notif) =>
+        fetch('/api/notifications', {
+          method: 'PATCH',
+          credentials: 'include',
+          headers: { 'Content-Type': 'application/json' },
+          body: JSON.stringify({ notificationId: notif._id.toString() }),
+        }).catch(error => console.error('Failed to mark notification as read:', error))
+      )
+    );
+    
+    // Update local state AFTER all requests are done
+    setNotificationList(notificationList.map(n => ({ ...n, read: true })));
+    setNotifications(0);
+  };
+  
   const handleLogout = async () => {
     setShowLogoutModal(true);
   };
@@ -179,27 +211,25 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
-          <div className="flex items-center justify-between h-16">
+     {/* Top Header */}
+      <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 relative">
+          <div className="flex items-center justify-between h-16 sm:h-16">
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden"
+              className="md:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
             
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3">
-              <div className="flex items-center justify-center w-9 h-9 sm:w-10 sm:h-10 bg-gradient-to-br from-blue-600 to-blue-700 rounded-xl shadow-md">
-                <Truck className="h-4 w-4 sm:h-5 sm:w-5 text-white" strokeWidth={2.5} />
-              </div>
+            <div className="flex items-center gap-3 sm:gap-3">
+              <Package className="h-7 w-7 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2} />
               <div>
-                <h1 className="text-lg sm:text-xl font-bold text-gray-900 tracking-tight">Netta Logistics</h1>
+                <h1 className="text-lg sm:text-lg md:text-lg font-bold text-gray-900 tracking-tight">Netta</h1>
                 {user?.tenantName && (
                   <p className="text-xs text-gray-500 font-medium hidden sm:block">{user.tenantName}</p>
                 )}
@@ -212,31 +242,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link 
                   key={link.href}
                   href={link.href} 
-                  className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-medium transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard') 
-                      ? 'bg-blue-600 text-white shadow-md hover:shadow-lg hover:bg-blue-700' 
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                      ? 'bg-blue-100 text-blue-700' 
+                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <link.icon className="h-4 w-4" strokeWidth={2} />
+                  <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={1.5} />
                   <span>{link.label}</span>
                 </Link>
               ))}
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Notification Bell */}
-              {(user.role === 'admin' || user.role === 'staff') && (
+              {(user.role === 'admin' || user.role === 'dispatcher') && (
                 <Button
                   variant="ghost"
                   size="icon"
-                  onClick={() => setShowNotifications(!showNotifications)}
-                  className="relative h-10 w-10"
+                  onClick={handleNotificationDropdownOpen}
+                  className="relative h-10 w-10 sm:h-9 sm:w-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                 >
-                  <Bell className="h-5 w-5" strokeWidth={2} />
+                  <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={1.5} />
                   {notifications > 0 && (
-                    <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                    <span className="absolute -top-1 -right-1 h-5 w-5 sm:h-4 sm:w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                       {notifications}
                     </span>
                   )}
@@ -246,25 +276,23 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Branch Manager Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-3 flex-shrink-0">
-                    <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center flex-shrink-0">
-                      <UserIcon className="h-4 w-4 text-white" strokeWidth={2} />
-                    </div>
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100">
+                    <UserIcon className="h-6 w-6 sm:h-6 sm:w-6 text-blue-600" strokeWidth={1.5} />
                     <div className="text-left min-w-max">
-                      <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                      <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
                       <p className="text-xs text-gray-500 -mt-0.5">{userRole}</p>
                     </div>
-                    <ChevronDown className="h-4 w-4 text-gray-500 ml-1 flex-shrink-0" />
+                    <ChevronDown className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-400 ml-1 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                <DropdownMenuContent align="end" className="w-56 sm:w-52">
+                  <div className="px-4 sm:px-3 py-3 sm:py-2 border-b border-gray-100">
+                    <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
                     <p className="text-xs text-gray-500 mt-1">{userRole}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer text-base sm:text-sm">
+                    <LogOut className="h-5 w-5 sm:h-4 sm:w-4 mr-2" strokeWidth={1.5} />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -274,55 +302,52 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <Button 
                 onClick={handleLogout}
                 variant="ghost"
-                size="sm"
-                className="lg:hidden text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5 h-10 flex-shrink-0"
+                size="icon"
+                className="lg:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10 sm:h-9 sm:w-9 flex-shrink-0"
               >
-                <LogOut className="h-4 w-4" strokeWidth={2} />
-                <span className="hidden sm:inline">Sign Out</span>
+                <LogOut className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={1.5} />
               </Button>
             </div>
           </div>
         </div>
         
         {/* Mobile Navigation Menu */}
-        <div className={`md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden transition-all duration-300 ease-in-out z-40 ${
-          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        <div className={`md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden z-40 transition-[max-height] duration-400 ease-in-out ${
+          isMobileMenuOpen ? 'max-h-96' : 'max-h-0'
         }`}>
-          <div>
-            <nav className="px-4 py-3 space-y-1">
+            <nav className="px-3 sm:px-4 py-4 sm:py-3 space-y-2 sm:space-y-1">
               {navLinks.map((link) => (
                 <Link 
                   key={link.href}
                   href={link.href}
                   onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150 ${
+                  className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-medium transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <link.icon className="h-5 w-5" strokeWidth={2} />
+                  <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
                   <span>{link.label}</span>
                 </Link>
               ))}
               
               {/* Mobile User Info */}
-              <div className="flex items-center gap-3 px-4 py-3 mt-2 border-t border-gray-200 pt-3">
-                <div className="h-10 w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md">
-                  <UserIconComponent size={18} className="text-white" strokeWidth={2.5} />
+              <div className="flex items-center gap-3 px-4 py-4 sm:py-3 mt-2 border-t border-gray-200 pt-4 sm:pt-3">
+                <div className="h-12 w-12 sm:h-10 sm:w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md flex-shrink-0">
+                  <UserIconComponent size={20} className="text-white" strokeWidth={2.5} />
                 </div>
                 <div>
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                  <p className="text-base sm:text-sm font-semibold text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">{userRole}</p>
                 </div>
               </div>
             </nav>
-          </div>
         </div>
       </header>
       
       {/* Notification Dropdown */}
-      {showNotifications && (user.role === 'admin' || user.role === 'staff') && (
+      {showNotifications && (user.role === 'admin' || user.role === 'dispatcher') && (
         <>
           {/* Backdrop */}
           <div 
@@ -330,53 +355,31 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             onClick={() => setShowNotifications(false)}
           />
           <div className="fixed top-16 right-2 sm:right-6 w-[calc(100vw-1rem)] sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-gray-100 bg-gradient-to-r from-blue-50 to-white">
+            <div className="p-3 sm:p-4 border-b border-gray-100">
               <div className="flex items-center justify-between">
                 <h3 className="text-sm sm:text-base font-bold text-gray-900">Notifications</h3>
-                <span className="px-2 py-1 bg-blue-600 text-white text-xs font-bold rounded-full">
-                  {notifications}
-                </span>
               </div>
             </div>
           <div className="overflow-y-auto max-h-80">
             {notificationList.length > 0 ? (
-              <div className="p-3 space-y-2">
-                {notificationList.map((notification: any) => (
-                  <div 
-                    key={notification._id}
-                    className={`p-3 border rounded-lg transition-colors cursor-pointer ${
-                      notification.read 
-                        ? 'bg-gray-50 border-gray-200' 
-                        : notification.type === 'assignment'
-                          ? 'bg-blue-50 border-blue-200 hover:bg-blue-100'
-                          : 'bg-green-50 border-green-200 hover:bg-green-100'
-                    }`}
-                  >
-                    <div className="flex items-start gap-3">
-                      <div className={`p-2 rounded-lg ${
-                        notification.type === 'assignment' ? 'bg-blue-100' : 'bg-green-100'
-                      }`}>
-                        {notification.type === 'assignment' ? (
-                          <Bell className={`h-4 w-4 ${
-                            notification.type === 'assignment' ? 'text-blue-600' : 'text-green-600'
-                          }`} />
-                        ) : (
-                          <Package className="h-4 w-4 text-green-600" />
-                        )}
-                      </div>
-                      <div className="flex-1">
-                        <p className={`text-sm font-semibold text-gray-900 ${
-                          !notification.read && 'font-bold'
-                        }`}>
-                          {notification.message}
-                        </p>
-                        <p className="text-xs text-gray-500 mt-1">
-                          {new Date(notification.createdAt).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                  </div>
-                ))}
+              <div className="p-3 space-y-3">
+            {notificationList.map((notification: any) => {
+                  const presentation = getNotificationPresentation(notification.type);
+                  const formattedTime = formatNotificationTime(notification.createdAt);
+                  
+                  return (
+                    <NotificationItem
+                      key={notification._id}
+                      id={notification._id.toString()}
+                      type={presentation.type}
+                      title={presentation.title}
+                      message={notification.message}
+                      timestamp={formattedTime}
+                      read={notification.read}
+                      pill={presentation.pill}
+                    />
+                  );
+                })}
                 <Link 
                   href={user.role === 'admin' ? '/dashboard/shipments' : '/deliverystaff'}
                   onClick={() => setShowNotifications(false)}

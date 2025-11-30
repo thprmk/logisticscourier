@@ -10,7 +10,9 @@ import {
   Send,
   Calendar,
   ChevronDown,
+  TrendingUp,
 } from "lucide-react";
+import { Button } from '@/components/ui/button';
 import { KPICard, ModernTable, StatCard } from "./DashboardComponents";
 
 interface IShipment {
@@ -188,40 +190,43 @@ export default function BranchDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header Section */}
-      <div className="bg-white border-b border-gray-200 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-6 py-4">
+      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-4">
           <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
             <div>
-              <h1 className="text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-sm text-gray-500 mt-1">
+              <h1 className="text-3xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
+              <p className="text-base sm:text-sm text-gray-600 mt-1 sm:mt-0.5">
                 Welcome back, {user?.name || 'User'}
               </p>
             </div>
 
             {/* Date Range Picker */}
             <div className="relative inline-block w-full md:w-56">
-              <button
+              <Button
                 onClick={() => setDropdownOpen(!dropdownOpen)}
-                className="w-full px-4 py-2.5 text-sm font-medium text-gray-700 bg-gray-50 border border-gray-200 rounded-xl hover:bg-gray-100 hover:border-gray-300 transition-all flex items-center gap-2 justify-between"
+                variant="outline"
+                className="w-full justify-between text-gray-700 h-12 sm:h-10 text-base sm:text-sm"
               >
                 <span className="flex items-center gap-2">
-                  <Calendar className="h-4 w-4 text-gray-500" />
-                  {dateRange === "today"
-                    ? "Today"
-                    : dateRange === "yesterday"
-                      ? "Yesterday"
-                      : dateRange === "last7"
-                        ? "Last 7 Days"
-                        : dateRange === "month"
-                          ? "This Month"
-                          : "Custom Range"}
+                  <Calendar className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" strokeWidth={1.5} />
+                  <span className="font-medium">
+                    {dateRange === "today"
+                      ? "Today"
+                      : dateRange === "yesterday"
+                        ? "Yesterday"
+                        : dateRange === "last7"
+                          ? "Last 7 Days"
+                          : dateRange === "month"
+                            ? "This Month"
+                            : "Custom Range"}
+                  </span>
                 </span>
-                <ChevronDown className={`h-4 w-4 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} />
-              </button>
+                <ChevronDown className={`h-5 w-5 sm:h-4 sm:w-4 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
+              </Button>
 
               {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full bg-white border border-gray-100 rounded-xl shadow-xl z-50 overflow-hidden ring-1 ring-black/5">
-                  <div className="p-1">
+                <div className="absolute right-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
+                  <div className="p-2 sm:p-1">
                     {[
                       { id: 'today', label: 'Today' },
                       { id: 'yesterday', label: 'Yesterday' },
@@ -240,10 +245,11 @@ export default function BranchDashboardPage() {
                           }
                           setDropdownOpen(false);
                         }}
-                        className={`w-full px-3 py-2 text-left text-sm rounded-lg flex items-center gap-2 transition-colors ${dateRange === option.id
-                          ? 'bg-blue-50 text-blue-700 font-medium'
-                          : 'text-gray-700 hover:bg-gray-50'
-                          }`}
+                        className={`w-full px-3 py-3 sm:py-2 text-left text-base sm:text-sm rounded-md transition-colors flex items-center gap-2 ${
+                          dateRange === option.id
+                            ? 'bg-blue-100 text-blue-700 font-medium'
+                            : 'text-gray-700 hover:bg-gray-100'
+                        }`}
                       >
                         {option.label}
                       </button>
@@ -255,23 +261,23 @@ export default function BranchDashboardPage() {
           </div>
 
           {showCustom && dateRange === "custom" && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-xl border border-gray-200 flex flex-wrap gap-4 items-end animate-in fade-in slide-in-from-top-2">
+            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-wrap gap-3 sm:gap-4 items-end animate-in fade-in slide-in-from-top-2">
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">From</label>
+                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">From</label>
                 <input
                   type="date"
                   value={customStart}
                   onChange={(e) => setCustomStart(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
                 />
               </div>
               <div>
-                <label className="block text-xs font-semibold text-gray-500 uppercase tracking-wide mb-1.5">To</label>
+                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">To</label>
                 <input
                   type="date"
                   value={customEnd}
                   onChange={(e) => setCustomEnd(e.target.value)}
-                  className="px-3 py-2 text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all"
+                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
                 />
               </div>
             </div>
@@ -279,9 +285,9 @@ export default function BranchDashboardPage() {
         </div>
       </div>
 
-      <div className="max-w-7xl mx-auto px-6 py-8 space-y-8">
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
         {/* KPI Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
           <KPICard
             label="Total Shipments"
             value={kpis.totalCreated.toString()}
@@ -309,7 +315,7 @@ export default function BranchDashboardPage() {
         </div>
 
         {/* Operational Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4">
           <StatCard
             label="Ready for Assignment"
             value={readyForAssignment.length}
@@ -342,8 +348,8 @@ export default function BranchDashboardPage() {
 
         {/* Recent Shipments Table */}
         <div>
-          <div className="flex items-center justify-between mb-6">
-            <h2 className="text-lg font-bold text-gray-900">Recent Activity</h2>
+          <div className="flex items-center justify-between mb-4 sm:mb-6">
+            <h2 className="text-xl sm:text-lg font-bold text-gray-900">Recent Activity</h2>
           </div>
 
           <ModernTable
@@ -353,18 +359,18 @@ export default function BranchDashboardPage() {
             emptyMessage="No recent shipments found"
             renderRow={(shipment, i) => (
               <tr key={shipment._id} className="hover:bg-gray-50/50 transition-colors group">
-                <td className="px-8 py-5">
-                  <span className="text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors">
+                <td className="px-4 sm:px-8 py-4 sm:py-5">
+                  <span className="text-base sm:text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors">
                     {shipment.trackingId}
                   </span>
                 </td>
-                <td className="px-8 py-5">
+                <td className="px-4 sm:px-8 py-4 sm:py-5">
                   <div className="flex flex-col">
-                    <span className="text-base text-gray-900 font-medium">{shipment.recipient.name}</span>
+                    <span className="text-base sm:text-base text-gray-900 font-medium">{shipment.recipient.name}</span>
                     <span className="text-sm text-gray-500 truncate max-w-[250px]">{shipment.recipient.address}</span>
                   </div>
                 </td>
-                <td className="px-8 py-5">
+                <td className="px-4 sm:px-8 py-4 sm:py-5">
                   <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${shipment.status === "Failed"
                     ? "bg-red-100 text-red-700"
                     : shipment.status === "At Destination Branch"
@@ -374,7 +380,7 @@ export default function BranchDashboardPage() {
                     {shipment.status}
                   </span>
                 </td>
-                <td className="px-8 py-5 text-sm text-gray-500 font-medium">
+                <td className="px-4 sm:px-8 py-4 sm:py-5 text-sm text-gray-500 font-medium">
                   {new Date(shipment.createdAt).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',

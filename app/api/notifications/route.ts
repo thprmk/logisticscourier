@@ -23,16 +23,35 @@ export async function GET(request: NextRequest) {
     }
 
     console.log('Fetching notifications for user:', userId);
+    console.log('User ID Type:', typeof userId);
 
     await dbConnect();
 
+    // Convert userId to string for comparison if it's an object
+    const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
+    console.log('User ID String:', userIdString);
+
     // Fetch notifications for the logged-in user, sorted by newest first
-    const notifications = await Notification.find({ userId })
+    const notifications = await Notification.find({ userId: userIdString })
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
 
-    console.log(`Found ${notifications.length} notifications for user ${userId}`);
+    console.log(`Found ${notifications.length} notifications for user ${userIdString}`);
+    if (notifications.length > 0) {
+      console.log('Latest notifications:', notifications.slice(0, 3).map(n => ({ 
+        id: n._id, 
+        message: n.message, 
+        type: n.type,
+        userId: n.userId,
+        createdAt: n.createdAt,
+        read: n.read 
+      })));
+    } else {
+      console.log('[DEBUG] No notifications found. Checking database directly:');
+      const allNotifs = await Notification.find({}).limit(5).lean();
+      console.log('Sample of all notifications in DB:', allNotifs.map(n => ({ userId: n.userId, message: n.message })));
+    }
 
     return NextResponse.json(notifications);
   } catch (error: any) {
@@ -63,16 +82,21 @@ export async function PATCH(request: NextRequest) {
 
     await dbConnect();
 
+    // Convert userId to string for consistent comparison
+    const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
+
     const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, userId },
+      { _id: notificationId, userId: userIdString },
       { read: true },
       { new: true }
     );
 
     if (!notification) {
+      console.log(`[PATCH] Notification not found: _id=${notificationId}, userId=${userIdString}`);
       return NextResponse.json({ message: 'Notification not found' }, { status: 404 });
     }
 
+    console.log(`[PATCH] Marked notification as read: ${notificationId} for user ${userIdString}`);
     return NextResponse.json({ message: 'Notification marked as read', notification });
   } catch (error: any) {
     console.error('Error updating notification:', error);
@@ -100,8 +124,11 @@ export async function POST(request: NextRequest) {
 
     await dbConnect();
 
+    // Convert userId to string for consistent comparison
+    const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
+
     await Notification.updateMany(
-      { userId, read: false },
+      { userId: userIdString, read: false },
       { read: true }
     );
 

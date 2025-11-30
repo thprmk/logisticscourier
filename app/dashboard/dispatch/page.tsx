@@ -243,44 +243,44 @@ export default function DispatchPage() {
 
       {/* Stats Overview */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-lg border border-blue-200 p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-xl border border-blue-200/60 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Incoming Manifests</p>
-              <p className="text-3xl font-bold text-blue-900 mt-2">{incomingManifests.length}</p>
+              <p className="text-xs font-semibold text-blue-700 uppercase tracking-widest">Incoming Manifests</p>
+              <p className="text-4xl font-bold text-blue-900 mt-3 font-mono">{incomingManifests.length}</p>
             </div>
-            <div className="bg-blue-100 rounded-full p-3">
-              <TrendingDown className="h-8 w-8 text-blue-600" />
+            <div className="bg-blue-500/15 rounded-2xl p-4">
+              <TrendingDown className="h-10 w-10 text-blue-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-green-200 p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-xl border border-green-200/60 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">Outgoing Manifests</p>
-              <p className="text-3xl font-bold text-green-900 mt-2">{outgoingManifests.length}</p>
+              <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">Outgoing Manifests</p>
+              <p className="text-4xl font-bold text-green-900 mt-3 font-mono">{outgoingManifests.length}</p>
             </div>
-            <div className="bg-green-100 rounded-full p-3">
-              <Send className="h-8 w-8 text-green-600" />
+            <div className="bg-green-500/15 rounded-2xl p-4">
+              <Send className="h-10 w-10 text-green-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-lg border border-orange-200 p-6 hover:shadow-lg transition-shadow">
+        <div className="bg-white rounded-xl border border-orange-200/60 p-6 hover:shadow-md transition-shadow">
           <div className="flex items-center justify-between">
             <div>
-              <p className="text-xs font-semibold text-orange-700 uppercase tracking-wide">Available for Dispatch</p>
-              <p className="text-3xl font-bold text-orange-900 mt-2">{availableShipments.length}</p>
+              <p className="text-xs font-semibold text-orange-700 uppercase tracking-widest">Available for Dispatch</p>
+              <p className="text-4xl font-bold text-orange-900 mt-3 font-mono">{availableShipments.length}</p>
             </div>
-            <div className="bg-orange-100 rounded-full p-3">
-              <Box className="h-8 w-8 text-orange-600" />
+            <div className="bg-orange-500/15 rounded-2xl p-4">
+              <Box className="h-10 w-10 text-orange-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
       </div>
 
       {/* Tabs */}
-      <div className="border-b border-gray-200 overflow-x-auto">
-        <div className="flex gap-1 min-w-min md:min-w-0">
+      <div className="border-b border-gray-200">
+        <div className="flex gap-1">
         {[
           { value: 'create', label: 'Create Dispatch', icon: Plus },
           { value: 'incoming', label: `Incoming (${incomingManifests.length})`, icon: TrendingDown },
@@ -291,7 +291,7 @@ export default function DispatchPage() {
             <button
               key={tab.value}
               onClick={() => setActiveTab(tab.value as TabType)}
-              className={`px-3 md:px-5 py-3 font-medium text-xs md:text-sm border-b-2 transition-all flex items-center gap-1 md:gap-2 whitespace-nowrap flex-shrink-0 md:flex-shrink ${
+              className={`px-5 py-3 font-medium text-sm border-b-2 transition-all flex items-center gap-2 ${
                 activeTab === tab.value
                   ? 'border-blue-600 text-blue-600 bg-blue-50/30'
                   : 'border-transparent text-gray-600 hover:text-gray-900'
@@ -364,12 +364,12 @@ function CreateDispatchTab({
   handleDispatch,
 }: any) {
   return (
-    <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-2 gap-4 md:gap-6">
+    <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
       {/* Left: Form Section */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-        <h3 className="text-base md:text-lg font-bold text-gray-900 mb-4 md:mb-6">Dispatch Details</h3>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <h3 className="text-lg font-bold text-gray-900 mb-6">Dispatch Details</h3>
         
-        <div className="space-y-4 md:space-y-5">
+        <div className="space-y-5">
           {/* Destination Branch */}
           <div>
             <Label htmlFor="dest-branch" className="text-sm font-medium">Destination Branch <span className="text-red-500">*</span></Label>
@@ -461,10 +461,10 @@ function CreateDispatchTab({
       </div>
 
       {/* Right: Shipment Selection */}
-      <div className="bg-white rounded-lg border border-gray-200 p-4 md:p-6">
-        <div className="flex items-center justify-between mb-3 md:mb-4 gap-2">
-          <h3 className="text-base md:text-lg font-bold text-gray-900">
-            Available Shipments <span className="text-gray-500 font-normal text-sm md:text-base">({availableShipments.length})</span>
+      <div className="bg-white rounded-lg border border-gray-200 p-6">
+        <div className="flex items-center justify-between mb-4">
+          <h3 className="text-lg font-bold text-gray-900">
+            Available Shipments <span className="text-gray-500 font-normal text-base">({availableShipments.length})</span>
           </h3>
           {availableShipments.length > 0 && (
             <Button

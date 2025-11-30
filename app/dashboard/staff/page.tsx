@@ -287,7 +287,7 @@ export default function StaffManagementPage() {
       </div>
 
       {/* Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4">
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4 sm:gap-6">
         {/* Search Bar */}
         <div className="relative w-full sm:w-80">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -298,18 +298,18 @@ export default function StaffManagementPage() {
             placeholder="Search by name or email..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10 text-sm"
           />
         </div>
 
         {/* Filters and Button */}
         <div className="flex flex-col gap-4 w-full">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+          <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             {/* Filter by Role */}
             <div className="flex-1 min-w-[150px]">
-              <Label htmlFor="role-filter" className="text-xs block mb-1">Filter by Role</Label>
+              <Label htmlFor="role-filter" className="text-xs block mb-1 font-medium">Filter by Role</Label>
               <Select value={roleFilter || 'all'} onValueChange={(val) => setRoleFilter(val === 'all' ? '' : val)}>
-                <SelectTrigger id="role-filter" className="h-9 text-sm">
+                <SelectTrigger id="role-filter" className="h-10 text-sm">
                   <SelectValue placeholder="All Roles" />
                 </SelectTrigger>
                 <SelectContent>
@@ -330,7 +330,7 @@ export default function StaffManagementPage() {
                     setSearchQuery('');
                     setRoleFilter('');
                   }}
-                  className="h-9 text-xs"
+                  className="h-10 text-xs"
                 >
                   Clear
                 </Button>
@@ -346,9 +346,9 @@ export default function StaffManagementPage() {
                   setEditingStaffId('');
                   setIsStaffModalOpen(true);
                 }}
-                className="h-9 gap-2 whitespace-nowrap text-sm"
+                className="h-10 gap-2 whitespace-nowrap text-sm"
               >
-                <Plus size={16} />
+                <Plus size={18} />
                 <span className="hidden sm:inline">Add New</span>
                 <span className="sm:hidden">Add</span>
               </Button>
@@ -368,7 +368,7 @@ export default function StaffManagementPage() {
               size="sm"
               variant="destructive"
               onClick={handleBulkDelete}
-              className="gap-2"
+              className="gap-2 text-sm"
             >
               <Trash2 size={16} />
               Delete Selected
@@ -378,6 +378,7 @@ export default function StaffManagementPage() {
             size="sm"
             variant="outline"
             onClick={() => setSelectedStaffIds(new Set())}
+            className="text-sm"
           >
             Clear
           </Button>
@@ -387,15 +388,15 @@ export default function StaffManagementPage() {
         {isLoading ? (
           <div className="py-12 flex justify-center">
             <div className="text-center">
-              <Loader className="mx-auto h-8 w-8 animate-spin text-blue-500 mb-3" />
-              <p className="text-gray-600">Loading staff members...</p>
+              <Loader className="mx-auto h-8 w-8 animate-spin text-blue-500 mb-2" />
+              <p className="text-sm text-gray-600">Loading staff members...</p>
             </div>
           </div>
         ) : filteredStaff.length > 0 ? (
           <div className="hidden md:block table-container border rounded-lg">
-            <Table className="text-base">
+            <Table className="text-sm">
               <TableHeader>
-                <TableRow className="bg-gray-50 h-16">
+                <TableRow className="bg-gray-50 h-14">
                   <TableHead className="w-16 text-sm font-semibold">
                     <input
                       type="checkbox"
@@ -406,15 +407,15 @@ export default function StaffManagementPage() {
                     />
                   </TableHead>
                   <TableHead className="w-16 text-sm font-semibold">S/No</TableHead>
-                  <TableHead>User</TableHead>
-                  <TableHead>Email</TableHead>
-                  <TableHead>Role</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                  <TableHead className="text-sm font-semibold">User</TableHead>
+                  <TableHead className="text-sm font-semibold">Email</TableHead>
+                  <TableHead className="text-sm font-semibold">Role</TableHead>
+                  <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
                 {paginatedStaff.map((member, index) => (
-                  <TableRow key={member._id} className="h-20 hover:bg-gray-50">
+                  <TableRow key={member._id} className="h-16 hover:bg-gray-50">
                     <TableCell>
                       <input
                         type="checkbox"
@@ -423,18 +424,18 @@ export default function StaffManagementPage() {
                         className="w-4 h-4 cursor-pointer"
                       />
                     </TableCell>
-                    <TableCell className="font-medium text-base">{startIndex + index + 1}</TableCell>
+                    <TableCell className="font-medium text-sm">{startIndex + index + 1}</TableCell>
                     <TableCell>
-                      <div className="flex items-center gap-3">
-                        <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100">
-                          <UserIcon className="h-5 w-5 text-gray-500" />
+                      <div className="flex items-center gap-2">
+                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                          <UserIcon className="h-4 w-4 text-gray-500" />
                         </div>
                         <div className="text-sm font-medium text-gray-900">{member.name}</div>
                       </div>
                     </TableCell>
                     <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
-                    <TableCell className="text-base">{getRoleBadge(member)}</TableCell>
-                    <TableCell className="text-right space-x-2">
+                    <TableCell className="text-sm">{getRoleBadge(member)}</TableCell>
+                    <TableCell className="text-right space-x-1">
                       <Button
                         variant="ghost"
                         size="sm"
@@ -461,7 +462,7 @@ export default function StaffManagementPage() {
           <div className="py-12 text-center">
             <UserIcon className="mx-auto h-12 w-12 text-gray-300" />
             <h3 className="mt-2 text-lg font-medium text-gray-900">No staff members</h3>
-            <p className="mt-1 text-gray-500 mb-6">Get started by adding a new staff member.</p>
+            <p className="mt-1 text-sm text-gray-500 mb-6">Get started by adding a new staff member.</p>
             <Button
               onClick={() => {
                 setStaffName('');
@@ -472,7 +473,7 @@ export default function StaffManagementPage() {
                 setEditingStaffId('');
                 setIsStaffModalOpen(true);
               }}
-              className="gap-2"
+              className="gap-2 text-sm h-10"
             >
               <Plus size={16} />
               Add First Staff Member
@@ -481,18 +482,18 @@ export default function StaffManagementPage() {
         )}
         
         {filteredStaff.length > 0 && (
-          <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white border border-gray-200 rounded-lg">
-          <div className="text-base text-gray-600">
+          <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white border border-gray-200 rounded-lg">
+          <div className="text-sm text-gray-600">
             Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredStaff.length)}</span> of <span className="font-medium">{filteredStaff.length}</span> staff members
           </div>
           
-          <div className="flex items-center gap-2">
+          <div className="flex items-center gap-1">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="text-sm px-4"
+              className="text-xs px-3 h-9"
             >
               Previous
             </Button>
@@ -504,7 +505,7 @@ export default function StaffManagementPage() {
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className="text-sm w-10 h-10 p-0"
+                  className="text-xs w-8 h-8 p-0"
                 >
                   {page}
                 </Button>
@@ -516,7 +517,7 @@ export default function StaffManagementPage() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="text-sm px-4"
+              className="text-xs px-3 h-9"
             >
               Next
             </Button>
@@ -539,7 +540,7 @@ export default function StaffManagementPage() {
           
           <form onSubmit={handleAddStaff} autoComplete="off" className="space-y-4">
             <div>
-              <Label htmlFor="staffName" className="text-sm">Full Name</Label>
+              <Label htmlFor="staffName" className="text-sm font-medium">Full Name</Label>
               <Input
                 id="staffName"
                 type="text"
@@ -548,12 +549,12 @@ export default function StaffManagementPage() {
                 autoComplete="off"
                 placeholder="Enter staff member's name"
                 required
-                className="mt-2"
+                className="mt-2 h-10 text-sm"
               />
             </div>
             
             <div>
-              <Label htmlFor="staffEmail" className="text-sm">Email Address</Label>
+              <Label htmlFor="staffEmail" className="text-sm font-medium">Email Address</Label>
               <Input
                 id="staffEmail"
                 type="email"
@@ -562,13 +563,13 @@ export default function StaffManagementPage() {
                 autoComplete="off"
                 placeholder="Enter email address"
                 required
-                className="mt-2"
+                className="mt-2 h-10 text-sm"
               />
             </div>
                         
             {!isEditingStaff && (
               <div>
-                <Label htmlFor="staffPassword" className="text-sm">Temporary Password</Label>
+                <Label htmlFor="staffPassword" className="text-sm font-medium">Temporary Password</Label>
                 <Input
                   id="staffPassword"
                   type="password"
@@ -577,15 +578,15 @@ export default function StaffManagementPage() {
                   autoComplete="new-password"
                   placeholder="Enter temporary password"
                   required
-                  className="mt-2"
+                  className="mt-2 h-10 text-sm"
                 />
               </div>
             )}
                         
             <div>
-              <Label htmlFor="staffRole" className="text-sm">Role</Label>
+              <Label htmlFor="staffRole" className="text-sm font-medium">Role</Label>
               <Select value={staffRole} onValueChange={(val) => setStaffRole(val as 'staff' | 'admin')}>
-                <SelectTrigger id="staffRole" className="mt-2">
+                <SelectTrigger id="staffRole" className="mt-2 h-10 text-sm">
                   <SelectValue />
                 </SelectTrigger>
                 <SelectContent>
@@ -608,12 +609,14 @@ export default function StaffManagementPage() {
                 variant="outline"
                 onClick={() => setIsStaffModalOpen(false)}
                 disabled={isSubmittingStaff}
+                className="h-10 text-sm px-4"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmittingStaff}
+                className="h-10 text-sm px-6"
               >
                 {isSubmittingStaff 
                   ? (isEditingStaff ? 'Updating...' : 'Adding...') 
@@ -650,6 +653,7 @@ export default function StaffManagementPage() {
                 setShowDeleteModal(false);
                 setStaffToDelete(null);
               }}
+              className="h-10 text-sm px-4"
             >
               Cancel
             </Button>
@@ -657,6 +661,7 @@ export default function StaffManagementPage() {
               type="button"
               variant="destructive"
               onClick={confirmDeleteStaff}
+              className="h-10 text-sm px-4"
             >
               Remove Staff
             </Button>

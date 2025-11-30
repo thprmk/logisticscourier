@@ -218,6 +218,14 @@ async function handleManifestArrived(context: NotificationContext) {
 async function handleDeliveryAssigned(context: NotificationContext) {
   const { tenantId, shipmentId, trackingId, assignedStaffId } = context;
 
+  console.log('[Delivery Assigned] Processing:', {
+    assignedStaffId,
+    assignedStaffIdType: typeof assignedStaffId,
+    trackingId,
+    shipmentId,
+    tenantId
+  });
+
   if (!assignedStaffId) {
     console.warn('Delivery assigned event missing assignedStaffId');
     return;
@@ -251,10 +259,23 @@ async function handleDeliveryAssigned(context: NotificationContext) {
     read: false,
   };
 
+  console.log('[Delivery Assigned] Staff notification object:', {
+    userId: staffNotification.userId,
+    userIdType: typeof staffNotification.userId,
+    message: staffNotification.message
+  });
+
   // Save all notifications
   const allNotifications = [...adminNotifications, staffNotification];
   if (allNotifications.length > 0) {
     await Notification.insertMany(allNotifications);
+    console.log(`[Delivery Assigned] Notifications created for ${allNotifications.length} users:`, {
+      adminCount: adminNotifications.length,
+      staffId: staffNotification.userId,
+      message: staffNotification.message
+    });
+  } else {
+    console.warn('[Delivery Assigned] No notifications to save');
   }
 
   // Send PUSH notification to staff (immediate alert)

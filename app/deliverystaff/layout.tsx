@@ -168,12 +168,12 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             </Button>
             
             {/* Logo */}
-            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
-              <Package className="h-6 w-6 text-orange-500" strokeWidth={2} />
-              <div className="hidden sm:block">
-                <h1 className="text-base sm:text-lg font-bold text-gray-900 tracking-tight">Netta</h1>
+            <div className="flex items-center gap-3 flex-shrink-0">
+              <Package className="h-7 w-7 sm:h-6 sm:w-6 text-orange-500" strokeWidth={2} />
+              <div>
+                <h1 className="text-lg sm:text-lg font-bold text-gray-900 tracking-tight">Netta</h1>
                 {user?.tenantName && (
-                  <p className="text-xs text-gray-500 font-medium">{user.tenantName}</p>
+                  <p className="text-xs text-gray-500 font-medium hidden sm:block">{user.tenantName}</p>
                 )}
               </div>
             </div>

@@ -393,71 +393,128 @@ export default function StaffManagementPage() {
             </div>
           </div>
         ) : filteredStaff.length > 0 ? (
-          <div className="hidden md:block table-container border rounded-lg">
-            <Table className="text-sm">
-              <TableHeader>
-                <TableRow className="bg-gray-50 h-14">
-                  <TableHead className="w-16 text-sm font-semibold">
-                    <input
-                      type="checkbox"
-                      checked={selectedStaffIds.size === filteredStaff.length && filteredStaff.length > 0}
-                      onChange={handleSelectAll}
-                      className="w-4 h-4 cursor-pointer"
-                      title="Select all"
-                    />
-                  </TableHead>
-                  <TableHead className="w-16 text-sm font-semibold">S/No</TableHead>
-                  <TableHead className="text-sm font-semibold">User</TableHead>
-                  <TableHead className="text-sm font-semibold">Email</TableHead>
-                  <TableHead className="text-sm font-semibold">Role</TableHead>
-                  <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
-                </TableRow>
-              </TableHeader>
-              <TableBody>
-                {paginatedStaff.map((member, index) => (
-                  <TableRow key={member._id} className="h-16 hover:bg-gray-50">
-                    <TableCell>
+          <>
+            {/* Desktop Table View */}
+            <div className="hidden md:block table-container border rounded-lg">
+              <Table className="text-sm">
+                <TableHeader>
+                  <TableRow className="bg-gray-50 h-14">
+                    <TableHead className="w-16 text-sm font-semibold">
+                      <input
+                        type="checkbox"
+                        checked={selectedStaffIds.size === filteredStaff.length && filteredStaff.length > 0}
+                        onChange={handleSelectAll}
+                        className="w-4 h-4 cursor-pointer"
+                        title="Select all"
+                      />
+                    </TableHead>
+                    <TableHead className="w-16 text-sm font-semibold">S/No</TableHead>
+                    <TableHead className="text-sm font-semibold">User</TableHead>
+                    <TableHead className="text-sm font-semibold">Email</TableHead>
+                    <TableHead className="text-sm font-semibold">Role</TableHead>
+                    <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
+                  </TableRow>
+                </TableHeader>
+                <TableBody>
+                  {paginatedStaff.map((member, index) => (
+                    <TableRow key={member._id} className="h-16 hover:bg-gray-50">
+                      <TableCell>
+                        <input
+                          type="checkbox"
+                          checked={selectedStaffIds.has(member._id)}
+                          onChange={() => handleSelectStaff(member._id)}
+                          className="w-4 h-4 cursor-pointer"
+                        />
+                      </TableCell>
+                      <TableCell className="font-medium text-sm">{startIndex + index + 1}</TableCell>
+                      <TableCell>
+                        <div className="flex items-center gap-2">
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
+                            <UserIcon className="h-4 w-4 text-gray-500" />
+                          </div>
+                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                        </div>
+                      </TableCell>
+                      <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                      <TableCell className="text-sm">{getRoleBadge(member)}</TableCell>
+                      <TableCell className="text-right space-x-1">
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleEditStaff(member)}
+                          title="Edit Staff Member"
+                        >
+                          <Edit size={16} />
+                        </Button>
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => handleDeleteStaff(member._id, member.name)}
+                          title="Remove Staff Member"
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      </TableCell>
+                    </TableRow>
+                  ))}
+                </TableBody>
+              </Table>
+            </div>
+
+            {/* Mobile Card View */}
+            <div className="md:hidden space-y-4">
+              {paginatedStaff.map((member, index) => (
+                <div key={member._id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                  <div className="flex items-start justify-between">
+                    <div className="flex items-center gap-3 flex-1">
                       <input
                         type="checkbox"
                         checked={selectedStaffIds.has(member._id)}
                         onChange={() => handleSelectStaff(member._id)}
-                        className="w-4 h-4 cursor-pointer"
+                        className="w-4 h-4 cursor-pointer mt-1 flex-shrink-0"
                       />
-                    </TableCell>
-                    <TableCell className="font-medium text-sm">{startIndex + index + 1}</TableCell>
-                    <TableCell>
-                      <div className="flex items-center gap-2">
-                        <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                          <UserIcon className="h-4 w-4 text-gray-500" />
-                        </div>
-                        <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 flex-shrink-0">
+                        <UserIcon className="h-5 w-5 text-gray-500" />
                       </div>
-                    </TableCell>
-                    <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
-                    <TableCell className="text-sm">{getRoleBadge(member)}</TableCell>
-                    <TableCell className="text-right space-x-1">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleEditStaff(member)}
-                        title="Edit Staff Member"
-                      >
-                        <Edit size={16} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDeleteStaff(member._id, member.name)}
-                        title="Remove Staff Member"
-                      >
-                        <Trash2 size={16} />
-                      </Button>
-                    </TableCell>
-                  </TableRow>
-                ))}
-              </TableBody>
-            </Table>
-          </div>
+                      <div className="flex-1 min-w-0">
+                        <p className="text-base font-semibold text-gray-900 truncate">{member.name}</p>
+                        <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                      </div>
+                    </div>
+                  </div>
+                  <div className="flex items-center justify-between">
+                    <div className="flex items-center gap-2">
+                      <span className="text-xs text-gray-500 font-medium">S/No:</span>
+                      <span className="text-sm font-medium text-gray-900">{startIndex + index + 1}</span>
+                    </div>
+                    {getRoleBadge(member)}
+                  </div>
+                  <div className="flex items-center gap-2 justify-end">
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleEditStaff(member)}
+                      title="Edit Staff Member"
+                      className="h-9 gap-2"
+                    >
+                      <Edit size={16} />
+                      <span className="text-xs">Edit</span>
+                    </Button>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      onClick={() => handleDeleteStaff(member._id, member.name)}
+                      title="Remove Staff Member"
+                      className="h-9 gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                    >
+                      <Trash2 size={16} />
+                      <span className="text-xs">Remove</span>
+                    </Button>
+                  </div>
+                </div>
+              ))}
+            </div>
+          </>
         ) : (
           <div className="py-12 text-center">
             <UserIcon className="mx-auto h-12 w-12 text-gray-300" />

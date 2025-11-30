@@ -311,9 +311,15 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
           </div>
         </div>
         
-        {/* Mobile Navigation Menu */}
-        <div className={`md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden z-40 transition-[max-height] duration-400 ease-in-out ${
-          isMobileMenuOpen ? 'max-h-96' : 'max-h-0'
+        {/* Mobile Navigation Menu - Drawer Effect */}
+        {isMobileMenuOpen && (
+          <div 
+            className="md:hidden fixed top-16 inset-x-0 bottom-0 bg-black/30 z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        <div className={`md:hidden fixed top-16 left-0 h-[calc(100vh-64px)] w-64 bg-white border-r border-gray-200 shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
             <nav className="px-3 sm:px-4 py-4 sm:py-3 space-y-2 sm:space-y-1">
               {navLinks.map((link) => (
@@ -334,9 +340,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               
               {/* Mobile User Info */}
               <div className="flex items-center gap-3 px-4 py-4 sm:py-3 mt-2 border-t border-gray-200 pt-4 sm:pt-3">
-                <div className="h-12 w-12 sm:h-10 sm:w-10 flex items-center justify-center bg-gradient-to-br from-blue-600 to-blue-700 rounded-lg shadow-md flex-shrink-0">
-                  <UserIconComponent size={20} className="text-white" strokeWidth={2.5} />
-                </div>
+                <UserIcon className="h-8 w-8 text-blue-600 flex-shrink-0" strokeWidth={1.5} />
                 <div>
                   <p className="text-base sm:text-sm font-semibold text-gray-900">{user.name}</p>
                   <p className="text-xs text-gray-500">{userRole}</p>

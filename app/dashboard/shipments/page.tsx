@@ -887,7 +887,7 @@ export default function ShipmentsPage() {
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
-            <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mb-3"></div>
+            <Loader className="animate-spin h-8 w-8 text-blue-500 mb-3" />
             <p className="text-sm text-gray-600">Loading shipments...</p>
           </div>
         ) : paginatedShipments.length > 0 ? (

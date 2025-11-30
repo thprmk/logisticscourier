@@ -154,15 +154,15 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
     <div className="min-h-screen bg-gray-50">
       <PWASetup />
       {/* Top Header */}
-      <header className="bg-white border-b border-gray-200 sticky top-0 z-50 shadow-sm">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 relative">
-          <div className="flex items-center justify-between h-16">
+      <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
+        <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 relative">
+          <div className="flex items-center justify-between h-16 sm:h-16">
             {/* Mobile Menu Button */}
             <Button
               variant="ghost"
               size="icon"
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
-              className="md:hidden"
+              className="md:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10"
             >
               {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
             </Button>
@@ -197,17 +197,17 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             </nav>
             
             {/* User Menu */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0">
+            <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Notification Bell */}
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={handleNotificationDropdownOpen}
-                className="relative h-10 w-10"
+                className="relative h-10 w-10 sm:h-9 sm:w-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
               >
-                <Bell className="h-5 w-5" strokeWidth={2} />
+                <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
                 {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                  <span className="absolute -top-1 -right-1 h-5 w-5 sm:h-4 sm:w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                     {notifications}
                   </span>
                 )}
@@ -216,23 +216,23 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
               {/* Delivery Staff Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 hidden lg:flex h-9 px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100">
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100">
                     <UserIcon className="h-6 w-6 text-orange-500" strokeWidth={1.5} />
                     <div className="text-left min-w-max">
-                      <p className="text-xs font-semibold text-gray-900">{user.name}</p>
+                      <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
                       <p className="text-xs text-gray-500 -mt-0.5">Delivery Staff</p>
                     </div>
-                    <ChevronDown className="h-3.5 w-3.5 text-gray-400 ml-1 flex-shrink-0" />
+                    <ChevronDown className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-400 ml-1 flex-shrink-0" />
                   </Button>
                 </DropdownMenuTrigger>
-                <DropdownMenuContent align="end" className="w-56">
-                  <div className="px-4 py-3 border-b border-gray-100">
-                    <p className="text-sm font-semibold text-gray-900">{user.name}</p>
+                <DropdownMenuContent align="end" className="w-56 sm:w-52">
+                  <div className="px-4 sm:px-3 py-3 sm:py-2 border-b border-gray-100">
+                    <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
                     <p className="text-xs text-gray-500 mt-1">Delivery Staff</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer">
-                    <LogOut className="h-4 w-4 mr-2" />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer text-base sm:text-sm">
+                    <LogOut className="h-5 w-5 sm:h-4 sm:w-4 mr-2" strokeWidth={1.5} />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -242,48 +242,51 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
               <Button 
                 onClick={handleLogout}
                 variant="ghost"
-                size="sm"
-                className="lg:hidden text-red-600 hover:bg-red-50 hover:text-red-700 gap-1.5 h-10 flex-shrink-0"
+                size="icon"
+                className="lg:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10 sm:h-9 sm:w-9 flex-shrink-0"
               >
-                <LogOut className="h-4 w-4" strokeWidth={2} />
-                <span className="hidden sm:inline">Sign Out</span>
+                <LogOut className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={1.5} />
               </Button>
             </div>
           </div>
         </div>
         
-        {/* Mobile Navigation Menu */}
-        <div className={`md:hidden absolute top-full left-0 right-0 bg-white border-b border-gray-200 shadow-lg overflow-hidden transition-all duration-300 ease-in-out z-40 ${
-          isMobileMenuOpen ? 'max-h-96 opacity-100' : 'max-h-0 opacity-0'
+        {/* Mobile Navigation Menu - Drawer Effect */}
+        {isMobileMenuOpen && (
+          <div 
+            className="md:hidden fixed top-16 inset-x-0 bottom-0 bg-black/30 z-30"
+            onClick={() => setIsMobileMenuOpen(false)}
+          />
+        )}
+        <div className={`md:hidden fixed top-16 left-0 h-[calc(100vh-64px)] w-64 bg-white border-r border-gray-200 shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+          isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
-          <div>
-            <nav className="px-4 py-3 space-y-1">
-              {navLinks.map((link) => (
-                <Link 
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm font-medium transition-all duration-150 ${
-                    pathname === link.href 
-                      ? 'bg-orange-600 text-white shadow-md' 
-                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
-                  }`}
-                >
-                  <link.icon className="h-5 w-5" strokeWidth={2} />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
-              
-              {/* Mobile User Info */}
-              <div className="flex items-center gap-3 px-4 py-3 mt-2 border-t border-gray-200 pt-3">
-                <UserIcon className="h-6 w-6 text-orange-500" strokeWidth={2} />
-                <div>
-                  <p className="text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">Delivery Staff</p>
-                </div>
+          <nav className="px-3 sm:px-4 py-4 sm:py-3 space-y-2 sm:space-y-1">
+            {navLinks.map((link) => (
+              <Link 
+                key={link.href}
+                href={link.href}
+                onClick={() => setIsMobileMenuOpen(false)}
+                className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-medium transition-all duration-150 ${
+                  pathname === link.href 
+                    ? 'bg-orange-600 text-white shadow-md' 
+                    : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
+                }`}
+              >
+                <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
+                <span>{link.label}</span>
+              </Link>
+            ))}
+            
+            {/* Mobile User Info */}
+            <div className="flex items-center gap-3 px-4 py-4 sm:py-3 mt-2 border-t border-gray-200 pt-4 sm:pt-3">
+              <UserIcon className="h-8 w-8 text-orange-600 flex-shrink-0" strokeWidth={1.5} />
+              <div>
+                <p className="text-base sm:text-sm font-semibold text-gray-900">{user.name}</p>
+                <p className="text-xs text-gray-500">Delivery Staff</p>
               </div>
-            </nav>
-          </div>
+            </div>
+          </nav>
         </div>
       </header>
       

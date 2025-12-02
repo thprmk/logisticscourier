@@ -276,7 +276,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {/* Branch Manager Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100">
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors data-[state=open]:bg-blue-50 data-[state=open]:text-blue-700">
                     <UserIcon className="h-6 w-6 sm:h-6 sm:w-6 text-blue-600" strokeWidth={1.5} />
                     <div className="text-left min-w-max">
                       <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>

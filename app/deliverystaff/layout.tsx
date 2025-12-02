@@ -186,7 +186,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
                   href={link.href} 
                   className={`flex items-center gap-2 px-4 py-2 rounded-lg text-sm font-medium transition-all duration-150 ${
                     pathname === link.href 
-                      ? 'bg-orange-600 text-white shadow-md hover:shadow-lg hover:bg-orange-700' 
+                      ? 'bg-orange-100 text-orange-700' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
@@ -216,7 +216,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
               {/* Delivery Staff Dropdown */}
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
-                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100">
+                  <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors data-[state=open]:bg-orange-50 data-[state=open]:text-orange-600">
                     <UserIcon className="h-6 w-6 text-orange-500" strokeWidth={1.5} />
                     <div className="text-left min-w-max">
                       <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>

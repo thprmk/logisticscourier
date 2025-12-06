@@ -1,11 +1,8 @@
-// app/api/auth/login/route.ts
-
 import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import User from '@/models/User.model';
 import bcrypt from 'bcryptjs';
 import jwt from 'jsonwebtoken';
-import { sanitizeInput } from '@/lib/sanitize';
 import { checkRateLimit, getClientIp } from '@/lib/rateLimiter';
 
 export async function POST(request: NextRequest) {
@@ -61,25 +58,16 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
     }
 
-    // Find the user by email, REGARDLESS of their role.
-    // Explicitly select the password for comparison.
+    // Find the user by email
     const user = await User.findOne({ email: sanitizedEmail }).select('+password');
 
     if (!user) {
-      console.log('User not found:', email);
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 
-    console.log('User found:', email, 'Role:', user.role);
-    console.log('Password hash exists:', !!user.password);
-    console.log('Password hash starts with $2a or $2b:', user.password?.startsWith('$2'));
-
     const isPasswordMatch = await bcrypt.compare(password, user.password);
 
-    console.log('Password match result:', isPasswordMatch);
-
     if (!isPasswordMatch) {
-      console.log('Password mismatch for:', email);
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 
@@ -97,35 +85,40 @@ export async function POST(request: NextRequest) {
       };
       redirectTo = '/superadmin/dashboard';
     } else {
-      // If the user is any other role (e.g., 'admin', 'staff')
+      // If the user is any other role (e.g., 'admin', 'staff', 'delivery_staff')
       tokenPayload = {
         userId: user._id,
         role: user.role,
-        tenantId: user.tenantId, // Include tenantId for branch users
-        isManager: user.isManager, // Include isManager flag for permission checks
+        tenantId: user.tenantId, 
+        isManager: user.isManager, 
       };
-      redirectTo = '/dashboard';
+
+      // 👇 FIX: Explicitly send delivery staff to their mobile view
+      if (user.role === 'delivery_staff') {
+        redirectTo = '/deliverystaff';
+      } else {
+        redirectTo = '/dashboard';
+      }
     }
     // --- End of Smart Logic ---
 
+    // Generate Token (30 Days)
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '30d' });
     
     console.log('Login successful for:', email, 'Role:', user.role);
-    console.log('Setting cookie with domain:', process.env.COOKIE_DOMAIN || 'not set');
     
-    // The response now includes the correct redirect URL
     const response = NextResponse.json({
       message: 'Login successful.',
       success: true,
-      redirectTo: redirectTo, // Send the redirect path to the frontend
+      redirectTo: redirectTo, // Sends the correct path to the frontend
     });
 
-    // For Vercel, we need to be more explicit about cookie settings
+    // Set Cookie (30 Days)
     const cookieOptions: any = {
         httpOnly: true,
         secure: true, // Always use secure in production
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24 * 30,
+        maxAge: 60 * 60 * 24 * 30, // 30 Days in seconds
         path: '/',
     };
 
@@ -135,14 +128,11 @@ export async function POST(request: NextRequest) {
     response.headers.set('X-RateLimit-Remaining', rateLimitResult.remaining.toString());
     response.headers.set('X-RateLimit-Limit', rateLimitResult.limit.toString());
     
-    console.log('Cookie set successfully');
-
     return response;
 
   } catch (error) {
     console.error('Unified Login Error:', error);
     
-    // Only return JSON if we haven't already sent a response
     if (error instanceof SyntaxError) {
       return NextResponse.json(
         { message: 'Invalid JSON in request body.' },

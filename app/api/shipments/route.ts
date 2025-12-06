@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     // Check if there's an assignedTo query parameter
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assignedTo');
+    const fromDate = searchParams.get('from');
+    const toDate = searchParams.get('to');
     
     // Build query object
     const query: any = { tenantId: payload.tenantId };
@@ -42,6 +44,17 @@ export async function GET(request: NextRequest) {
     // If assignedTo parameter is provided, filter by it
     if (assignedTo) {
       query.assignedTo = assignedTo;
+    }
+
+    // Add date range filtering if provided
+    if (fromDate || toDate) {
+      query.createdAt = {};
+      if (fromDate) {
+        query.createdAt.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        query.createdAt.$lt = new Date(toDate);
+      }
     }
 
     // CRUCIAL: Filter shipments by the tenantId from the user's token

@@ -8,12 +8,20 @@ import {
   AlertCircle,
   Users,
   Send,
-  Calendar,
   ChevronDown,
   TrendingUp,
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
 import { KPICard, ModernTable, StatCard } from "./DashboardComponents";
+import ShipmentOverviewChart from "../components/ShipmentOverviewChart";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar } from '@/components/ui/calendar';
+import { format } from 'date-fns';
+import { Label } from '@/components/ui/label';
 
 interface IShipment {
   _id: string;
@@ -51,12 +59,14 @@ interface KPIData {
 export default function BranchDashboardPage() {
   const { user } = useUser();
   const [dateRange, setDateRange] = useState<
-    "today" | "yesterday" | "last7" | "month" | "custom"
-  >("today");
+    "week" | "month" | "last3months" | "year"
+  >("week");
   const [customStart, setCustomStart] = useState("");
   const [customEnd, setCustomEnd] = useState("");
   const [showCustom, setShowCustom] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [filterStart, setFilterStart] = useState("");
+  const [filterEnd, setFilterEnd] = useState("");
 
   const [kpis, setKpis] = useState<KPIData>({
     totalCreated: 0,
@@ -81,26 +91,24 @@ export default function BranchDashboardPage() {
     let end = tomorrow;
 
     switch (dateRange) {
-      case "yesterday":
+      case "week":
         start = new Date(today);
-        start.setDate(start.getDate() - 1);
-        end = new Date(today);
-        break;
-      case "last7":
-        start = new Date(today);
-        start.setDate(start.getDate() - 7);
+        const dayOfWeek = today.getDay();
+        start.setDate(today.getDate() - dayOfWeek); // Start of current week (Sunday)
         end = tomorrow;
         break;
       case "month":
         start = new Date(today.getFullYear(), today.getMonth(), 1);
         end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         break;
-      case "custom":
-        if (customStart && customEnd) {
-          start = new Date(customStart);
-          end = new Date(customEnd);
-          end.setDate(end.getDate() + 1);
-        }
+      case "last3months":
+        start = new Date(today);
+        start.setMonth(today.getMonth() - 3);
+        end = tomorrow;
+        break;
+      case "year":
+        start = new Date(today.getFullYear(), 0, 1);
+        end = new Date(today.getFullYear() + 1, 0, 1);
         break;
     }
 
@@ -136,22 +144,120 @@ export default function BranchDashboardPage() {
     }
   };
 
-  const fetchOperationalData = async () => {
+  const fetchKPIsWithCustomDates = async (startDate: string, endDate: string) => {
+    try {
+      setKpisLoading(true);
+      // Add one day to endDate to include the end date in the range
+      const endDatePlusOne = new Date(endDate);
+      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+      const endDateStr = endDatePlusOne.toISOString().split("T")[0];
+      
+      const response = await fetch(
+        `/api/shipments?from=${startDate}&to=${endDateStr}`,
+        { credentials: "include" }
+      );
+
+      if (!response.ok) throw new Error("Failed to fetch data");
+
+      const shipments: IShipment[] = await response.json();
+
+      setKpis({
+        totalCreated: shipments.length,
+        totalDelivered: shipments.filter((s) => s.status === "Delivered")
+          .length,
+        totalFailed: shipments.filter((s) => s.status === "Failed").length,
+      });
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setKpisLoading(false);
+    }
+  };
+
+  const handleApplyFilter = () => {
+    if (filterStart && filterEnd) {
+      fetchKPIsWithCustomDates(filterStart, filterEnd);
+      // Add one day to endDate to include the end date in the range
+      const endDatePlusOne = new Date(filterEnd);
+      endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+      const endDateStr = endDatePlusOne.toISOString().split("T")[0];
+      fetchOperationalData(filterStart, endDateStr);
+    }
+  };
+
+  const handleAllTime = () => {
+    setFilterStart("");
+    setFilterEnd("");
+    try {
+      setKpisLoading(true);
+      const from = "2020-01-01";
+      const to = new Date().toISOString().split("T")[0];
+      
+      fetch(`/api/shipments?from=${from}&to=${to}`, {
+        credentials: "include",
+      })
+        .then((res) => {
+          if (!res.ok) throw new Error("Failed");
+          return res.json();
+        })
+        .then((shipments: IShipment[]) => {
+          setKpis({
+            totalCreated: shipments.length,
+            totalDelivered: shipments.filter((s) => s.status === "Delivered")
+              .length,
+            totalFailed: shipments.filter((s) => s.status === "Failed").length,
+          });
+        })
+        .catch((err) => console.error(err))
+        .finally(() => setKpisLoading(false));
+    } catch (err) {
+      console.error(err);
+      setKpisLoading(false);
+    }
+    // Fetch all time operational data
+    const endDatePlusOne = new Date();
+    endDatePlusOne.setDate(endDatePlusOne.getDate() + 1);
+    const endDateStr = endDatePlusOne.toISOString().split("T")[0];
+    fetchOperationalData("2020-01-01", endDateStr);
+  };
+
+  const handleReset = () => {
+    setFilterStart("");
+    setFilterEnd("");
+    setDateRange("week");
+    fetchKPIs();
+    fetchOperationalData();
+  };
+
+  const fetchOperationalData = async (startDate?: string, endDate?: string) => {
     try {
       setOperationalLoading(true);
 
-      const shipmentsRes = await fetch("/api/shipments", {
+      let shipmentsUrl = "/api/shipments";
+      let manifestsUrl = "/api/manifests";
+      
+      // If date range is provided, add it to the API call
+      if (startDate && endDate) {
+        shipmentsUrl += `?from=${startDate}&to=${endDate}`;
+        manifestsUrl += `?from=${startDate}&to=${endDate}`;
+      }
+
+      const shipmentsRes = await fetch(shipmentsUrl, {
         credentials: "include",
       });
-      const manifestsRes = await fetch("/api/manifests", {
+      const manifestsRes = await fetch(manifestsUrl, {
         credentials: "include",
       });
 
       if (!shipmentsRes.ok || !manifestsRes.ok)
         throw new Error("Failed to fetch data");
 
-      const shipments: IShipment[] = await shipmentsRes.json();
-      const manifests: IManifest[] = await manifestsRes.json();
+      const shipmentsData: any = await shipmentsRes.json();
+      const manifestsData: any = await manifestsRes.json();
+
+      // Handle both array and object responses
+      const shipments: IShipment[] = Array.isArray(shipmentsData) ? shipmentsData : shipmentsData.data || [];
+      const manifests: IManifest[] = Array.isArray(manifestsData) ? manifestsData : manifestsData.data || [];
 
       setReadyForAssignment(
         shipments
@@ -166,7 +272,12 @@ export default function BranchDashboardPage() {
         manifests.filter((m) => m.status === "In Transit").slice(0, 5)
       );
     } catch (err) {
-      console.error(err);
+      console.error("Operational data error:", err);
+      // Set empty arrays on error
+      setReadyForAssignment([]);
+      setFailedDeliveries([]);
+      setIncomingManifests([]);
+      setOutgoingManifests([]);
     } finally {
       setOperationalLoading(false);
     }
@@ -174,7 +285,7 @@ export default function BranchDashboardPage() {
 
   useEffect(() => {
     fetchKPIs();
-  }, [dateRange, customStart, customEnd]);
+  }, [dateRange]);
 
   useEffect(() => {
     fetchOperationalData();
@@ -190,167 +301,161 @@ export default function BranchDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header Section */}
-      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
+      <div className="bg-transparent border-b border-gray-200/50 py-6 sm:py-8">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6">
+          <div className="flex flex-col sm:flex-row sm:items-end sm:justify-between gap-6">
+            {/* Left Side */}
             <div>
-              <h1 className="text-3xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-base sm:text-sm text-gray-600 mt-1 sm:mt-0.5">
-                Welcome back, {user?.name || 'User'}
-              </p>
+              <h1 className="text-4xl sm:text-3xl font-bold text-gray-900 leading-tight">{user?.tenantName || 'Branch'}</h1>
+              <p className="text-sm text-gray-500 mt-2">Welcome back, <span className="text-gray-700 font-medium">{user?.name || 'User'}</span></p>
             </div>
 
-            {/* Date Range Picker */}
-            <div className="relative inline-block w-full md:w-56">
-              <Button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                variant="outline"
-                className="w-full justify-between text-gray-700 h-12 sm:h-10 text-base sm:text-sm"
-              >
-                <span className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" strokeWidth={1.5} />
-                  <span className="font-medium">
-                    {dateRange === "today"
-                      ? "Today"
-                      : dateRange === "yesterday"
-                        ? "Yesterday"
-                        : dateRange === "last7"
-                          ? "Last 7 Days"
-                          : dateRange === "month"
-                            ? "This Month"
-                            : "Custom Range"}
-                  </span>
-                </span>
-                <ChevronDown className={`h-5 w-5 sm:h-4 sm:w-4 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
-              </Button>
-
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                  <div className="p-2 sm:p-1">
-                    {[
-                      { id: 'today', label: 'Today' },
-                      { id: 'yesterday', label: 'Yesterday' },
-                      { id: 'last7', label: 'Last 7 Days' },
-                      { id: 'month', label: 'This Month' },
-                      { id: 'custom', label: 'Custom Range' },
-                    ].map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => {
-                          if (option.id === 'custom') {
-                            setShowCustom(true);
-                          } else {
-                            setDateRange(option.id as any);
-                            setShowCustom(false);
-                          }
-                          setDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-3 sm:py-2 text-left text-base sm:text-sm rounded-md transition-colors flex items-center gap-2 ${
-                          dateRange === option.id
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
+            {/* Right Side - Date Range and Filters */}
+            <div className="flex flex-col sm:flex-row gap-2 items-start sm:items-center flex-wrap">
+              <Popover>
+                <PopoverTrigger asChild>
+                  <Button
+                    variant="outline"
+                    className="h-10 px-4 text-sm font-medium text-gray-700 bg-white border-gray-300 hover:bg-gray-50"
+                  >
+                    {filterStart && filterEnd
+                      ? `${format(new Date(filterStart), 'MMM dd')} - ${format(new Date(filterEnd), 'MMM dd')}`
+                      : filterStart
+                      ? `${format(new Date(filterStart), 'MMM dd')} - Pick end`
+                      : 'Pick date range'}
+                  </Button>
+                </PopoverTrigger>
+                <PopoverContent className="w-auto p-0" align="start">
+                  <div className="flex gap-0">
+                    <div className="p-3">
+                      <Label className="text-xs mb-2 block">Start Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={filterStart ? new Date(filterStart) : undefined}
+                        onSelect={(date) => setFilterStart(date ? format(date, 'yyyy-MM-dd') : '')}
+                        disabled={(date) =>
+                          filterEnd ? date > new Date(filterEnd) : false
+                        }
+                      />
+                    </div>
+                    <div className="p-3">
+                      <Label className="text-xs mb-2 block">End Date</Label>
+                      <Calendar
+                        mode="single"
+                        selected={filterEnd ? new Date(filterEnd) : undefined}
+                        onSelect={(date) => setFilterEnd(date ? format(date, 'yyyy-MM-dd') : '')}
+                        disabled={(date) =>
+                          filterStart ? date < new Date(filterStart) : false
+                        }
+                      />
+                    </div>
                   </div>
-                </div>
-              )}
+                </PopoverContent>
+              </Popover>
+              <Button onClick={handleApplyFilter} className="h-10 px-6 font-semibold" disabled={!filterStart || !filterEnd}>
+                Apply
+              </Button>
+              <Button onClick={handleAllTime} variant="outline" className="h-10 px-6 font-semibold text-gray-700 border-gray-300">
+                All Time
+              </Button>
+              <Button onClick={handleReset} variant="ghost" className="h-10 px-6 font-semibold text-gray-600 hover:text-gray-900">
+                Reset
+              </Button>
             </div>
           </div>
-
-          {showCustom && dateRange === "custom" && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-wrap gap-3 sm:gap-4 items-end animate-in fade-in slide-in-from-top-2">
-              <div>
-                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">From</label>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">To</label>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* KPI Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
-          <KPICard
-            label="Total Shipments"
-            value={kpis.totalCreated.toString()}
-            icon={Package}
-            color="blue"
-          />
-          <KPICard
-            label="Delivered"
-            value={kpis.totalDelivered.toString()}
-            icon={CheckCircle2}
-            color="green"
-          />
-          <KPICard
-            label="Failed"
-            value={kpis.totalFailed.toString()}
-            icon={AlertCircle}
-            color="red"
-          />
-          <KPICard
-            label="Success Rate"
-            value={`${successRate}%`}
-            icon={CheckCircle2}
-            color="orange"
-          />
+        {/* KPI Grid - Delivery Staff Style */}
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
+          <div className="bg-white rounded-xl border border-blue-200/60 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-blue-700 uppercase tracking-widest">Total Shipments</p>
+                <p className="text-4xl font-bold text-blue-900 mt-3 font-mono">{kpis.totalCreated}</p>
+              </div>
+              <div className="bg-blue-500/15 rounded-2xl p-4">
+                <Package className="h-10 w-10 text-blue-600" strokeWidth={1.5} />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-green-200/60 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">Delivered</p>
+                <p className="text-4xl font-bold text-green-900 mt-3 font-mono">{kpis.totalDelivered}</p>
+              </div>
+              <div className="bg-green-500/15 rounded-2xl p-4">
+                <CheckCircle2 className="h-10 w-10 text-green-600" strokeWidth={1.5} />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-red-200/60 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-red-700 uppercase tracking-widest">Failed</p>
+                <p className="text-4xl font-bold text-red-900 mt-3 font-mono">{kpis.totalFailed}</p>
+              </div>
+              <div className="bg-red-500/15 rounded-2xl p-4">
+                <AlertCircle className="h-10 w-10 text-red-600" strokeWidth={1.5} />
+              </div>
+            </div>
+          </div>
+          <div className="bg-white rounded-xl border border-orange-200/60 p-6 hover:shadow-md transition-shadow">
+            <div className="flex items-center justify-between">
+              <div>
+                <p className="text-xs font-semibold text-orange-700 uppercase tracking-widest">Success Rate</p>
+                <p className="text-4xl font-bold text-orange-900 mt-3 font-mono">{successRate}%</p>
+              </div>
+              <div className="bg-orange-500/15 rounded-2xl p-4">
+                <CheckCircle2 className="h-10 w-10 text-orange-600" strokeWidth={1.5} />
+              </div>
+            </div>
+          </div>
         </div>
 
-        {/* Operational Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4">
-          <StatCard
-            label="Ready for Assignment"
-            value={readyForAssignment.length}
-            icon={Package}
-            color="blue"
-            trend="Action Required"
-          />
-          <StatCard
-            label="Failed Deliveries"
-            value={failedDeliveries.length}
-            icon={AlertCircle}
-            color="red"
-            trend="Needs Attention"
-          />
-          <StatCard
-            label="Incoming Manifests"
-            value={incomingManifests.length}
-            icon={Package}
-            color="purple"
-            trend="In Transit"
-          />
-          <StatCard
-            label="Outgoing Manifests"
-            value={outgoingManifests.length}
-            icon={Send}
-            color="teal"
-            trend="In Transit"
-          />
+        {/* Shipment Overview Chart with Operational Stats Collage */}
+        <div className="grid grid-cols-1 lg:grid-cols-5 gap-4">
+          {/* Chart - Left Side (3 columns = 60%) */}
+          <div className="lg:col-span-3">
+            <ShipmentOverviewChart
+              dateRange={dateRange}
+              onDateRangeChange={setDateRange}
+            />
+          </div>
+
+          {/* Operational Stats - Right Side (2 columns = 40% - 2x2 grid) */}
+          <div className="lg:col-span-2 grid grid-cols-2 gap-2 h-fit">
+            <div className="bg-gradient-to-br from-blue-50 to-blue-100/40 rounded-lg px-2 py-1.5 border border-blue-200/40 text-center">
+              <Package className="h-4 w-4 text-blue-600 mx-auto" strokeWidth={1.5} />
+              <p className="text-xs font-medium text-blue-600 uppercase tracking-wider">Ready for Assignment</p>
+              <p className="text-xl font-bold text-blue-900">{readyForAssignment.length}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-red-50 to-red-100/40 rounded-lg px-2 py-1.5 border border-red-200/40 text-center">
+              <AlertCircle className="h-4 w-4 text-red-600 mx-auto" strokeWidth={1.5} />
+              <p className="text-xs font-medium text-red-600 uppercase tracking-wider">Failed Deliveries</p>
+              <p className="text-xl font-bold text-red-900">{failedDeliveries.length}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100/40 rounded-lg px-2 py-1.5 border border-purple-200/40 text-center">
+              <Package className="h-4 w-4 text-purple-600 mx-auto" strokeWidth={1.5} />
+              <p className="text-xs font-medium text-purple-600 uppercase tracking-wider">Incoming Manifests</p>
+              <p className="text-xl font-bold text-purple-900">{incomingManifests.length}</p>
+            </div>
+
+            <div className="bg-gradient-to-br from-teal-50 to-teal-100/40 rounded-lg px-2 py-1.5 border border-teal-200/40 text-center">
+              <Send className="h-4 w-4 text-teal-600 mx-auto" strokeWidth={1.5} />
+              <p className="text-xs font-medium text-teal-600 uppercase tracking-wider">Outgoing Manifests</p>
+              <p className="text-xl font-bold text-teal-900">{outgoingManifests.length}</p>
+            </div>
+          </div>
         </div>
 
         {/* Recent Shipments Table */}
-        <div>
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-lg font-bold text-gray-900">Recent Activity</h2>
-          </div>
+        <div className="bg-white rounded-lg border border-gray-200 p-6">
+          <h2 className="text-lg font-semibold text-gray-900 mb-4">Recent Activity</h2>
 
           <ModernTable
             headers={['Tracking ID', 'Recipient', 'Status', 'Date']}
@@ -358,29 +463,30 @@ export default function BranchDashboardPage() {
             isLoading={operationalLoading}
             emptyMessage="No recent shipments found"
             renderRow={(shipment, i) => (
-              <tr key={shipment._id} className="hover:bg-gray-50/50 transition-colors group">
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                  <span className="text-base sm:text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors">
+              <tr key={shipment._id} className="hover:bg-gray-50 transition-colors group">
+                <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <span className="text-sm font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors cursor-pointer">
                     {shipment.trackingId}
                   </span>
                 </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
+                <td className="px-4 sm:px-6 py-3 sm:py-4">
                   <div className="flex flex-col">
-                    <span className="text-base sm:text-base text-gray-900 font-medium">{shipment.recipient.name}</span>
-                    <span className="text-sm text-gray-500 truncate max-w-[250px]">{shipment.recipient.address}</span>
+                    <span className="text-sm text-gray-900 font-medium">{shipment.recipient.name}</span>
+                    <span className="text-xs text-gray-500 truncate max-w-[250px]">{shipment.recipient.address}</span>
                   </div>
                 </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${shipment.status === "Failed"
-                    ? "bg-red-100 text-red-700"
-                    : shipment.status === "At Destination Branch"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-yellow-100 text-yellow-700"
-                    }`}>
+                <td className="px-4 sm:px-6 py-3 sm:py-4">
+                  <span className={`inline-flex items-center px-2.5 py-1 rounded-full text-xs font-medium ${
+                    shipment.status === "Failed"
+                      ? "bg-red-100 text-red-700"
+                      : shipment.status === "At Destination Branch"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-amber-100 text-amber-700"
+                  }`}>
                     {shipment.status}
                   </span>
                 </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5 text-sm text-gray-500 font-medium">
+                <td className="px-4 sm:px-6 py-3 sm:py-4 text-sm text-gray-600 font-medium">
                   {new Date(shipment.createdAt).toLocaleDateString(undefined, {
                     month: 'short',
                     day: 'numeric',

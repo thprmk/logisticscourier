@@ -34,6 +34,8 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const type = searchParams.get('type'); // 'incoming' or 'outgoing'
     const status = searchParams.get('status');
+    const fromDate = searchParams.get('from');
+    const toDate = searchParams.get('to');
     const page = Math.max(1, parseInt(searchParams.get('page') || '1', 10));
     const limit = Math.min(50, Math.max(1, parseInt(searchParams.get('limit') || '20', 10)));
     const skip = (page - 1) * limit;
@@ -50,6 +52,17 @@ export async function GET(request: NextRequest) {
     // Filter by status if provided
     if (status) {
       query.status = status;
+    }
+
+    // Add date range filtering if provided
+    if (fromDate || toDate) {
+      query.dispatchedAt = {};
+      if (fromDate) {
+        query.dispatchedAt.$gte = new Date(fromDate);
+      }
+      if (toDate) {
+        query.dispatchedAt.$lt = new Date(toDate);
+      }
     }
 
     // Get total count for pagination

@@ -1,7 +1,7 @@
 // app/context/UserContext.tsx
 "use client";
 
-import { createContext, useContext, ReactNode, useState } from 'react';
+import { createContext, useContext, ReactNode, useState, useEffect } from 'react';
 
 // The User interface is correct
 export interface User {

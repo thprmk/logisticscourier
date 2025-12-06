@@ -24,6 +24,7 @@ const withPWA = withPWAInit({
   disable: false, // Explicitly enable PWA
   workboxOptions: {
     skipWaiting: true,
+    importScripts: ['/push-sw.js'],
   },
 });
 

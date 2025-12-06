@@ -18,6 +18,7 @@ export interface User {
 interface UserContextType {
   user: User | null;
   setUser: (user: User | null) => void;
+  loading: boolean;
 }
 
 // Create the context with a default value that matches the type
@@ -57,7 +58,7 @@ export function UserProvider({ children }: { children: ReactNode }) {
   
   // The value provided is an object with both user and setUser
   return (
-    <UserContext.Provider value={{ user, setUser }}>
+    <UserContext.Provider value={{ user, setUser, loading }}>
       {children}
     </UserContext.Provider>
   );

@@ -35,8 +35,11 @@ export function UserProvider({ children }: { children: ReactNode }) {
       try {
         // 👇 FIX 1: Add timestamp (?t=...) and headers to force fresh request
         const response = await fetch(`/api/auth/me?t=${Date.now()}`, {
+          method: 'GET',
+          credentials: 'include', // 👈 THIS IS CRITICAL FOR PWA COOKIES
           cache: 'no-store',
           headers: {
+            'Content-Type': 'application/json',
             'Pragma': 'no-cache',
             'Cache-Control': 'no-cache, no-store, must-revalidate'
           }

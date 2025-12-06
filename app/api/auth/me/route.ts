@@ -6,12 +6,18 @@ import Tenant from '@/models/Tenant.model';
 
 export async function GET(request: NextRequest) {
   try {
-    const token = request.cookies.get('token')?.value;
+    // 👇 DEBUG LOGGING
+    const tokenCookie = request.cookies.get('token');
+    console.log('[API/ME] Checking session...');
+    console.log('[API/ME] Cookie present?', !!tokenCookie);
+    console.log('[API/ME] User Agent:', request.headers.get('user-agent'));
 
-    if (!token) {
+    if (!tokenCookie || !tokenCookie.value) {
+      console.log('[API/ME] No token found in cookies');
       return NextResponse.json({ message: 'Authentication token not found.' }, { status: 401 });
     }
 
+    const token = tokenCookie.value;
     const secret = new TextEncoder().encode(process.env.JWT_SECRET!);
     const { payload } = await jwtVerify(token, secret);
     

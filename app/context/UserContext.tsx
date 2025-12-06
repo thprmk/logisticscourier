@@ -33,15 +33,21 @@ export function UserProvider({ children }: { children: ReactNode }) {
   useEffect(() => {
     const checkSession = async () => {
       try {
-        // Call the 'me' endpoint to see if the cookie is valid
-        const response = await fetch('/api/auth/me');
+        // 👇 FIX 1: Add timestamp (?t=...) and headers to force fresh request
+        const response = await fetch(`/api/auth/me?t=${Date.now()}`, {
+          cache: 'no-store',
+          headers: {
+            'Pragma': 'no-cache',
+            'Cache-Control': 'no-cache, no-store, must-revalidate'
+          }
+        });
         
         if (response.ok) {
           const data = await response.json();
-          // If valid, restore the user state
-          setUser(data.user); 
+          // 👇 FIX 2: Handle both { user: ... } and direct object responses
+          // Your 'me' endpoint returns the object directly, so 'data' is the user.
+          setUser(data.user || data); 
         } else {
-          // If invalid (401), ensure user is null
           setUser(null);
         }
       } catch (error) {

@@ -21,10 +21,36 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  disable: false, // Explicitly enable PWA
+  disable: false, 
   workboxOptions: {
     skipWaiting: true,
     importScripts: ['/push-sw.js'],
+    // 👇 NEW: Prevent caching of API routes to fix Login/Session issues
+    runtimeCaching: [
+      {
+        urlPattern: /\/api\/.*$/i,
+        handler: 'NetworkOnly',
+        options: {
+          backgroundSync: {
+            name: 'api-retry',
+            options: {
+              maxRetentionTime: 24 * 60,
+            },
+          },
+        },
+      },
+      {
+        // Default handler for other resources (images, css, etc)
+        urlPattern: /^https?.*/,
+        handler: 'NetworkFirst',
+        options: {
+          cacheName: 'offlineCache',
+          expiration: {
+            maxEntries: 200,
+          },
+        },
+      },
+    ],
   },
 });
 

@@ -88,20 +88,39 @@ define(['./workbox-1e54d6fe'], (function (workbox) { 'use strict';
   workbox.registerRoute("/", new workbox.NetworkFirst({
     "cacheName": "start-url",
     plugins: [{
-      cacheWillUpdate: function (_) {
-        return _ref.apply(this, arguments);
+      cacheWillUpdate: function (param) {
+        var e = param.response;
+        return _async_to_generator(function () {
+          return _ts_generator(this, function (_state) {
+            return [2, e && "opaqueredirect" === e.type ? new Response(e.body, {
+              status: 200,
+              statusText: "OK",
+              headers: e.headers
+            }) : e];
+          });
+        })();
       }
     }, {
-      handlerDidError: function (_) {
-        return _ref.apply(this, arguments);
+      handlerDidError: function (param) {
+        var _$e = param.request;
+        return _async_to_generator(function () {
+          return _ts_generator(this, function (_state) {
+            return [2, "undefined" != typeof self ? self.fallback(_$e) : Response.error()];
+          });
+        })();
       }
     }]
   }), 'GET');
   workbox.registerRoute(/.*/i, new workbox.NetworkOnly({
     "cacheName": "dev",
     plugins: [{
-      handlerDidError: function (_) {
-        return _ref.apply(this, arguments);
+      handlerDidError: function (param) {
+        var _$e = param.request;
+        return _async_to_generator(function () {
+          return _ts_generator(this, function (_state) {
+            return [2, "undefined" != typeof self ? self.fallback(_$e) : Response.error()];
+          });
+        })();
       }
     }]
   }), 'GET');

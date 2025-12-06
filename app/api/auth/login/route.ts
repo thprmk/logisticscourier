@@ -108,7 +108,7 @@ export async function POST(request: NextRequest) {
     }
     // --- End of Smart Logic ---
 
-    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '1d' });
+    const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '30d' });
     
     console.log('Login successful for:', email, 'Role:', user.role);
     console.log('Setting cookie with domain:', process.env.COOKIE_DOMAIN || 'not set');
@@ -125,7 +125,7 @@ export async function POST(request: NextRequest) {
         httpOnly: true,
         secure: true, // Always use secure in production
         sameSite: 'lax',
-        maxAge: 60 * 60 * 24,
+        maxAge: 60 * 60 * 24 * 30,
         path: '/',
     };
 

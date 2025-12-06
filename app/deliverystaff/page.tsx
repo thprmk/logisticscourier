@@ -3,6 +3,7 @@
 
 import { useState, useEffect } from 'react';
 import { useUser } from '../context/UserContext';
+import { useRouter } from 'next/navigation';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { invalidateCache } from '@/lib/requestCache';
 import { MapPin, Phone, Truck, CheckCircle, XCircle, Package, Building, Eye, Loader, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
@@ -65,7 +66,8 @@ interface IShipment {
 }
 
 export default function DeliveryStaffPage() {
-  const { user } = useUser();
+  const router = useRouter();
+  const { user, loading: authLoading } = useUser();
   const [shipments, setShipments] = useState<IShipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   
@@ -94,6 +96,12 @@ export default function DeliveryStaffPage() {
     'Wrong Item',
     'Other',
   ];
+
+  useEffect(() => {
+    if (!authLoading && !user) {
+      router.push('/login');
+    }
+  }, [authLoading, user, router]);
 
   useEffect(() => {
     const fetchAssignedShipments = async () => {
@@ -211,11 +219,22 @@ export default function DeliveryStaffPage() {
     invalidateCache('/api/shipments');
   };
 
+  if (authLoading) {
+    return (
+      <div className="flex h-screen w-full items-center justify-center bg-gray-50">
+        <div className="flex flex-col items-center gap-2">
+          <Loader className="h-8 w-8 animate-spin text-orange-500" />
+          <p className="text-sm text-gray-500">Verifying session...</p>
+        </div>
+      </div>
+    );
+  }
+
   // Filter shipments based on debounced search and status
   const filteredShipments = shipments.filter(shipment => {
     const matchesSearch = debouncedQuery === '' || 
-                         shipment.trackingId.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
-                         shipment.recipient.name.toLowerCase().includes(debouncedQuery.toLowerCase());
+      shipment.trackingId.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
+      shipment.recipient.name.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesStatus = !statusFilter || shipment.status === statusFilter;
     return matchesSearch && matchesStatus;
   });

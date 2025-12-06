@@ -26,6 +26,34 @@ const UserContext = createContext<UserContextType | undefined>(undefined);
 // The provider will hold the state
 export function UserProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
+  const [loading, setLoading] = useState(true); // Start as loading
+
+  // 👇 THIS IS THE FIX: Check for session on app load
+  useEffect(() => {
+    const checkSession = async () => {
+      try {
+        // Call the 'me' endpoint to see if the cookie is valid
+        const response = await fetch('/api/auth/me');
+        
+        if (response.ok) {
+          const data = await response.json();
+          // If valid, restore the user state
+          setUser(data.user); 
+        } else {
+          // If invalid (401), ensure user is null
+          setUser(null);
+        }
+      } catch (error) {
+        console.error('Session check failed', error);
+        setUser(null);
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    checkSession();
+  }, []);
+
   
   // The value provided is an object with both user and setUser
   return (

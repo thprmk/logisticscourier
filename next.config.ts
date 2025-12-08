@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  disable: false, 
+  disable: process.env.NODE_ENV === 'development', // Disable PWA in development to avoid Babel issues
   workboxOptions: {
     skipWaiting: true,
     importScripts: ['/push-sw.js'],

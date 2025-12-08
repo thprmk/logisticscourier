@@ -73,6 +73,9 @@ interface IShipment {
     name: string;
   };
 
+  originBranchId?: string | IBranch;
+  destinationBranchId?: string | IBranch;
+  currentBranchId?: string | IBranch;
   statusHistory: IStatusHistory[];
   createdAt: string;
   packageInfo: {
@@ -237,15 +240,30 @@ export default function ShipmentsPage() {
     setSelectedShipment(null);
   };
 
-  // Check if user can edit/delete this shipment (only creator can)
+  // Check if user can edit this shipment
+  // - Can edit if from origin branch (creator authority) OR current branch (local operations like assigning drivers)
+  // - Can only DELETE if creator from origin branch
   const canEditShipment = (shipment: IShipment): boolean => {
-    return user?.id === shipment.createdBy?._id;
+    const originId = typeof shipment.originBranchId === 'string' ? shipment.originBranchId : (shipment.originBranchId as any)?._id;
+    const currentId = typeof shipment.currentBranchId === 'string' ? shipment.currentBranchId : (shipment.currentBranchId as any)?._id;
+    const isFromOriginBranch = user?.tenantId === originId;
+    const isFromCurrentBranch = user?.tenantId === currentId;
+    return isFromOriginBranch || isFromCurrentBranch;
+  };
+
+  const canDeleteShipment = (shipment: IShipment): boolean => {
+    const originId = typeof shipment.originBranchId === 'string' ? shipment.originBranchId : (shipment.originBranchId as any)?._id;
+    return user?.id === shipment.createdBy?._id && user?.tenantId === originId;
   };
 
   const openModal = (type: ModalType, shipment?: IShipment) => {
     // Check permissions before opening edit/delete modals
-    if ((type === 'update' || type === 'delete') && shipment && !canEditShipment(shipment)) {
-      toast.error('You can only edit/delete shipments you created');
+    if (type === 'delete' && shipment && !canDeleteShipment(shipment)) {
+      toast.error('Only the creator from the origin branch can delete this shipment');
+      return;
+    }
+    if (type === 'update' && shipment && !canEditShipment(shipment)) {
+      toast.error('You can only edit shipments from your branch or the origin branch');
       return;
     }
     
@@ -1469,7 +1487,7 @@ export default function ShipmentsPage() {
                             })}
                           </p>
                           {history.notes && (
-                            <p className="text-sm text-gray-600 mt-2 italic border-l-2 border-gray-300 pl-3">\"{ history.notes}\"</p>
+                            <p className="text-sm text-gray-800 font-medium mt-2 border-l-2 border-gray-400 pl-3">{history.notes}</p>
                           )}
                         </div>
                       </div>

@@ -10,7 +10,7 @@
     "db:seed": "ts-node --project tsconfig.scripts.json scripts/seedSuperAdmin.ts"
   },
   "dependencies": {
-    "@ducanh2912/next-pwa": "^10.2.9",
+    "@ducanh2912/next-pwa": "^10.2.7",
     "@hookform/resolvers": "^5.2.2",
     "@radix-ui/react-dialog": "^1.1.15",
     "@radix-ui/react-dropdown-menu": "^2.1.16",

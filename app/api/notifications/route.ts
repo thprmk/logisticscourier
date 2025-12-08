@@ -78,26 +78,26 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
-    const { notificationId } = await request.json();
+    const body = await request.json();
+    const { notificationIds } = body; // Expect an array of IDs
+
+    if (!notificationIds || !Array.isArray(notificationIds) || notificationIds.length === 0) {
+      return NextResponse.json({ message: 'Notification IDs are required.' }, { status: 400 });
+    }
 
     await dbConnect();
 
     // Convert userId to string for consistent comparison
     const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
-
-    const notification = await Notification.findOneAndUpdate(
-      { _id: notificationId, userId: userIdString },
-      { read: true },
-      { new: true }
+    
+    // Use $in to update multiple documents at once
+    await Notification.updateMany(
+      { _id: { $in: notificationIds }, userId: userIdString },
+      { $set: { read: true } }
     );
 
-    if (!notification) {
-      console.log(`[PATCH] Notification not found: _id=${notificationId}, userId=${userIdString}`);
-      return NextResponse.json({ message: 'Notification not found' }, { status: 404 });
-    }
-
-    console.log(`[PATCH] Marked notification as read: ${notificationId} for user ${userIdString}`);
-    return NextResponse.json({ message: 'Notification marked as read', notification });
+    console.log(`[PATCH] Marked ${notificationIds.length} notifications as read for user ${userIdString}`);
+    return NextResponse.json({ message: 'Notifications marked as read' });
   } catch (error: any) {
     console.error('Error updating notification:', error);
     return NextResponse.json({ message: 'Failed to update notification' }, { status: 500 });

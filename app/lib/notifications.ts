@@ -98,14 +98,23 @@ export async function sendShipmentNotification(
     'Delivered': 'Delivery completed',
     'Failed': 'Delivery attempt failed',
     'At Destination Branch': 'Package arrived at destination',
+    'Manifest In Transit': 'Manifest arriving to your branch',
+    'Manifest Delivered': 'Manifest successfully received',
   };
 
   const body = statusMessages[status] || `Status updated to ${status}`;
+  
+  // 👇 FIX: Use correct URL for manifest events vs shipment events
+  const url = action === 'manifest_dispatched' || action === 'manifest_arrived'
+    ? '/dashboard/dispatch'  // Branch admins/dispatchers view manifests here
+    : `/deliverystaff?shipmentId=${shipmentId}`; // Delivery staff view shipments here
 
   return sendNotificationToUser(userId, {
-    title: `Delivery: ${trackingId}`,
+    title: action === 'manifest_dispatched' || action === 'manifest_arrived'
+      ? `Manifest: ${trackingId}`
+      : `Delivery: ${trackingId}`,
     body,
-    url: `/deliverystaff?shipmentId=${shipmentId}`,
+    url,
     data: {
       shipmentId,
       trackingId,

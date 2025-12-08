@@ -706,10 +706,10 @@ function ManifestCard({ manifest, type, siNo }: any) {
   const isOutgoing = type === 'outgoing';
   const isCompleted = manifest.status === 'Completed';
   const [isReceiving, setIsReceiving] = useState(false);
+  const [showConfirmDialog, setShowConfirmDialog] = useState(false);
 
-  const handleReceive = async () => {
-    if (!confirm('Confirm receipt of this manifest?')) return;
-
+  const handleConfirmReceive = async () => {
+    setShowConfirmDialog(false);
     setIsReceiving(true);
     const toastId = toast.loading('Confirming receipt...');
 
@@ -803,24 +803,54 @@ function ManifestCard({ manifest, type, siNo }: any) {
       </div>
 
       {isIncoming && !isCompleted && (
-        <Button
-          onClick={handleReceive}
-          disabled={isReceiving}
-          className="w-full gap-2"
-          size="sm"
-        >
-          {isReceiving ? (
-            <>
-              <Loader className="h-4 w-4 animate-spin" />
-              Confirming...
-            </>
-          ) : (
-            <>
-              <Check className="h-4 w-4" />
-              Confirm Receipt
-            </>
-          )}
-        </Button>
+        <>
+          <Button
+            onClick={() => setShowConfirmDialog(true)}
+            disabled={isReceiving}
+            className="w-full gap-2"
+            size="sm"
+          >
+            {isReceiving ? (
+              <>
+                <Loader className="h-4 w-4 animate-spin" />
+                Confirming...
+              </>
+            ) : (
+              <>
+                <Check className="h-4 w-4" />
+                Confirm Receipt
+              </>
+            )}
+          </Button>
+          
+          {/* Confirm Receipt Dialog */}
+          <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+            <DialogContent className="max-w-sm">
+              <DialogHeader>
+                <DialogTitle>Confirm Manifest Receipt</DialogTitle>
+                <DialogDescription>
+                  Are you sure you want to confirm receipt of this manifest? This action cannot be undone.
+                </DialogDescription>
+              </DialogHeader>
+              <DialogFooter className="flex gap-2">
+                <Button
+                  variant="outline"
+                  onClick={() => setShowConfirmDialog(false)}
+                  disabled={isReceiving}
+                >
+                  Cancel
+                </Button>
+                <Button
+                  onClick={handleConfirmReceive}
+                  disabled={isReceiving}
+                  className="bg-green-600 hover:bg-green-700"
+                >
+                  {isReceiving ? 'Confirming...' : 'Confirm'}
+                </Button>
+              </DialogFooter>
+            </DialogContent>
+          </Dialog>
+        </>
       )}
     </div>
   );

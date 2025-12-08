@@ -14,10 +14,11 @@ import { getNotificationPresentation, formatNotificationTime } from '@/app/lib/n
 import {
   DropdownMenu,
   DropdownMenuContent,
-  DropdownMenuItem,
   DropdownMenuTrigger,
   DropdownMenuSeparator,
+  DropdownMenuItem,
 } from '@/app/components/ui/dropdown-menu';
+import { ScrollArea } from '@/app/components/ui/scroll-area';
 
 interface NavLink { href: string; label: string; icon: React.ElementType; }
 interface DeliveryStaffLayoutProps { children: React.ReactNode; }
@@ -27,10 +28,10 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
   const router = useRouter();
   const pathname = usePathname();
   const [notifications, setNotifications] = useState(0);
-  const [showNotifications, setShowNotifications] = useState(false);
   const [notificationList, setNotificationList] = useState<any[]>([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+  const [isPollingPaused, setIsPollingPaused] = useState(false);
 
   useEffect(() => {
     const fetchUser = async () => {
@@ -68,7 +69,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             const unreadNotifications = data.filter((n: any) => !n.read);
             console.log('[Notifications] Unread count:', unreadNotifications.length);
             setNotifications(unreadNotifications.length);
-            setNotificationList(data.slice(0, 10)); // Show last 10 notifications
+            setNotificationList(data); // Display ALL notifications, not just 10
           } else {
             console.error('[Notifications] API returned status:', res.status);
           }
@@ -79,31 +80,50 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
       // Fetch immediately on load
       fetchNotifications();
       // Refresh notifications every 10 seconds for faster updates
-      const interval = setInterval(fetchNotifications, 10000);
+      const interval = setInterval(() => {
+        // 👇 FIX: Only fetch if polling is NOT paused
+        if (!isPollingPaused) {
+          fetchNotifications();
+        }
+      }, 10000);
       return () => clearInterval(interval);
     }
-  }, [user]);
+  }, [user, isPollingPaused]);
 
-  const handleNotificationDropdownOpen = async () => {
-    setShowNotifications(true);
-    // Mark all unread as read when dropdown opens
-    const unreadNotifs = notificationList.filter((n: any) => !n.read);
-    
-    // Send all mark-as-read requests
-    await Promise.all(
-      unreadNotifs.map((notif) =>
-        fetch('/api/notifications', {
+  const handleNotificationDropdownOpen = async (isOpen: boolean) => {
+    // If the menu is opening and there are unread notifications
+    if (isOpen && notifications > 0) {
+      // 👇 FIX: Pause the background polling
+      setIsPollingPaused(true);
+
+      const unreadIds = notificationList
+        .filter((n: any) => !n.read)
+        .map((n: any) => n._id.toString());
+
+      if (unreadIds.length === 0) return;
+
+      // Optimistic UI updates
+      setNotifications(0);
+      setNotificationList(prev => prev.map(n => ({ ...n, read: true })));
+      
+      // Send request to backend
+      try {
+        await fetch('/api/notifications', {
           method: 'PATCH',
           credentials: 'include',
           headers: { 'Content-Type': 'application/json' },
-          body: JSON.stringify({ notificationId: notif._id.toString() }),
-        }).catch(error => console.error('Failed to mark notification as read:', error))
-      )
-    );
-    
-    // Update local state AFTER all requests are done
-    setNotificationList(notificationList.map(n => ({ ...n, read: true })));
-    setNotifications(0);
+          body: JSON.stringify({ notificationIds: unreadIds }),
+        });
+        console.log('Marked', unreadIds.length, 'notifications as read for staff.');
+      } catch (error) {
+        console.error('Failed to mark notifications as read:', error);
+      }
+    }
+
+    // 👇 FIX: When the menu closes, resume polling
+    if (!isOpen) {
+      setIsPollingPaused(false);
+    }
   };
 
   if (!user) {
@@ -199,19 +219,55 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             {/* User Menu */}
             <div className="flex items-center gap-2 sm:gap-3 flex-shrink-0">
               {/* Notification Bell */}
-              <Button
-                variant="ghost"
-                size="icon"
-                onClick={handleNotificationDropdownOpen}
-                className="relative h-10 w-10 sm:h-9 sm:w-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
-              >
-                <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
-                {notifications > 0 && (
-                  <span className="absolute -top-1 -right-1 h-5 w-5 sm:h-4 sm:w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
-                    {notifications}
-                  </span>
-                )}
-              </Button>
+              {user.role === 'staff' && (
+                <DropdownMenu onOpenChange={handleNotificationDropdownOpen}>
+                  <DropdownMenuTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="relative h-10 w-10 sm:h-9 sm:w-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
+                    >
+                      <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
+                      {notifications > 0 && (
+                        <span className="absolute -top-1 -right-1 h-5 w-5 sm:h-4 sm:w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
+                          {notifications}
+                        </span>
+                      )}
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="end" className="w-80 p-0">
+                    <div className="p-3 border-b">
+                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                    </div>
+                    <ScrollArea className="h-[300px]">
+                      <div className="p-2 space-y-1">
+                        {notificationList.length > 0 ? (
+                          notificationList.map((notification: any) => {
+                            const presentation = getNotificationPresentation(notification.type);
+                            const formattedTime = formatNotificationTime(notification.createdAt);
+                            return (
+                              <NotificationItem
+                                key={notification._id}
+                                id={notification._id.toString()}
+                                type={presentation.type}
+                                title={presentation.title}
+                                message={notification.message}
+                                timestamp={formattedTime}
+                                read={notification.read}
+                                pill={presentation.pill}
+                              />
+                            );
+                          })
+                        ) : (
+                          <div className="p-8 text-center text-sm text-gray-500">
+                            You're all caught up!
+                          </div>
+                        )}
+                      </div>
+                    </ScrollArea>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+              )}
               
               {/* Delivery Staff Dropdown */}
               <DropdownMenu>
@@ -289,68 +345,6 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
           </nav>
         </div>
       </header>
-      
-      {/* Notification Dropdown */}
-      {showNotifications && (
-        <>
-          {/* Backdrop */}
-          <div 
-            className="fixed inset-0 z-40" 
-            onClick={() => setShowNotifications(false)}
-          />
-          <div className="fixed top-16 right-2 sm:right-6 w-[calc(100vw-1rem)] sm:w-96 bg-white rounded-xl shadow-2xl border border-gray-200 z-50 max-h-96 overflow-hidden">
-            <div className="p-3 sm:p-4 border-b border-gray-100">
-              <div className="flex items-center justify-between">
-                <h3 className="text-sm sm:text-base font-bold text-gray-900">Notifications</h3>
-              </div>
-            </div>
-          <div className="overflow-y-auto max-h-80">
-            {notificationList.length > 0 ? (
-              <div className="p-3 space-y-3">
-                {notificationList.map((notification: any) => {
-                  const presentation = getNotificationPresentation(notification.type);
-                  const formattedTime = formatNotificationTime(notification.createdAt);
-                  
-                  return (
-                    <NotificationItem
-                      key={notification._id}
-                      id={notification._id.toString()}
-                      type={presentation.type}
-                      title={presentation.title}
-                      message={notification.message}
-                      timestamp={formattedTime}
-                      read={notification.read}
-                      pill={presentation.pill}
-                    />
-                  );
-                })}
-                <Link 
-                  href="/deliverystaff"
-                  onClick={() => setShowNotifications(false)}
-                  className="block p-3 bg-orange-50 border border-orange-200 rounded-lg hover:bg-orange-100 transition-colors mt-2"
-                >
-                  <div className="flex items-start gap-3">
-                    <div className="p-2 bg-orange-100 rounded-lg">
-                      <Package className="h-4 w-4 text-orange-600" />
-                    </div>
-                    <div className="flex-1">
-                      <p className="text-sm font-semibold text-gray-900">View My Deliveries</p>
-                      <p className="text-xs text-gray-600 mt-1">Track and update your assigned deliveries</p>
-                    </div>
-                  </div>
-                </Link>
-              </div>
-            ) : (
-              <div className="p-8 text-center">
-                <Bell className="h-12 w-12 text-gray-300 mx-auto mb-3" />
-                <p className="text-sm font-medium text-gray-900">No new notifications</p>
-                <p className="text-xs text-gray-500 mt-1">You're all caught up!</p>
-              </div>
-            )}
-          </div>
-        </div>
-        </>
-      )}
       
       {/* Logout Confirmation Modal */}
       {showLogoutModal && (

@@ -69,19 +69,26 @@ export async function PATCH(request: NextRequest) {
     const sanitizedFailureReason = failureReason ? sanitizeInput(failureReason, 500) : undefined;
 
     // Find the shipment
-    const shipment = await Shipment.findOne({ _id: shipmentId, tenantId: payload.tenantId }).populate('createdBy', '_id name');
+    const shipment = await Shipment.findById(shipmentId)
+      .populate('createdBy', '_id name');
 
     if (!shipment) {
-      return NextResponse.json({ message: 'Shipment not found or access denied.' }, { status: 404 });
+      return NextResponse.json({ message: 'Shipment not found.' }, { status: 404 });
     }
     
-    // Check permissions based on role:
-    // - Admins can only update their own created shipments
-    // - Delivery staff (role='staff') can update if assigned to them
+    // 👇 FIX: Check permissions based on role and branch location
+    // - Admins from ORIGIN branch (who created it) can edit
+    // - Admins from CURRENT branch (who have it now) can edit for local operations like assigning drivers
+    const isOriginBranchAdmin = payload.tenantId.toString() === shipment.originBranchId.toString();
+    const isCurrentBranchAdmin = payload.tenantId.toString() === shipment.currentBranchId.toString();
+    
     if (payload.role === 'admin') {
-      // Admin: must be the creator
-      if (shipment.createdBy && shipment.createdBy._id.toString() !== payload.userId) {
-        return NextResponse.json({ message: 'Only the creator can update this shipment.' }, { status: 403 });
+      // Admins can edit if they're from origin OR current branch
+      if (!isOriginBranchAdmin && !isCurrentBranchAdmin) {
+        return NextResponse.json(
+          { message: 'You can only edit shipments from your branch or the origin branch.' },
+          { status: 403 }
+        );
       }
     } else if (payload.role === 'staff') {
       // Delivery staff: must be assigned to this shipment
@@ -251,18 +258,20 @@ export async function DELETE(request: NextRequest) {
     const shipmentId = getShipmentIdFromUrl(request.url);
 
     // First, find the shipment with creator info
-    const shipment = await Shipment.findOne({
-      _id: shipmentId,
-      tenantId: payload.tenantId,
-    }).populate('createdBy', '_id name');
+    const shipment = await Shipment.findById(shipmentId)
+      .populate('createdBy', '_id name');
 
     if (!shipment) {
-      return NextResponse.json({ message: "Shipment not found or access denied" }, { status: 404 });
+      return NextResponse.json({ message: "Shipment not found" }, { status: 404 });
     }
 
-    // Check if user is the creator (only creator can delete)
-    if (shipment.createdBy && shipment.createdBy._id.toString() !== payload.userId) {
-      return NextResponse.json({ message: 'Only the creator can delete this shipment.' }, { status: 403 });
+    // Check if user is the creator from origin branch (only creator from origin can delete)
+    const isOriginBranchAdmin = payload.tenantId.toString() === shipment.originBranchId.toString();
+    if (!isOriginBranchAdmin || (shipment.createdBy && shipment.createdBy._id.toString() !== payload.userId)) {
+      return NextResponse.json(
+        { message: 'Only the creator from the origin branch can delete this shipment.' },
+        { status: 403 }
+      );
     }
 
     const deletedShipment = await Shipment.findOneAndDelete({

@@ -32,13 +32,18 @@ export default function PWASetup() {
     }
   }, []);
 
-  // Request notification permission when user logs in as delivery staff
+  // Request notification permission when user logs in
+  // Show for: delivery staff, admins, and dispatchers who need push notifications
   useEffect(() => {
-    if (user && (user.role === 'delivery_staff' || user.role === 'staff') && !isInstalled) {
+    if (user && (user.role === 'delivery_staff' || user.role === 'staff' || user.role === 'admin' || user.role === 'dispatcher') && !isInstalled) {
       // Wait a moment before showing the prompt for better UX
       const timer = setTimeout(() => {
-        if ('Notification' in window && Notification.permission === 'default') {
-          setShowPermissionPrompt(true);
+        if ('Notification' in window) {
+          // 👇 FIX: Only show prompt if permission has NOT been asked yet
+          // Don't show if already granted or denied
+          if (Notification.permission === 'default') {
+            setShowPermissionPrompt(true);
+          }
         }
       }, 2000);
 

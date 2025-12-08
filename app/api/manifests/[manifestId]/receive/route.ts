@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Manifest from '@/models/Manifest.model';
 import Shipment from '@/models/Shipment.model';
+import Tenant from '@/models/Tenant.model';
 import { jwtVerify } from 'jose';
 import { dispatchNotification } from '@/app/lib/notificationDispatcher';
 
@@ -97,12 +98,17 @@ export async function PUT(
     const updatedShipments = await Shipment.find({ _id: { $in: manifest.shipmentIds } });
     console.log('Verified shipments after update:', updatedShipments.map(s => ({ id: s._id, status: s.status, tenantId: s.tenantId })));
 
-    // Dispatch 'manifest_arrived' notification
+    // 👇 FIX: Get destination branch name for notification
+    const destinationBranch = await Tenant.findById(manifest.toBranchId).select('name').lean() as any;
+
+    // Dispatch 'manifest_arrived' notification to ORIGIN branch
     await dispatchNotification({
       event: 'manifest_arrived',
       manifestId: manifest._id.toString(),
       trackingId: manifest._id.toString(),
-      tenantId: payload.tenantId,
+      tenantId: manifest.fromBranchId,  // 👈 ORIGIN branch gets notified
+      toBranch: destinationBranch?.name || 'Destination',
+      createdBy: payload.userId || payload.id || payload.sub,
     } as any).catch(err => {
       console.error('Error dispatching manifest_arrived notification:', err);
     });

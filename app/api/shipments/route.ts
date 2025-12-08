@@ -36,19 +36,27 @@ export async function GET(request: NextRequest) {
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assignedTo');
     
-    // Build query object
-    const query: any = { tenantId: payload.tenantId };
+    // 👇 FIX: Show shipments from BOTH current branch (tenantId) AND shipments at this branch (currentBranchId)
+    // This allows admins to see shipments that arrived via manifest dispatch
+    const query: any = {
+      $or: [
+        { tenantId: payload.tenantId },           // Shipments created by this branch
+        { currentBranchId: payload.tenantId }     // Shipments currently at this branch
+      ]
+    };
     
     // If assignedTo parameter is provided, filter by it
     if (assignedTo) {
       query.assignedTo = assignedTo;
     }
 
-    // CRUCIAL: Filter shipments by the tenantId from the user's token
     const shipments = await Shipment.find(query)
       .sort({ createdAt: -1 }) // Show newest first
-      .populate('assignedTo', 'name email') // Later, this will fetch the driver's name
-      .populate('createdBy', 'name');
+      .populate('assignedTo', 'name email')
+      .populate('createdBy', 'name')
+      .populate('originBranchId', 'name')
+      .populate('destinationBranchId', 'name')
+      .populate('currentBranchId', 'name');
 
     return NextResponse.json(shipments);
   } catch (error) {

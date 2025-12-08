@@ -4,6 +4,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Manifest from '@/models/Manifest.model';
 import Shipment from '@/models/Shipment.model';
+import Tenant from '@/models/Tenant.model';
 import { jwtVerify } from 'jose';
 import { sanitizeInput } from '@/lib/sanitize';
 import { dispatchNotification } from '@/app/lib/notificationDispatcher';
@@ -137,17 +138,6 @@ export async function POST(request: NextRequest) {
 
     await manifest.save();
 
-    // Dispatch 'manifest_created' notification
-    await dispatchNotification({
-      event: 'manifest_created',
-      manifestId: manifest._id.toString(),
-      trackingId: manifest._id.toString(),
-      tenantId: payload.tenantId,
-      createdBy: payload.userId || payload.id || payload.sub,
-    } as any).catch(err => {
-      console.error('Error dispatching manifest_created notification:', err);
-    });
-
     // Update all shipments to "In Transit to Destination"
     await Shipment.updateMany(
       { _id: { $in: shipmentIds } },
@@ -163,13 +153,18 @@ export async function POST(request: NextRequest) {
       } as any
     );
 
-    // Dispatch 'manifest_dispatched' notification
+    // 👇 FIX: Get branch names for notification messages
+    const fromBranch = await Tenant.findById(payload.tenantId).select('name').lean();
+    const toBranchDoc = await Tenant.findById(toBranchId).select('name').lean();
+
+    // Dispatch 'manifest_dispatched' notification to DESTINATION branch
     await dispatchNotification({
       event: 'manifest_dispatched',
       manifestId: manifest._id.toString(),
       trackingId: manifest._id.toString(),
-      tenantId: payload.tenantId,
-      toBranch: toBranchId,
+      tenantId: toBranchId,  // 👈 DESTINATION branch gets notified
+      fromBranch: fromBranch?.name || 'Origin',
+      toBranch: toBranchDoc?.name || 'Destination',
       createdBy: payload.userId || payload.id || payload.sub,
     } as any).catch(err => {
       console.error('Error dispatching manifest_dispatched notification:', err);

@@ -151,7 +151,8 @@ export default function BranchDashboardPage() {
         throw new Error("Failed to fetch data");
 
       const shipments: IShipment[] = await shipmentsRes.json();
-      const manifests: IManifest[] = await manifestsRes.json();
+      const manifestsResponse = await manifestsRes.json();
+      const manifests: IManifest[] = manifestsResponse.data || manifestsResponse;
 
       setReadyForAssignment(
         shipments

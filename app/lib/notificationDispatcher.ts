@@ -138,76 +138,91 @@ async function handleManifestCreated(context: NotificationContext) {
 
 /**
  * Manifest Dispatched Event
- * Notify: Admin ✔️ (origin), Dispatcher ✔️ (destination)
+ * Notify: Admins & Dispatchers at DESTINATION branch when manifest is in transit
  */
 async function handleManifestDispatched(context: NotificationContext) {
-  const { tenantId, manifestId, trackingId, fromBranch, toBranch } = context;
+  const { manifestId, trackingId, fromBranch, toBranch, tenantId } = context;
 
-  // Notify origin branch admins/dispatchers
-  const originUsers = await User.find({
-    tenantId, // Origin tenant
+  // 👇 FIX: For inter-branch delivery, notify DESTINATION branch admins/dispatchers
+  // They need to know a manifest is coming to them
+  const destinationUsers = await User.find({
+    tenantId,  // This should be the DESTINATION tenantId, not origin
     role: { $in: ['admin', 'dispatcher'] }
   }).select('_id').lean();
 
-  const originNotifications = originUsers.map(user => ({
+  const destNotifications = destinationUsers.map(user => ({
     tenantId,
     userId: user._id,
     type: 'manifest_dispatched' as const,
     manifestId,
     trackingId,
-    message: `Manifest dispatched to ${toBranch || 'destination'} - ${trackingId}`,
+    message: `Manifest arriving from ${fromBranch || 'origin branch'} - ${trackingId}`,
     read: false,
   }));
 
-  // Notify destination branch admins/dispatchers (if different)
-  const destNotifications = (toBranch
-    ? (await User.find({
-        tenantId,
-        role: { $in: ['admin', 'dispatcher'] }
-      }).select('_id').lean()).map(user => ({
-        tenantId,
-        userId: user._id,
-        type: 'manifest_dispatched' as const,
-        manifestId,
-        trackingId,
-        message: `Manifest arriving from ${fromBranch || 'origin'} - ${trackingId}`,
-        read: false,
-      }))
-    : []) as any[];
-
-  const allNotifications = [...originNotifications, ...destNotifications];
-  if (allNotifications.length > 0) {
-    await Notification.insertMany(allNotifications);
-    console.log(`Manifest dispatch notifications created for ${allNotifications.length} users`);
+  if (destNotifications.length > 0) {
+    await Notification.insertMany(destNotifications);
+    console.log(`Manifest dispatch notifications created for ${destNotifications.length} users at destination`);
+    
+    // 👇 Send push notifications to destination branch
+    await Promise.all(
+      destinationUsers.map(user =>
+        sendShipmentNotification(
+          (user._id as any).toString(),
+          manifestId!,
+          trackingId,
+          'Manifest In Transit',
+          'manifest_dispatched'
+        ).catch(err => {
+          console.error(`Failed to send push to destination user:`, err);
+        })
+      )
+    );
   }
 }
 
 /**
  * Manifest Arrived Event
- * Notify: Admin ✔️, Dispatcher ✔️
+ * Notify: Admins & Dispatchers at ORIGIN branch that manifest arrived at destination
  */
 async function handleManifestArrived(context: NotificationContext) {
-  const { tenantId, manifestId, trackingId } = context;
+  const { tenantId, manifestId, trackingId, toBranch } = context;
 
-  // Get all admins and dispatchers for this branch
-  const users = await User.find({
-    tenantId,
+  // 👇 FIX: For inter-branch delivery, notify ORIGIN branch admins/dispatchers
+  // They need to know the manifest has been received at the destination
+  const originUsers = await User.find({
+    tenantId,  // This should be the ORIGIN tenantId, not destination
     role: { $in: ['admin', 'dispatcher'] }
   }).select('_id').lean();
 
-  const notificationRecords = users.map(user => ({
+  const notificationRecords = originUsers.map(user => ({
     tenantId,
     userId: user._id,
     type: 'manifest_arrived' as const,
     manifestId,
     trackingId,
-    message: `Manifest arrived at branch - ${trackingId}`,
+    message: `Manifest successfully received at ${toBranch || 'destination branch'} - ${trackingId}`,
     read: false,
   }));
 
   if (notificationRecords.length > 0) {
     await Notification.insertMany(notificationRecords);
-    console.log(`Manifest arrival notifications created for ${notificationRecords.length} users`);
+    console.log(`Manifest arrival notifications created for ${notificationRecords.length} users at origin`);
+    
+    // 👇 Send push notifications to origin branch
+    await Promise.all(
+      originUsers.map(user =>
+        sendShipmentNotification(
+          (user._id as any).toString(),
+          manifestId!,
+          trackingId,
+          'Manifest Delivered',
+          'manifest_arrived'
+        ).catch(err => {
+          console.error(`Failed to send push to origin user:`, err);
+        })
+      )
+    );
   }
 }
 
@@ -392,6 +407,21 @@ async function handleDelivered(context: NotificationContext) {
     });
   }
 
+  // 👇 FIX: Send push notifications to admins and dispatchers
+  await Promise.all(
+    adminUsers.map(user =>
+      sendShipmentNotification(
+        user._id.toString(),
+        shipmentId!,
+        trackingId,
+        'Delivery Completed',
+        'delivered'
+      ).catch(err => {
+        console.error(`Failed to send push to admin ${user._id}:`, err);
+      })
+    )
+  );
+
   if (notificationRecords.length > 0) {
     await Notification.insertMany(notificationRecords);
     console.log(`Delivery completed notifications created for ${notificationRecords.length} users`);
@@ -444,6 +474,21 @@ async function handleDeliveryFailed(context: NotificationContext) {
       console.error('Failed to send delivery failed push notification:', err);
     });
   }
+
+  // 👇 FIX: Send push notifications to admins and dispatchers
+  await Promise.all(
+    adminUsers.map(user =>
+      sendShipmentNotification(
+        user._id.toString(),
+        shipmentId!,
+        trackingId,
+        'Delivery Failed',
+        'delivery_failed'
+      ).catch(err => {
+        console.error(`Failed to send push to admin ${user._id}:`, err);
+      })
+    )
+  );
 
   if (notificationRecords.length > 0) {
     await Notification.insertMany(notificationRecords);

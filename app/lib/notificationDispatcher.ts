@@ -411,7 +411,7 @@ async function handleDelivered(context: NotificationContext) {
   await Promise.all(
     adminUsers.map(user =>
       sendShipmentNotification(
-        user._id.toString(),
+        (user._id as any).toString(),
         shipmentId!,
         trackingId,
         'Delivery Completed',
@@ -479,7 +479,7 @@ async function handleDeliveryFailed(context: NotificationContext) {
   await Promise.all(
     adminUsers.map(user =>
       sendShipmentNotification(
-        user._id.toString(),
+        (user._id as any).toString(),
         shipmentId!,
         trackingId,
         'Delivery Failed',

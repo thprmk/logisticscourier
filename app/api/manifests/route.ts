@@ -154,8 +154,8 @@ export async function POST(request: NextRequest) {
     );
 
     // 👇 FIX: Get branch names for notification messages
-    const fromBranch = await Tenant.findById(payload.tenantId).select('name').lean();
-    const toBranchDoc = await Tenant.findById(toBranchId).select('name').lean();
+    const fromBranch = await Tenant.findById(payload.tenantId).select('name').lean() as any;
+    const toBranchDoc = await Tenant.findById(toBranchId).select('name').lean() as any;
 
     // Dispatch 'manifest_dispatched' notification to DESTINATION branch
     await dispatchNotification({

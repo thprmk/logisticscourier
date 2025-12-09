@@ -15,7 +15,7 @@ export default function LoginPage() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
 
-  const [showPassword, setShowPassword] =useState(false);
+  const [showPassword, setShowPassword] = useState(false);
   const [error, setError] = useState('');
   const [isLoading, setIsLoading] = useState(false);
 
@@ -31,7 +31,6 @@ export default function LoginPage() {
         credentials: 'include',
       });
       
-      // Check if response is valid JSON before parsing
       const contentType = response.headers.get('content-type');
       if (!contentType?.includes('application/json')) {
         throw new Error('Server returned invalid response format');
@@ -40,7 +39,6 @@ export default function LoginPage() {
       const data = await response.json();
       if (!response.ok) throw new Error(data.message || 'Login failed');
       
-      // Use window.location for a full page reload to ensure cookies are set
       window.location.href = data.redirectTo || '/dashboard';
     } catch (error: any) {
       console.error('Login error:', error);
@@ -51,88 +49,108 @@ export default function LoginPage() {
   };
 
   return (
-    <main className="flex min-h-screen items-center justify-center bg-gray-50 px-4 py-8 sm:py-12">
-      <div className="w-full max-w-sm space-y-6 sm:space-y-8">
-        {/* Logo & Header */}
-        <div className="text-center space-y-3 sm:space-y-4">
-          <div className="flex justify-center">
-            <div className="flex items-center gap-3">
-              <Package className="h-8 w-8 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2} />
-              <h2 className="text-3xl sm:text-2xl font-bold text-gray-900" style={{fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'}}>Netta</h2>
-            </div>
-          </div>
-          <h1 className="text-2xl sm:text-2xl font-semibold text-gray-900 leading-tight">Sign in to your account</h1>
+    <main className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50">
+      {/* Main Content */}
+      <div className="flex h-screen flex-col lg:flex-row">
+        {/* Left Side - Illustration Background */}
+        <div className="hidden lg:flex w-full lg:w-1/2 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-50 items-center justify-center p-8 relative overflow-hidden bg-cover bg-center" style={{backgroundImage: 'url(/bg-login.png)'}}>
+          {/* Decorative elements */}
+          <div className="absolute top-20 left-20 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
+          <div className="absolute bottom-20 right-20 w-40 h-40 bg-cyan-200/20 rounded-full blur-3xl"></div>
         </div>
 
-        {/* Form */}
-        <form onSubmit={handleSubmit} autoComplete="off" className="space-y-5 sm:space-y-6">
-          {/* Email Input */}
-          <div className="space-y-2">
-            <Label htmlFor="email" className="text-base sm:text-sm font-medium text-gray-900">Email</Label>
-            <Input
-              type="email"
-              id="email"
-              value={email}
-              onChange={(e) => setEmail(e.target.value)}
-              autoComplete="email"
-              className="h-12 sm:h-11 text-base sm:text-sm border border-gray-300 rounded-lg focus:border-gray-400 focus:ring-0"
-              required
-            />
-          </div>
+        {/* Right Side - Login Form */}
+        <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-4 sm:p-6 md:p-8 min-h-screen lg:min-h-auto">
+          <div className="w-full max-w-sm md:max-w-md space-y-6 md:space-y-8">
+            {/* Header */}
+            <div className="space-y-2 md:space-y-3">
+              <div className="flex items-center gap-2 md:gap-3">
+                <div className="flex-shrink-0">
+                  <Package className="h-6 w-6 md:h-8 md:w-8 text-blue-600" strokeWidth={2} />
+                </div>
+                <h1 className="text-3xl md:text-4xl font-bold text-gray-900">Netta</h1>
+              </div>
+              <p className="text-gray-600 text-sm md:text-base">Welcome back to your logistics dashboard. Sign in to continue.</p>
+            </div>
 
-          {/* Password Input */}
-          <div className="space-y-2">
-            <Label htmlFor="password" className="text-base sm:text-sm font-medium text-gray-900">Password</Label>
-            <div className="relative">
-              <Input
-                type={showPassword ? "text" : "password"}
-                id="password"
-                value={password}
-                onChange={(e) => setPassword(e.target.value)}
-                autoComplete="current-password"
-                className="h-12 sm:h-11 text-base sm:text-sm border border-gray-300 rounded-lg focus:border-gray-400 focus:ring-0 pr-12"
-                required
-              />
-              <button
-                type="button"
-                onClick={() => setShowPassword(!showPassword)}
-                className="absolute inset-y-0 right-0 flex items-center px-4 text-gray-500 hover:text-gray-700 transition-colors"
-                aria-label="Toggle password visibility"
+            {/* Form */}
+            <form onSubmit={handleSubmit} autoComplete="off" className="space-y-4 md:space-y-5">
+              {/* Email Input */}
+              <div className="space-y-1.5 md:space-y-2">
+                <Label htmlFor="email" className="text-xs md:text-sm font-medium text-gray-700">Email Address</Label>
+                <div className="relative">
+                  <Input
+                    type="email"
+                    id="email"
+                    placeholder="Enter your email"
+                    value={email}
+                    onChange={(e) => setEmail(e.target.value)}
+                    autoComplete="email"
+                    className="h-10 md:h-12 text-sm border border-gray-300 rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-gray-50 transition-all pl-4"
+                    required
+                  />
+                </div>
+              </div>
+
+              {/* Password Input */}
+              <div className="space-y-1.5 md:space-y-2">
+                <Label htmlFor="password" className="text-xs md:text-sm font-medium text-gray-700">Password</Label>
+                <div className="relative">
+                  <Input
+                    type={showPassword ? "text" : "password"}
+                    id="password"
+                    placeholder="Enter your password"
+                    value={password}
+                    onChange={(e) => setPassword(e.target.value)}
+                    autoComplete="current-password"
+                    className="h-10 md:h-12 text-sm border border-gray-300 rounded-full focus:border-blue-500 focus:ring-2 focus:ring-blue-100 bg-gray-50 transition-all pl-4 pr-12"
+                    required
+                  />
+                  <button
+                    type="button"
+                    onClick={() => setShowPassword(!showPassword)}
+                    className="absolute inset-y-0 right-0 flex items-center px-3 md:px-4 text-gray-500 hover:text-gray-700 transition-colors"
+                    aria-label="Toggle password visibility"
+                  >
+                    {showPassword ? <Eye size={18} strokeWidth={1.5} /> : <EyeOff size={18} strokeWidth={1.5} />}
+                  </button>
+                </div>
+              </div>
+
+              {/* Error Message */}
+              {error && (
+                <div className="p-3 md:p-4 bg-red-50 border border-red-200 rounded-lg text-red-700 text-xs md:text-sm font-medium">
+                  {error}
+                </div>
+              )}
+
+              {/* Login Button */}
+              <Button
+                type="submit"
+                disabled={isLoading}
+                className="w-full h-10 md:h-12 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-full transition-all duration-200 shadow-md hover:shadow-lg disabled:opacity-75 text-sm md:text-base"
               >
-                {showPassword ? <Eye size={20} strokeWidth={1.5} /> : <EyeOff size={20} strokeWidth={1.5} />}
-              </button>
+                {isLoading ? (
+                  <div className="flex items-center gap-2">
+                    <div className="relative h-4 w-4 md:h-5 md:w-5">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
+                    <span>Signing in...</span>
+                  </div>
+                ) : (
+                  'Login'
+                )}
+              </Button>
+            </form>
+
+            {/* Footer */}
+            <div className="text-center space-y-2 md:space-y-3 pt-4 border-t border-gray-200">
+              <p className="text-xs md:text-xs text-gray-500">
+                Demo: superadmin@logistics.com / superpassword123
+              </p>
             </div>
           </div>
-
-          {/* Error Message */}
-          {error && (
-            <div className="p-4 sm:p-3 bg-red-50 border border-red-200 rounded-lg text-red-600 text-sm font-medium text-center">
-              {error}
-            </div>
-          )}
-
-          {/* Login Button */}
-          <Button
-            type="submit"
-            disabled={isLoading}
-            className="w-full h-12 sm:h-11 bg-blue-600 hover:bg-blue-700 text-white font-medium text-base sm:text-sm rounded-lg transition-colors"
-          >
-            {isLoading ? (
-              <svg className="animate-spin h-5 w-5" xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24">
-                <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4"></circle>
-                <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z"></path>
-              </svg>
-            ) : (
-              'Login'
-            )}
-          </Button>
-        </form>
-
-        {/* Dev Credentials */}
-        <div className="mt-6 sm:mt-8 p-4 sm:p-4 bg-gray-100 rounded-lg text-center space-y-2 sm:space-y-1">
-          <p className="text-sm sm:text-xs text-gray-600 font-medium">For development use</p>
-          <p className="text-sm sm:text-xs text-gray-700">Email: <span className="font-mono font-semibold break-all">superadmin@logistics.com</span></p>
-          <p className="text-sm sm:text-xs text-gray-700">Pwd: <span className="font-mono font-semibold">superpassword123</span></p>
         </div>
       </div>
     </main>

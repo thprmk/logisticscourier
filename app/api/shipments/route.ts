@@ -35,6 +35,8 @@ export async function GET(request: NextRequest) {
     // Check if there's an assignedTo query parameter
     const { searchParams } = new URL(request.url);
     const assignedTo = searchParams.get('assignedTo');
+    const from = searchParams.get('from');
+    const to = searchParams.get('to');
     
     // 👇 FIX: Show shipments from BOTH current branch (tenantId) AND shipments at this branch (currentBranchId)
     // This allows admins to see shipments that arrived via manifest dispatch
@@ -48,6 +50,17 @@ export async function GET(request: NextRequest) {
     // If assignedTo parameter is provided, filter by it
     if (assignedTo) {
       query.assignedTo = assignedTo;
+    }
+    
+    // If date range is provided, filter by createdAt date
+    if (from && to) {
+      const fromDate = new Date(from);
+      const toDate = new Date(to);
+      query.createdAt = {
+        $gte: fromDate,
+        $lt: toDate
+      };
+      console.log(`Filtering shipments from ${from} to ${to}`);
     }
 
     const shipments = await Shipment.find(query)

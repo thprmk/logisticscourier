@@ -58,7 +58,7 @@ export default function LoginPage() {
           <div className="flex justify-center">
             <div className="flex items-center gap-3">
               <Package className="h-8 w-8 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2} />
-              <h2 className="text-3xl sm:text-2xl font-bold text-gray-900">Netta</h2>
+              <h2 className="text-3xl sm:text-2xl font-bold text-gray-900" style={{fontFamily: '-apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", sans-serif'}}>Netta</h2>
             </div>
           </div>
           <h1 className="text-2xl sm:text-2xl font-semibold text-gray-900 leading-tight">Sign in to your account</h1>

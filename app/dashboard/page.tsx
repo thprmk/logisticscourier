@@ -13,7 +13,14 @@ import {
   TrendingUp,
 } from "lucide-react";
 import { Button } from '@/components/ui/button';
-import { KPICard, ModernTable, StatCard } from "./DashboardComponents";
+import { KPICard, ModernTable, StatCard, ShipmentOverviewChart } from "./DashboardComponents";
+import {
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+} from '@/components/ui/popover';
+import { Calendar as CalendarComponent } from '@/components/ui/calendar';
+import { Label } from '@/components/ui/label';
 
 interface IShipment {
   _id: string;
@@ -51,12 +58,13 @@ interface KPIData {
 export default function BranchDashboardPage() {
   const { user } = useUser();
   const [dateRange, setDateRange] = useState<
-    "today" | "yesterday" | "last7" | "month" | "custom"
+    "today" | "yesterday" | "last7" | "month" | "custom" | "all"
   >("today");
-  const [customStart, setCustomStart] = useState("");
-  const [customEnd, setCustomEnd] = useState("");
+  const [customStart, setCustomStart] = useState<Date | undefined>(undefined);
+  const [customEnd, setCustomEnd] = useState<Date | undefined>(undefined);
   const [showCustom, setShowCustom] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
+  const [chartDateRange, setChartDateRange] = useState<'week' | 'month' | 'last3months' | 'year'>('week');
 
   const [kpis, setKpis] = useState<KPIData>({
     totalCreated: 0,
@@ -174,8 +182,39 @@ export default function BranchDashboardPage() {
   };
 
   useEffect(() => {
-    fetchKPIs();
-  }, [dateRange, customStart, customEnd]);
+    // Fetch KPIs with today's date only on initial mount
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+    const from = today.toISOString().split('T')[0];
+    const to = tomorrow.toISOString().split('T')[0];
+    
+    const fetchTodayKPIs = async () => {
+      try {
+        setKpisLoading(true);
+        const response = await fetch(`/api/shipments?from=${from}&to=${to}`, {
+          credentials: 'include',
+        });
+        if (!response.ok) throw new Error('Failed to fetch data');
+        const data = await response.json();
+        // Handle both array response and {data: [...]} response
+        const shipments: IShipment[] = Array.isArray(data) ? data : data.data || [];
+        console.log(`Initial load - Fetched ${shipments.length} shipments for today`);
+        setKpis({
+          totalCreated: shipments.length,
+          totalDelivered: shipments.filter((s) => s.status === 'Delivered').length,
+          totalFailed: shipments.filter((s) => s.status === 'Failed').length,
+        });
+      } catch (err) {
+        console.error('Error in initial KPI fetch:', err);
+      } finally {
+        setKpisLoading(false);
+      }
+    };
+    
+    fetchTodayKPIs();
+  }, []);
 
   useEffect(() => {
     fetchOperationalData();
@@ -188,101 +227,204 @@ export default function BranchDashboardPage() {
       ? Math.round((kpis.totalDelivered / kpis.totalCreated) * 100)
       : 0;
 
+  const handleApplyFilter = () => {
+    if (customStart && customEnd) {
+      const from = customStart.toISOString().split('T')[0];
+      const to = new Date(customEnd);
+      to.setDate(to.getDate() + 1);
+      const toStr = to.toISOString().split('T')[0];
+      
+      const fetchCustomKPIs = async () => {
+        try {
+          setKpisLoading(true);
+          console.log(`Applying filter from ${from} to ${toStr}`);
+          const response = await fetch(`/api/shipments?from=${from}&to=${toStr}`, {
+            credentials: 'include',
+          });
+          console.log(`Response status: ${response.status}`);
+          if (!response.ok) {
+            const errorText = await response.text();
+            console.error(`API Error: ${errorText}`);
+            throw new Error(`Failed to fetch data: ${response.status}`);
+          }
+          const data = await response.json();
+          console.log('Raw API response:', data);
+          // Handle both array response and {data: [...]} response
+          const shipments: IShipment[] = Array.isArray(data) ? data : data.data || [];
+          console.log(`Successfully fetched ${shipments.length} shipments from ${from} to ${toStr}`);
+          setKpis({
+            totalCreated: shipments.length,
+            totalDelivered: shipments.filter((s) => s.status === 'Delivered').length,
+            totalFailed: shipments.filter((s) => s.status === 'Failed').length,
+          });
+          setDropdownOpen(false);
+        } catch (err) {
+          console.error('Error fetching custom KPIs:', err);
+        } finally {
+          setKpisLoading(false);
+        }
+      };
+      
+      fetchCustomKPIs();
+    } else {
+      console.log('Custom start or end date not selected');
+    }
+  };
+
+  const formatDateDisplay = () => {
+    if (dateRange === 'custom' && customStart && customEnd) {
+      return `${customStart.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })} - ${customEnd.toLocaleDateString(undefined, { month: 'short', day: 'numeric' })}`;
+    }
+    return dateRange === 'today' ? 'Today' : dateRange === 'yesterday' ? 'Yesterday' : dateRange === 'last7' ? 'Last 7 Days' : 'This Month';
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header Section */}
-      <div className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4 sm:py-4">
-          <div className="flex flex-col md:flex-row md:items-center justify-between gap-4">
-            <div>
-              <h1 className="text-3xl sm:text-2xl font-bold text-gray-900">Dashboard</h1>
-              <p className="text-base sm:text-sm text-gray-600 mt-1 sm:mt-0.5">
-                Welcome back, {user?.name || 'User'}
-              </p>
+      <div className="border-b border-gray-200/30">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
+          <div className="flex flex-row items-center justify-between gap-6">
+            {/* Left: Branch Name and Welcome */}
+            <div className="flex-1 min-w-0">
+              <h1 className="text-2xl font-bold text-gray-900">{user?.tenantName || 'Your Branch'}</h1>
+              <p className="text-sm text-gray-600 font-medium">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
             </div>
 
-            {/* Date Range Picker */}
-            <div className="relative inline-block w-full md:w-56">
+            {/* Right: Date Range Picker with Buttons */}
+            <div className="flex items-center gap-2 flex-shrink-0">
+              <div className="flex-1 min-w-[180px]">
+                <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
+                  <PopoverTrigger asChild>
+                    <Button
+                      variant="ghost"
+                      className="w-full h-9 justify-start text-sm font-normal text-gray-600 hover:bg-gray-100/50 border border-gray-200/50"
+                    >
+                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
+                      {customStart && customEnd
+                        ? `${customStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })} - ${customEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}`
+                        : 'Pick a date range'}
+                    </Button>
+                  </PopoverTrigger>
+                  <PopoverContent className="w-auto p-0" align="end">
+                    <div className="flex gap-0">
+                      <div className="p-3">
+                        <CalendarComponent
+                          mode="single"
+                          selected={customStart}
+                          onSelect={(date) => {
+                            setCustomStart(date);
+                            setDateRange("custom");
+                          }}
+                          disabled={(date) =>
+                            customEnd ? date > customEnd : false
+                          }
+                          onDayClick={(day) => {
+                            // Double-click handling: if same date clicked twice, apply filter
+                            if (customStart && customStart.toDateString() === day.toDateString() && !customEnd) {
+                              setCustomEnd(day);
+                              setDateRange("custom");
+                              setDropdownOpen(false);
+                              // Auto-apply filter when double-clicked
+                              setTimeout(() => handleApplyFilter(), 0);
+                            }
+                          }}
+                        />
+                      </div>
+                      <div className="p-3">
+                        <CalendarComponent
+                          mode="single"
+                          selected={customEnd}
+                          onSelect={(date) => {
+                            setCustomEnd(date);
+                            setDateRange("custom");
+                          }}
+                          disabled={(date) =>
+                            customStart ? date < customStart : false
+                          }
+                          numberOfMonths={1}
+                        />
+                      </div>
+                    </div>
+                  </PopoverContent>
+                </Popover>
+              </div>
+
+              {/* Apply Filter Button */}
               <Button
-                onClick={() => setDropdownOpen(!dropdownOpen)}
-                variant="outline"
-                className="w-full justify-between text-gray-700 h-12 sm:h-10 text-base sm:text-sm"
+                onClick={handleApplyFilter}
+                disabled={!customStart || !customEnd}
+                className="h-9 px-4 text-sm bg-blue-600 hover:bg-blue-700 text-white"
               >
-                <span className="flex items-center gap-2">
-                  <Calendar className="h-5 w-5 sm:h-4 sm:w-4 text-gray-500" strokeWidth={1.5} />
-                  <span className="font-medium">
-                    {dateRange === "today"
-                      ? "Today"
-                      : dateRange === "yesterday"
-                        ? "Yesterday"
-                        : dateRange === "last7"
-                          ? "Last 7 Days"
-                          : dateRange === "month"
-                            ? "This Month"
-                            : "Custom Range"}
-                  </span>
-                </span>
-                <ChevronDown className={`h-5 w-5 sm:h-4 sm:w-4 text-gray-400 transition-transform ${dropdownOpen ? "rotate-180" : ""}`} strokeWidth={1.5} />
+                Apply Filter
               </Button>
 
-              {dropdownOpen && (
-                <div className="absolute right-0 mt-2 w-full bg-white border border-gray-200 rounded-lg shadow-lg z-50 overflow-hidden">
-                  <div className="p-2 sm:p-1">
-                    {[
-                      { id: 'today', label: 'Today' },
-                      { id: 'yesterday', label: 'Yesterday' },
-                      { id: 'last7', label: 'Last 7 Days' },
-                      { id: 'month', label: 'This Month' },
-                      { id: 'custom', label: 'Custom Range' },
-                    ].map((option) => (
-                      <button
-                        key={option.id}
-                        onClick={() => {
-                          if (option.id === 'custom') {
-                            setShowCustom(true);
-                          } else {
-                            setDateRange(option.id as any);
-                            setShowCustom(false);
-                          }
-                          setDropdownOpen(false);
-                        }}
-                        className={`w-full px-3 py-3 sm:py-2 text-left text-base sm:text-sm rounded-md transition-colors flex items-center gap-2 ${
-                          dateRange === option.id
-                            ? 'bg-blue-100 text-blue-700 font-medium'
-                            : 'text-gray-700 hover:bg-gray-100'
-                        }`}
-                      >
-                        {option.label}
-                      </button>
-                    ))}
-                  </div>
-                </div>
-              )}
+              {/* All Time Button */}
+              <Button
+                size="sm"
+                variant="secondary"
+                onClick={() => {
+                  setDateRange('all');
+                  setCustomStart(undefined);
+                  setCustomEnd(undefined);
+                  setDropdownOpen(false);
+                  // Fetch all-time data (no date filter)
+                  fetch(`/api/shipments`, { credentials: 'include' })
+                    .then(res => {
+                      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+                      return res.json();
+                    })
+                    .then((shipments: any[]) => {
+                      console.log(`Fetched ${shipments.length} shipments - All Time`);
+                      setKpis({
+                        totalCreated: shipments.length,
+                        totalDelivered: shipments.filter((s: any) => s.status === 'Delivered').length,
+                        totalFailed: shipments.filter((s: any) => s.status === 'Failed').length,
+                      });
+                    })
+                    .catch(err => console.error('All Time Error:', err));
+                }}
+                className="h-9 px-4 text-sm"
+              >
+                All Time
+              </Button>
+
+              {/* Reset Button */}
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={() => {
+                  setDateRange('today');
+                  setCustomStart(undefined);
+                  setCustomEnd(undefined);
+                  setDropdownOpen(false);
+                  // Fetch today's data
+                  const today = new Date();
+                  today.setHours(0, 0, 0, 0);
+                  const tomorrow = new Date(today);
+                  tomorrow.setDate(tomorrow.getDate() + 1);
+                  const from = today.toISOString().split('T')[0];
+                  const to = tomorrow.toISOString().split('T')[0];
+                  fetch(`/api/shipments?from=${from}&to=${to}`, { credentials: 'include' })
+                    .then(res => {
+                      if (!res.ok) throw new Error(`Failed: ${res.status}`);
+                      return res.json();
+                    })
+                    .then((shipments: any[]) => {
+                      console.log(`Fetched ${shipments.length} shipments on reset`);
+                      setKpis({
+                        totalCreated: shipments.length,
+                        totalDelivered: shipments.filter((s: any) => s.status === 'Delivered').length,
+                        totalFailed: shipments.filter((s: any) => s.status === 'Failed').length,
+                      });
+                    })
+                    .catch(err => console.error('Reset Error:', err));
+                }}
+                className="h-9 px-4 text-sm"
+              >
+                Reset
+              </Button>
             </div>
           </div>
-
-          {showCustom && dateRange === "custom" && (
-            <div className="mt-4 p-4 bg-gray-50 rounded-lg border border-gray-200 flex flex-wrap gap-3 sm:gap-4 items-end animate-in fade-in slide-in-from-top-2">
-              <div>
-                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">From</label>
-                <input
-                  type="date"
-                  value={customStart}
-                  onChange={(e) => setCustomStart(e.target.value)}
-                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                />
-              </div>
-              <div>
-                <label className="block text-sm sm:text-xs font-semibold text-gray-600 uppercase tracking-wide mb-2 sm:mb-1.5">To</label>
-                <input
-                  type="date"
-                  value={customEnd}
-                  onChange={(e) => setCustomEnd(e.target.value)}
-                  className="px-4 sm:px-3 py-3 sm:py-2 text-base sm:text-sm border border-gray-200 rounded-lg focus:ring-2 focus:ring-blue-500/20 focus:border-blue-500 outline-none transition-all bg-white"
-                />
-              </div>
-            </div>
-          )}
         </div>
       </div>
 
@@ -315,36 +457,70 @@ export default function BranchDashboardPage() {
           />
         </div>
 
-        {/* Operational Stats Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-4">
-          <StatCard
-            label="Ready for Assignment"
-            value={readyForAssignment.length}
-            icon={Package}
-            color="blue"
-            trend="Action Required"
-          />
-          <StatCard
-            label="Failed Deliveries"
-            value={failedDeliveries.length}
-            icon={AlertCircle}
-            color="red"
-            trend="Needs Attention"
-          />
-          <StatCard
-            label="Incoming Manifests"
-            value={incomingManifests.length}
-            icon={Package}
-            color="purple"
-            trend="In Transit"
-          />
-          <StatCard
-            label="Outgoing Manifests"
-            value={outgoingManifests.length}
-            icon={Send}
-            color="teal"
-            trend="In Transit"
-          />
+        {/* Main Content - Shipment Overview (Left) & Operational Stats (Right) */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
+  {/* Shipment Overview Chart - Left Side (takes 2 columns) */}
+          <div className="lg:col-span-2">
+            <ShipmentOverviewChart
+              dateRange={chartDateRange}
+              onDateRangeChange={setChartDateRange}
+            />
+          </div>
+
+          {/* Operational Stats - Right Side (compact & detailed) */}
+          <div className="space-y-3">
+            <h3 className="text-sm font-semibold text-gray-900 px-2">Operational Status</h3>
+            <div className="space-y-3">
+              <div className="bg-white rounded-lg border border-blue-200/60 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Ready for Assignment</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Action Required</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-blue-900">{readyForAssignment.length}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg border border-red-200/60 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Failed Deliveries</p>
+                      <p className="text-xs text-gray-500 mt-0.5">Needs Attention</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-red-900">{failedDeliveries.length}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg border border-purple-200/60 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Package className="h-5 w-5 text-purple-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Incoming Manifests</p>
+                      <p className="text-xs text-gray-500 mt-0.5">In Transit</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-purple-900">{incomingManifests.length}</span>
+                </div>
+              </div>
+              <div className="bg-white rounded-lg border border-teal-200/60 p-4 hover:shadow-md transition-shadow">
+                <div className="flex items-start justify-between mb-2">
+                  <div className="flex items-center gap-2">
+                    <Send className="h-5 w-5 text-teal-600 flex-shrink-0" />
+                    <div>
+                      <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider">Outgoing Manifests</p>
+                      <p className="text-xs text-gray-500 mt-0.5">In Transit</p>
+                    </div>
+                  </div>
+                  <span className="text-2xl font-bold text-teal-900">{outgoingManifests.length}</span>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
 
         {/* Recent Shipments Table */}
@@ -355,7 +531,7 @@ export default function BranchDashboardPage() {
 
           <ModernTable
             headers={['Tracking ID', 'Recipient', 'Status', 'Date']}
-            data={[...readyForAssignment, ...failedDeliveries].slice(0, 8)}
+            data={[...readyForAssignment, ...failedDeliveries].slice(0, 5)}
             isLoading={operationalLoading}
             emptyMessage="No recent shipments found"
             renderRow={(shipment, i) => (

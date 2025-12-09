@@ -241,43 +241,6 @@ export default function DispatchPage() {
         </p>
       </div>
 
-      {/* Stats Overview */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4">
-        <div className="bg-white rounded-xl border border-blue-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-widest">Incoming Manifests</p>
-              <p className="text-4xl font-bold text-blue-900 mt-3 font-mono">{incomingManifests.length}</p>
-            </div>
-            <div className="bg-blue-500/15 rounded-2xl p-4">
-              <TrendingDown className="h-10 w-10 text-blue-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-green-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">Outgoing Manifests</p>
-              <p className="text-4xl font-bold text-green-900 mt-3 font-mono">{outgoingManifests.length}</p>
-            </div>
-            <div className="bg-green-500/15 rounded-2xl p-4">
-              <Send className="h-10 w-10 text-green-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-xl border border-orange-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-orange-700 uppercase tracking-widest">Available for Dispatch</p>
-              <p className="text-4xl font-bold text-orange-900 mt-3 font-mono">{availableShipments.length}</p>
-            </div>
-            <div className="bg-orange-500/15 rounded-2xl p-4">
-              <Box className="h-10 w-10 text-orange-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-      </div>
-
       {/* Tabs */}
       <div className="border-b border-gray-200">
         <div className="flex gap-1">
@@ -545,7 +508,7 @@ function ManifestListTab({ manifests, type }: any) {
   const [searchQuery, setSearchQuery] = useState('');
   const [statusFilter, setStatusFilter] = useState('');
   const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 10;
+  const itemsPerPage = 5; // Enhanced: Reduced from 10 to 5 items per page for better readability
 
   const filteredManifests = manifests.filter((manifest: IManifest) => {
     const matchesSearch = 
@@ -600,43 +563,41 @@ function ManifestListTab({ manifests, type }: any) {
   return (
     <div className="space-y-4">
       {/* Search and Filter Bar */}
-      {isOutgoing && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4">
-          <div className="flex flex-col sm:flex-row gap-3">
-            <div className="flex-1">
-              <Input
-                type="text"
-                placeholder="Search by manifest ID or branch..."
-                value={searchQuery}
-                onChange={(e) => handleSearch(e.target.value)}
-              />
-            </div>
-            <div className="w-full sm:w-48">
-              <Select value={statusFilter || 'all'} onValueChange={handleStatusChange}>
-                <SelectTrigger>
-                  <SelectValue placeholder="All Status" />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="all">All Status</SelectItem>
-                  <SelectItem value="In Transit">In Transit</SelectItem>
-                  <SelectItem value="Completed">Completed</SelectItem>
-                </SelectContent>
-              </Select>
-            </div>
-            {(searchQuery || statusFilter) && (
-              <Button
-                size="sm"
-                variant="outline"
-                onClick={handleClearFilters}
-              >
-                Clear
-              </Button>
-            )}
+      <div className="bg-white rounded-lg border border-gray-200 p-4">
+        <div className="flex flex-col sm:flex-row gap-3">
+          <div className="flex-1">
+            <Input
+              type="text"
+              placeholder="Search by manifest ID or branch..."
+              value={searchQuery}
+              onChange={(e) => handleSearch(e.target.value)}
+            />
           </div>
+          <div className="w-full sm:w-48">
+            <Select value={statusFilter || 'all'} onValueChange={handleStatusChange}>
+              <SelectTrigger>
+                <SelectValue placeholder="All Status" />
+              </SelectTrigger>
+              <SelectContent>
+                <SelectItem value="all">All Status</SelectItem>
+                <SelectItem value="In Transit">In Transit</SelectItem>
+                <SelectItem value="Completed">Completed</SelectItem>
+              </SelectContent>
+            </Select>
+          </div>
+          {(searchQuery || statusFilter) && (
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={handleClearFilters}
+            >
+              Clear
+            </Button>
+          )}
         </div>
-      )}
+      </div>
 
-      {/* Manifests List */}
+      {/* Manifests Table */}
       {filteredManifests.length === 0 ? (
         <div className="bg-white rounded-lg border border-gray-200 p-8 text-center">
           <Box className="h-8 w-8 text-gray-300 mx-auto mb-2" />
@@ -644,53 +605,103 @@ function ManifestListTab({ manifests, type }: any) {
         </div>
       ) : (
         <>
-      <div className="space-y-3">
-            {paginatedManifests.map((manifest: IManifest, index: number) => (
-              <ManifestCard 
-                key={manifest._id} 
-                manifest={manifest} 
-                type={type}
-                siNo={(currentPage - 1) * itemsPerPage + index + 1}
-              />
-            ))}
+          <div className="bg-white rounded-lg border border-gray-200 overflow-hidden">
+            <Table>
+              <TableHeader>
+                <TableRow className="bg-gray-50/50 border-b border-gray-200">
+                  <TableHead className="w-12 h-12 px-4 font-semibold text-gray-700 text-xs uppercase">No.</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">Manifest ID</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">{isIncoming ? 'From' : 'To'}</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">Shipments</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">Vehicle</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">Driver</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase">Status</TableHead>
+                  <TableHead className="px-4 font-semibold text-gray-700 text-xs uppercase text-right">Action</TableHead>
+                </TableRow>
+              </TableHeader>
+              <TableBody>
+                {paginatedManifests.map((manifest: IManifest, index: number) => (
+                  <ManifestTableRow
+                    key={manifest._id}
+                    manifest={manifest}
+                    type={type}
+                    siNo={(currentPage - 1) * itemsPerPage + index + 1}
+                    isIncoming={isIncoming}
+                  />
+                ))}
+              </TableBody>
+            </Table>
           </div>
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between">
-              <div className="text-sm text-gray-600">
-                Showing {(currentPage - 1) * itemsPerPage + 1} to {Math.min(currentPage * itemsPerPage, filteredManifests.length)} of {filteredManifests.length}
-              </div>
-              <div className="flex gap-2">
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
-                  disabled={currentPage === 1}
-                >
-                  Previous
-                </Button>
-                <div className="flex items-center gap-2">
-                  {Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
-                    <Button
-                      key={page}
-                      variant={currentPage === page ? 'default' : 'outline'}
-                      size="sm"
-                      onClick={() => setCurrentPage(page)}
-                      className="min-w-[40px]"
-                    >
-                      {page}
-                    </Button>
-                  ))}
+            <div className="bg-white rounded-lg border border-gray-200 p-4">
+              <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
+                <div className="text-sm text-gray-600 font-medium">
+                  Showing <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredManifests.length)}</span> of <span className="font-bold text-gray-900">{filteredManifests.length}</span> manifests
                 </div>
-                <Button
-                  variant="outline"
-                  size="sm"
-                  onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
-                  disabled={currentPage === totalPages}
-                >
-                  Next
-                </Button>
+                <div className="flex items-center gap-2 flex-wrap justify-center">
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+                    disabled={currentPage === 1}
+                    className="h-9 px-3"
+                  >
+                    ← Previous
+                  </Button>
+                  <div className="flex items-center gap-1">
+                    {totalPages <= 5 ? (
+                      Array.from({ length: totalPages }, (_, i) => i + 1).map((page) => (
+                        <Button
+                          key={page}
+                          variant={currentPage === page ? 'default' : 'outline'}
+                          size="sm"
+                          onClick={() => setCurrentPage(page)}
+                          className="h-9 min-w-[36px]"
+                        >
+                          {page}
+                        </Button>
+                      ))
+                    ) : (
+                      <>
+                        {Array.from({ length: Math.min(2, totalPages) }, (_, i) => i + 1).map((page) => (
+                          <Button
+                            key={page}
+                            variant={currentPage === page ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setCurrentPage(page)}
+                            className="h-9 min-w-[36px]"
+                          >
+                            {page}
+                          </Button>
+                        ))}
+                        {totalPages > 4 && (
+                          <span className="px-2 text-gray-500 font-medium">...</span>
+                        )}
+                        {totalPages > 2 && (
+                          <Button
+                            variant={currentPage === totalPages ? 'default' : 'outline'}
+                            size="sm"
+                            onClick={() => setCurrentPage(totalPages)}
+                            className="h-9 min-w-[36px]"
+                          >
+                            {totalPages}
+                          </Button>
+                        )}
+                      </>
+                    )}
+                  </div>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
+                    disabled={currentPage === totalPages}
+                    className="h-9 px-3"
+                  >
+                    Next →
+                  </Button>
+                </div>
               </div>
             </div>
           )}
@@ -700,10 +711,8 @@ function ManifestListTab({ manifests, type }: any) {
   );
 }
 
-// Manifest Card Component
-function ManifestCard({ manifest, type, siNo }: any) {
-  const isIncoming = type === 'incoming';
-  const isOutgoing = type === 'outgoing';
+// Manifest Table Row Component
+function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
   const isCompleted = manifest.status === 'Completed';
   const [isReceiving, setIsReceiving] = useState(false);
   const [showConfirmDialog, setShowConfirmDialog] = useState(false);
@@ -733,125 +742,81 @@ function ManifestCard({ manifest, type, siNo }: any) {
     }
   };
 
-  // ... existing code ...
-
   return (
-    <div className="bg-white rounded-lg border border-gray-200 hover:border-gray-300 hover:shadow-md transition-all p-4">
-      <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-4">
-        <div className="flex items-start gap-3 flex-1 min-w-0">
-          {siNo && (
-            <div className="flex-shrink-0">
-              <span className="inline-flex items-center justify-center h-8 w-8 rounded-full bg-gray-100 text-xs font-bold text-gray-700">
-                {siNo}
-              </span>
-            </div>
+    <TableRow className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+      <TableCell className="px-4 py-3 text-xs font-bold text-gray-700">{siNo}</TableCell>
+      <TableCell className="px-4 py-3 text-sm font-mono font-semibold text-gray-900">{manifest._id}</TableCell>
+      <TableCell className="px-4 py-3 text-sm text-gray-700">
+        {isIncoming ? manifest.fromBranchId?.name : manifest.toBranchId?.name || 'Unknown'}
+      </TableCell>
+      <TableCell className="px-4 py-3 text-sm font-bold text-gray-900">{manifest.shipmentIds?.length || 0}</TableCell>
+      <TableCell className="px-4 py-3 text-sm text-gray-700">{manifest.vehicleNumber || '—'}</TableCell>
+      <TableCell className="px-4 py-3 text-sm text-gray-700">{manifest.driverName || '—'}</TableCell>
+      <TableCell className="px-4 py-3">
+        <Badge
+          variant={manifest.status === 'In Transit' ? 'default' : 'secondary'}
+          className={`text-xs ${
+            manifest.status === 'In Transit'
+              ? 'bg-blue-100 text-blue-700 border border-blue-300'
+              : 'bg-green-100 text-green-700 border border-green-300'
+          }`}
+        >
+          {manifest.status}
+        </Badge>
+      </TableCell>
+      <TableCell className="px-4 py-3 text-right">
+        <div className="flex items-center justify-end gap-2">
+          {isIncoming && !isCompleted && (
+            <Button
+              onClick={() => setShowConfirmDialog(true)}
+              disabled={isReceiving}
+              size="sm"
+              variant="default"
+              className="h-8 text-xs"
+            >
+              {isReceiving ? (
+                <Loader className="h-3 w-3 animate-spin" />
+              ) : (
+                <Check className="h-3 w-3" />
+              )}
+              Receive
+            </Button>
           )}
-          <div className="flex-1 min-w-0">
-            <div className="flex items-center gap-2 flex-wrap mb-2">
-              <h3 className="text-sm font-bold text-gray-900 truncate">Manifest {manifest._id.slice(-6)}</h3>
-              <Badge 
-                variant={manifest.status === 'In Transit' ? 'default' : 'secondary'} 
-                className={`text-xs ${
-                  manifest.status === 'In Transit' 
-                    ? 'bg-blue-100 text-blue-700 border border-blue-300' 
-                    : ''
-                }`}
-              >
-                {manifest.status}
-              </Badge>
-            </div>
-            <p className="text-xs text-gray-600 font-medium">
-              {isIncoming
-                ? `From: ${manifest.fromBranchId?.name || 'Unknown'}`
-                : `To: ${manifest.toBranchId?.name || 'Unknown'}`}
-            </p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2">
           <Button
             variant="ghost"
             size="sm"
             asChild
+            className="h-8 text-xs"
           >
             <Link href={`/dashboard/dispatch/${manifest._id}`}>
-              <Eye className="h-4 w-4" />
-              Details
+              <Eye className="h-3 w-3" />
+              View
             </Link>
           </Button>
         </div>
-      </div>
+      </TableCell>
 
-      <div className="grid grid-cols-2 sm:grid-cols-4 gap-3 text-xs mb-4 pb-4 border-b border-gray-100">
-        <div>
-          <p className="text-gray-500 font-semibold uppercase">Shipments</p>
-          <p className="text-gray-900 font-bold mt-1">{manifest.shipmentIds?.length || 0}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 font-semibold uppercase">Vehicle</p>
-          <p className="text-gray-900 font-medium mt-1">{manifest.vehicleNumber || '—'}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 font-semibold uppercase">Driver</p>
-          <p className="text-gray-900 font-medium mt-1">{manifest.driverName || '—'}</p>
-        </div>
-        <div>
-          <p className="text-gray-500 font-semibold uppercase">Dispatched</p>
-          <p className="text-gray-900 font-medium mt-1">
-            {manifest.dispatchedAt ? new Date(manifest.dispatchedAt).toLocaleDateString() : '—'}
-          </p>
-        </div>
-      </div>
-
-      {isIncoming && !isCompleted && (
-        <>
-          <Button
-            onClick={() => setShowConfirmDialog(true)}
-            disabled={isReceiving}
-            className="w-full gap-2"
-            size="sm"
-          >
-            {isReceiving ? (
-              <>
-                <Loader className="h-4 w-4 animate-spin" />
-                Confirming...
-              </>
-            ) : (
-              <>
-                <Check className="h-4 w-4" />
-                Confirm Receipt
-              </>
-            )}
-          </Button>
-          
-          {/* Confirm Receipt Dialog */}
-          <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-            <DialogContent className="max-w-sm">
-              <DialogHeader>
-                <DialogTitle>Confirm Manifest Receipt</DialogTitle>
-                <DialogDescription>
-                  Are you sure you want to confirm receipt of this manifest? This action cannot be undone.
-                </DialogDescription>
-              </DialogHeader>
-              <DialogFooter className="flex gap-2">
-                <Button
-                  variant="outline"
-                  onClick={() => setShowConfirmDialog(false)}
-                  disabled={isReceiving}
-                >
-                  Cancel
-                </Button>
-                <Button
-                  onClick={handleConfirmReceive}
-                  disabled={isReceiving}
-                  className="bg-green-600 hover:bg-green-700"
-                >
-                  {isReceiving ? 'Confirming...' : 'Confirm'}
-                </Button>
-              </DialogFooter>
-            </DialogContent>
-          </Dialog>
-        </>
+      {/* Confirm Receipt Dialog */}
+      {showConfirmDialog && (
+        <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
+          <DialogContent>
+            <DialogHeader>
+              <DialogTitle>Confirm Manifest Receipt</DialogTitle>
+              <DialogDescription>
+                Are you sure you want to mark this manifest as received?
+              </DialogDescription>
+            </DialogHeader>
+            <DialogFooter>
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+                Cancel
+              </Button>
+              <Button onClick={handleConfirmReceive} disabled={isReceiving}>
+                {isReceiving ? 'Confirming...' : 'Confirm Receipt'}
+              </Button>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
-    </div>
+    </TableRow>
   );
 }

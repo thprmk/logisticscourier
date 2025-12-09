@@ -32,9 +32,12 @@ export default function RootPage() {
   // Show a loading screen while checking (prevents flashing the login page)
   return (
     <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-      <div className="flex flex-col items-center gap-2">
-        <Loader className="h-10 w-10 animate-spin text-orange-500" />
-        <p className="text-sm font-medium text-gray-500">Netta Logistics...</p>
+      <div className="flex flex-col items-center gap-3">
+        <div className="relative h-16 w-16">
+          <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+          <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+        </div>
+        <p className="text-sm font-medium text-gray-600">Netta Logistics...</p>
       </div>
     </div>
   );

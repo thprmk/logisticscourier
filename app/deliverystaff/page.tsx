@@ -6,7 +6,7 @@ import { useUser } from '../context/UserContext';
 import { useRouter } from 'next/navigation';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { invalidateCache } from '@/lib/requestCache';
-import { MapPin, Phone, Truck, CheckCircle, XCircle, Package, Building, Eye, Loader, Search, Plus, ChevronLeft, ChevronRight } from 'lucide-react';
+import { MapPin, Phone, Truck, CheckCircle, XCircle, Package, Building, Eye, Loader, Search, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
@@ -35,6 +35,12 @@ import {
   TableHeader,
   TableRow,
 } from '@/app/components/ui/table';
+import {
+  Card,
+  CardContent,
+  CardHeader,
+  CardTitle,
+} from '@/app/components/ui/card';
 import {
   Popover,
   PopoverContent,
@@ -78,14 +84,15 @@ export default function DeliveryStaffPage() {
     minLength: 0,
   });
   const [statusFilter, setStatusFilter] = useState('');
-  const [dateRangeStart, setDateRangeStart] = useState<string>('');
-  const [dateRangeEnd, setDateRangeEnd] = useState<string>('');
+  const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(undefined);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(undefined);
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingShipment, setUpdatingShipment] = useState<string | null>(null);
   const [showProofModal, setShowProofModal] = useState<string | null>(null);
   const [proofType, setProofType] = useState<'signature' | 'photo'>('signature');
   const [showFailureModal, setShowFailureModal] = useState<string | null>(null);
   const [proofImageViewer, setProofImageViewer] = useState<string | null>(null);
+  const [dropdownOpen, setDropdownOpen] = useState(false);
   const itemsPerPage = 10;
 
   const failureReasons = [
@@ -209,34 +216,79 @@ export default function DeliveryStaffPage() {
     window.open(`tel:${phoneNumber}`);
   };
 
+  // ... existing code ...
+
   const clearAllFilters = () => {
     setSearchQuery('');
     setStatusFilter('');
-    setDateRangeStart('');
-    setDateRangeEnd('');
+    setDateRangeStart(undefined);
+    setDateRangeEnd(undefined);
     setCurrentPage(1);
+    setDropdownOpen(false);
     // Invalidate cache after clearing filters
     invalidateCache('/api/shipments');
+  };
+
+  const handleApplyFilter = () => {
+    if (dateRangeStart && dateRangeEnd) {
+      const from = dateRangeStart.toISOString().split('T')[0];
+      const to = new Date(dateRangeEnd);
+      to.setDate(to.getDate() + 1);
+      const toStr = to.toISOString().split('T')[0];
+      
+      setCurrentPage(1);
+      setDropdownOpen(false);
+      console.log(`Filtering deliveries from ${from} to ${toStr}`);
+    }
+  };
+
+  const handleAllTime = () => {
+    setDateRangeStart(undefined);
+    setDateRangeEnd(undefined);
+    setCurrentPage(1);
+    setDropdownOpen(false);
+  };
+
+  const handleResetDate = () => {
+    setDateRangeStart(undefined);
+    setDateRangeEnd(undefined);
+    setCurrentPage(1);
+    setDropdownOpen(false);
   };
 
   if (authLoading) {
     return (
       <div className="flex h-screen w-full items-center justify-center bg-gray-50">
-        <div className="flex flex-col items-center gap-2">
-          <Loader className="h-8 w-8 animate-spin text-orange-500" />
-          <p className="text-sm text-gray-500">Verifying session...</p>
+        <div className="flex flex-col items-center gap-3">
+          <div className="relative h-12 w-12">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+          </div>
+          <p className="text-sm text-gray-600 font-medium">Verifying session...</p>
         </div>
       </div>
     );
   }
 
-  // Filter shipments based on debounced search and status
+  // Filter shipments based on debounced search, status, and date range
   const filteredShipments = shipments.filter(shipment => {
     const matchesSearch = debouncedQuery === '' || 
       shipment.trackingId.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
       shipment.recipient.name.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesStatus = !statusFilter || shipment.status === statusFilter;
-    return matchesSearch && matchesStatus;
+    
+    let matchesDateRange = true;
+    if (dateRangeStart && dateRangeEnd) {
+      const shipmentDate = new Date(shipment.createdAt);
+      shipmentDate.setHours(0, 0, 0, 0);
+      const filterStart = new Date(dateRangeStart);
+      filterStart.setHours(0, 0, 0, 0);
+      const filterEnd = new Date(dateRangeEnd);
+      filterEnd.setHours(23, 59, 59, 999);
+      matchesDateRange = shipmentDate >= filterStart && shipmentDate <= filterEnd;
+    }
+    
+    return matchesSearch && matchesStatus && matchesDateRange;
   });
 
   // Pagination
@@ -343,53 +395,58 @@ export default function DeliveryStaffPage() {
             />
             {isSearching && (
               <div className="absolute inset-y-0 right-0 pr-3 flex items-center">
-                <Loader className="h-4 w-4 text-orange-500 animate-spin" />
+                <div className="relative h-4 w-4">
+                  <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                </div>
               </div>
             )}
           </div>
 
           {/* Filters */}
-          <div className="flex items-end gap-2 sm:gap-3 flex-wrap w-full sm:w-auto">
-            {/* Date Range */}
-            <div className="flex-1 sm:flex-none min-w-[150px]">
-              <Label className="text-xs block mb-1">Date Range</Label>
-              <Popover>
+          <div className="flex items-center gap-2 flex-wrap">
+            {/* Date Range Picker */}
+            <div className="flex-1 min-w-[200px]">
+              <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-9 w-full justify-start text-sm font-normal"
+                    className="w-full h-9 justify-start text-sm font-normal"
                   >
+                    <CalendarIcon className="h-4 w-4 mr-2" />
                     {dateRangeStart && dateRangeEnd
-                      ? `${format(new Date(dateRangeStart), 'MMM dd')} - ${format(new Date(dateRangeEnd), 'MMM dd')}`
-                      : dateRangeStart
-                      ? `${format(new Date(dateRangeStart), 'MMM dd')} - Pick end`
+                      ? `${dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} - ${dateRangeEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`
                       : 'Pick date range'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <div className="flex gap-0">
-                    <div className="p-2">
-                      <Label className="text-xs mb-1 block">Start Date</Label>
+                    <div className="p-3">
                       <Calendar
                         mode="single"
-                        selected={dateRangeStart ? new Date(dateRangeStart) : undefined}
-                        onSelect={(date) => setDateRangeStart(date ? format(date, 'yyyy-MM-dd') : '')}
+                        selected={dateRangeStart}
+                        onSelect={(date) => {
+                          setDateRangeStart(date);
+                          // If selecting the same date twice, set it as both start and end
+                          if (date && dateRangeStart && dateRangeStart.toDateString() === date.toDateString()) {
+                            setDateRangeEnd(date);
+                          } else if (date && dateRangeEnd && date > dateRangeEnd) {
+                            setDateRangeEnd(undefined);
+                          }
+                        }}
                         disabled={(date) =>
-                          dateRangeEnd ? date > new Date(dateRangeEnd) : false
+                          dateRangeEnd ? date > dateRangeEnd : false
                         }
-                        className="scale-90 origin-top-left"
                       />
                     </div>
-                    <div className="p-2">
-                      <Label className="text-xs mb-1 block">End Date</Label>
+                    <div className="p-3">
                       <Calendar
                         mode="single"
-                        selected={dateRangeEnd ? new Date(dateRangeEnd) : undefined}
-                        onSelect={(date) => setDateRangeEnd(date ? format(date, 'yyyy-MM-dd') : '')}
+                        selected={dateRangeEnd}
+                        onSelect={(date) => setDateRangeEnd(date)}
                         disabled={(date) =>
-                          dateRangeStart ? date < new Date(dateRangeStart) : false
+                          dateRangeStart ? date < dateRangeStart : false
                         }
-                        className="scale-90 origin-top-left"
                       />
                     </div>
                   </div>
@@ -397,23 +454,56 @@ export default function DeliveryStaffPage() {
               </Popover>
             </div>
 
+            {/* Apply Filter Button - Always show when dates are selected */}
+            {(dateRangeStart || dateRangeEnd) && (
+              <Button
+                onClick={handleApplyFilter}
+                className="h-9 px-4 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+              >
+                Apply
+              </Button>
+            )}
+
+            {/* All Time Button */}
+            {(dateRangeStart || dateRangeEnd) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleAllTime}
+                className="h-9 text-sm"
+              >
+                All Time
+              </Button>
+            )}
+
+            {/* Reset Button */}
+            {(dateRangeStart || dateRangeEnd) && (
+              <Button
+                size="sm"
+                variant="ghost"
+                onClick={handleResetDate}
+                className="h-9 text-sm"
+              >
+                Reset
+              </Button>
+            )}
+
             {/* Status Filter */}
-            <div className="flex-1 sm:flex-none min-w-[150px]">
-              <Label htmlFor="filter-status" className="text-xs block mb-1">Status</Label>
+            <div className="flex-1 min-w-[150px]">
               <Select value={statusFilter || 'all'} onValueChange={(val) => {
                 setStatusFilter(val === 'all' ? '' : val);
                 setCurrentPage(1);
               }}>
-                <SelectTrigger id="filter-status" className="h-9 text-sm">
+                <SelectTrigger className="h-9 text-sm">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
                 <SelectContent>
-                  <SelectItem value="all" variant="orange">All Statuses</SelectItem>
-                  <SelectItem value="Assigned" variant="orange">Assigned</SelectItem>
-                  <SelectItem value="Out for Delivery" variant="orange">Out for Delivery</SelectItem>
-                  <SelectItem value="Delivered" variant="orange">Delivered</SelectItem>
-                  <SelectItem value="Failed" variant="orange">Failed</SelectItem>
-                  <SelectItem value="At Origin Branch" variant="orange">At Origin Branch</SelectItem>
+                  <SelectItem value="all">All Statuses</SelectItem>
+                  <SelectItem value="Assigned">Assigned</SelectItem>
+                  <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                  <SelectItem value="Delivered">Delivered</SelectItem>
+                  <SelectItem value="Failed">Failed</SelectItem>
+                  <SelectItem value="At Origin Branch">At Origin Branch</SelectItem>
                 </SelectContent>
               </Select>
             </div>
@@ -424,7 +514,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 variant="outline"
                 onClick={clearAllFilters}
-                className="h-9 text-xs"
+                className="h-9 text-sm"
               >
                 Clear
               </Button>
@@ -437,8 +527,11 @@ export default function DeliveryStaffPage() {
       {isLoading ? (
         <div className="flex justify-center items-center h-48 bg-white rounded-lg border border-gray-200 shadow-sm">
           <div className="text-center">
-            <Loader className="inline-block animate-spin h-8 w-8 text-orange-500 mb-2" />
-            <p className="text-sm text-gray-600">Loading your deliveries...</p>
+            <div className="relative h-10 w-10 mx-auto mb-3">
+              <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+            </div>
+            <p className="text-sm text-gray-600 font-medium">Loading your deliveries...</p>
           </div>
         </div>
       ) : shipments.length === 0 ? (
@@ -455,8 +548,8 @@ export default function DeliveryStaffPage() {
         </div>
       ) : (
         <>
-          {/* Table */}
-          <div className="border rounded-lg overflow-hidden">
+          {/* Desktop Table View */}
+          <div className="hidden md:block border rounded-lg overflow-hidden">
             <Table className="text-base">
               <TableHeader>
                 <TableRow className="bg-gray-50 h-12">
@@ -561,18 +654,137 @@ export default function DeliveryStaffPage() {
             </Table>
           </div>
 
+          {/* Mobile Card View */}
+          <div className="md:hidden space-y-4">
+            {paginatedShipments.map((shipment, index) => {
+              const isDelivered = shipment.status === 'Delivered';
+              const isOutForDelivery = shipment.status === 'Out for Delivery';
+              const isAssigned = shipment.status === 'Assigned';
+
+              return (
+                <Card key={shipment._id} className="border-gray-200">
+                  <CardHeader className="pb-3">
+                    <div className="flex items-start justify-between">
+                      <div className="space-y-1">
+                        <div className="flex items-center gap-2">
+                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">#{startIndex + index + 1}</span>
+                          <span className="text-xs font-mono font-semibold text-gray-700">{shipment.trackingId}</span>
+                        </div>
+                        <CardTitle className="text-base">{shipment.recipient.name}</CardTitle>
+                      </div>
+                    </div>
+                  </CardHeader>
+                  <CardContent className="space-y-3">
+                    {/* Address */}
+                    <div>
+                      <p className="text-xs text-gray-500 font-semibold mb-1">ADDRESS</p>
+                      <p className="text-sm text-gray-700">{shipment.recipient.address}</p>
+                    </div>
+
+                    {/* Status and Date Row */}
+                    <div className="grid grid-cols-2 gap-3">
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold mb-1">STATUS</p>
+                        {getStatusBadge(shipment.status)}
+                      </div>
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold mb-1">DATE</p>
+                        <p className="text-sm text-gray-700">
+                          {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                            month: 'short',
+                            day: 'numeric',
+                            year: 'numeric'
+                          })}
+                        </p>
+                      </div>
+                    </div>
+
+                    {/* Contact Info */}
+                    {(isAssigned || isOutForDelivery) && (
+                      <div>
+                        <p className="text-xs text-gray-500 font-semibold mb-2">CONTACT</p>
+                        <div className="flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1"
+                            onClick={() => handleGetDirections(shipment.recipient.address)}
+                          >
+                            <MapPin className="h-4 w-4" />
+                            Directions
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            className="flex-1 gap-1"
+                            onClick={() => handleCallCustomer(shipment.recipient.phone)}
+                          >
+                            <Phone className="h-4 w-4" />
+                            Call
+                          </Button>
+                        </div>
+                      </div>
+                    )}
+
+                    {/* Action Buttons */}
+                    <div className="border-t pt-3">
+                      <div className="space-y-2">
+                        {isAssigned && (
+                          <Button
+                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            disabled={updatingShipment === shipment._id}
+                          >
+                            {updatingShipment === shipment._id ? 'Starting...' : 'Start Delivery'}
+                          </Button>
+                        )}
+                        {isOutForDelivery && (
+                          <div className="grid grid-cols-2 gap-2">
+                            <Button
+                              className="bg-green-600 hover:bg-green-700"
+                              disabled={updatingShipment === shipment._id}
+                              onClick={() => setShowProofModal(shipment._id)}
+                            >
+                              {updatingShipment === shipment._id ? '...' : 'Done'}
+                            </Button>
+                            <Button
+                              variant="destructive"
+                              disabled={updatingShipment === shipment._id}
+                              onClick={() => setShowFailureModal(shipment._id)}
+                            >
+                              {updatingShipment === shipment._id ? '...' : 'Fail'}
+                            </Button>
+                          </div>
+                        )}
+                        {isDelivered && shipment.deliveryProof && (
+                          <Button
+                            variant="outline"
+                            className="w-full gap-1"
+                            onClick={() => setProofImageViewer(shipment.deliveryProof!.url)}
+                          >
+                            <Eye className="h-4 w-4" />
+                            View Proof
+                          </Button>
+                        )}
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              );
+            })}
+          </div>
+
           {/* Pagination */}
-          <div className="flex items-center justify-between">
+          <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
             <p className="text-sm text-gray-600">
               Showing {startIndex + 1} to {Math.min(endIndex, filteredShipments.length)} of {filteredShipments.length} deliveries
             </p>
-            <div className="flex gap-2">
+            <div className="flex gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="gap-1"
+                className="gap-1 flex-1 sm:flex-none"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -582,7 +794,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="gap-1"
+                className="gap-1 flex-1 sm:flex-none"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />

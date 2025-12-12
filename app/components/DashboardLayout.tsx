@@ -169,7 +169,14 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     pageTitle = 'Branch Management';
     navLinks = [{ href: '/superadmin/dashboard', label: 'Branches', icon: Building }];
   } else {
-    userRole = user.role === 'admin' ? 'Branch Manager' : 'Delivery Staff';
+    // For admin role: check isManager to distinguish between Branch Manager and Dispatcher
+    if (user.role === 'admin' && user.isManager) {
+      userRole = 'Branch Manager';
+    } else if (user.role === 'admin' && !user.isManager) {
+      userRole = 'Dispatcher';
+    } else {
+      userRole = 'Delivery Staff';
+    }
     
     if (pathname.startsWith('/dashboard/shipments')) pageTitle = 'Shipment Management';
     else if (pathname.startsWith('/dashboard/dispatch')) pageTitle = 'Branch Dispatch';

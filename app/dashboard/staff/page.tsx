@@ -105,7 +105,7 @@ export default function StaffManagementPage() {
         body: JSON.stringify({ 
           name: staffName, 
           email: staffEmail, 
-          ...(isEditingStaff ? {} : { password: staffPassword }),
+          ...(staffPassword ? { password: staffPassword } : {}),
           role: staffRole 
         }),
         credentials: 'include',
@@ -139,6 +139,16 @@ export default function StaffManagementPage() {
   };
 
   const handleEditStaff = (staffMember: IUser) => {
+    // Prevent Branch Manager from editing themselves
+    if (staffMember._id === user?.id) {
+      toast.error('You cannot edit your own account. Contact Super Admin.');
+      return;
+    }
+    // SECURITY: Check if trying to edit a Branch Manager
+    if (staffMember.isManager) {
+      toast.error('Cannot edit a Branch Manager. Contact Super Admin.');
+      return;
+    }
     setStaffName(staffMember.name);
     setStaffEmail(staffMember.email);
     setStaffRole(staffMember.role as 'staff' | 'admin');
@@ -148,6 +158,17 @@ export default function StaffManagementPage() {
   };
 
   const handleDeleteStaff = async (staffId: string, staffName: string) => {
+    // Prevent Branch Manager from deleting themselves
+    if (staffId === user?.id) {
+      toast.error('You cannot delete your own account. Contact Super Admin.');
+      return;
+    }
+    // SECURITY: Check if trying to delete a Branch Manager
+    const staffToDeleteObj = staff.find(s => s._id === staffId);
+    if (staffToDeleteObj?.isManager) {
+      toast.error('Cannot delete a Branch Manager. Contact Super Admin.');
+      return;
+    }
     setStaffToDelete({ id: staffId, name: staffName });
     setShowDeleteModal(true);
   };
@@ -248,10 +269,11 @@ export default function StaffManagementPage() {
     }
   };
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    setCurrentPage(1);
-  }, [roleFilter, searchQuery]);
+  // Helper: Check if current user is a Branch Manager (can manage staff)
+  const isBranchManager = user?.role === 'admin' && (user as any)?.isManager === true;
+  
+  // Helper: Check if current user is a Dispatcher (cannot manage staff)
+  const isDispatcher = user?.role === 'admin' && (user as any)?.isManager === false;
 
   if (error) return (
     <div className="flex h-64 items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
@@ -336,22 +358,25 @@ export default function StaffManagementPage() {
                 </Button>
               )}
               
-              <Button
-                onClick={() => {
-                  setStaffName('');
-                  setStaffEmail('');
-                  setStaffPassword('');
-                  setStaffRole('staff');
-                  setIsEditingStaff(false);
-                  setEditingStaffId('');
-                  setIsStaffModalOpen(true);
-                }}
-                className="h-10 gap-2 whitespace-nowrap text-sm"
-              >
-                <Plus size={18} />
-                <span className="hidden sm:inline">Add New</span>
-                <span className="sm:hidden">Add</span>
-              </Button>
+              {!isDispatcher && (
+                <Button
+                  onClick={() => {
+                    setStaffName('');
+                    setStaffEmail('');
+                    setStaffPassword('');
+                    setStaffRole('staff');
+                    setIsEditingStaff(false);
+                    setEditingStaffId('');
+                    setIsStaffModalOpen(true);
+                  }}
+                  title="Add new staff member"
+                  className="h-10 gap-2 whitespace-nowrap text-sm"
+                >
+                  <Plus size={18} />
+                  <span className="hidden sm:inline">Add New</span>
+                  <span className="sm:hidden">Add</span>
+                </Button>
+              )}
             </div>
           </div>
         </div>
@@ -412,7 +437,9 @@ export default function StaffManagementPage() {
                     <TableHead className="text-sm font-semibold">User</TableHead>
                     <TableHead className="text-sm font-semibold">Email</TableHead>
                     <TableHead className="text-sm font-semibold">Role</TableHead>
-                    <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
+                    {!isDispatcher && (
+                      <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
+                    )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
@@ -437,24 +464,30 @@ export default function StaffManagementPage() {
                       </TableCell>
                       <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
                       <TableCell className="text-sm">{getRoleBadge(member)}</TableCell>
-                      <TableCell className="text-right space-x-1">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleEditStaff(member)}
-                          title="Edit Staff Member"
-                        >
-                          <Edit size={16} />
-                        </Button>
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => handleDeleteStaff(member._id, member.name)}
-                          title="Remove Staff Member"
-                        >
-                          <Trash2 size={16} />
-                        </Button>
-                      </TableCell>
+                      {!isDispatcher && (
+                        <TableCell className="text-right space-x-1">
+                          <>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleEditStaff(member)}
+                              title={member.isManager ? 'Cannot edit Branch Managers' : 'Edit Staff Member'}
+                              disabled={member.isManager}
+                            >
+                              <Edit size={16} />
+                            </Button>
+                            <Button
+                              variant="ghost"
+                              size="sm"
+                              onClick={() => handleDeleteStaff(member._id, member.name)}
+                              title={member.isManager ? 'Cannot delete Branch Managers' : 'Remove Staff Member'}
+                              disabled={member.isManager}
+                            >
+                              <Trash2 size={16} />
+                            </Button>
+                          </>
+                        </TableCell>
+                      )}
                     </TableRow>
                   ))}
                 </TableBody>
@@ -490,26 +523,32 @@ export default function StaffManagementPage() {
                     {getRoleBadge(member)}
                   </div>
                   <div className="flex items-center gap-2 justify-end">
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleEditStaff(member)}
-                      title="Edit Staff Member"
-                      className="h-9 gap-2"
-                    >
-                      <Edit size={16} />
-                      <span className="text-xs">Edit</span>
-                    </Button>
-                    <Button
-                      variant="outline"
-                      size="sm"
-                      onClick={() => handleDeleteStaff(member._id, member.name)}
-                      title="Remove Staff Member"
-                      className="h-9 gap-2 text-red-600 hover:bg-red-50 border-red-200"
-                    >
-                      <Trash2 size={16} />
-                      <span className="text-xs">Remove</span>
-                    </Button>
+                    {!isDispatcher && (
+                      <>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleEditStaff(member)}
+                          title={member.isManager ? 'Cannot edit Branch Managers' : 'Edit Staff Member'}
+                          disabled={member.isManager}
+                          className="h-9 gap-2"
+                        >
+                          <Edit size={16} />
+                          <span className="text-xs">Edit</span>
+                        </Button>
+                        <Button
+                          variant="outline"
+                          size="sm"
+                          onClick={() => handleDeleteStaff(member._id, member.name)}
+                          title={member.isManager ? 'Cannot delete Branch Managers' : 'Remove Staff Member'}
+                          disabled={member.isManager}
+                          className="h-9 gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                        >
+                          <Trash2 size={16} />
+                          <span className="text-xs">Remove</span>
+                        </Button>
+                      </>
+                    )}
                   </div>
                 </div>
               ))}
@@ -623,22 +662,21 @@ export default function StaffManagementPage() {
                 className="mt-2 h-10 text-sm"
               />
             </div>
-                        
-            {!isEditingStaff && (
-              <div>
-                <Label htmlFor="staffPassword" className="text-sm font-medium">Temporary Password</Label>
-                <Input
-                  id="staffPassword"
-                  type="password"
-                  value={staffPassword}
-                  onChange={(e) => setStaffPassword(e.target.value)}
-                  autoComplete="new-password"
-                  placeholder="Enter temporary password"
-                  required
-                  className="mt-2 h-10 text-sm"
-                />
-              </div>
-            )}
+            
+            <div>
+              <Label htmlFor="staffPassword" className="text-sm font-medium">{isEditingStaff ? 'New Password (Optional)' : 'Temporary Password'}</Label>
+              <Input
+                id="staffPassword"
+                type="password"
+                value={staffPassword}
+                onChange={(e) => setStaffPassword(e.target.value)}
+                autoComplete="new-password"
+                placeholder={isEditingStaff ? 'Leave blank to keep current password' : 'Enter temporary password'}
+                required={!isEditingStaff}
+                className="mt-2 h-10 text-sm"
+              />
+              {isEditingStaff && <p className="mt-1 text-xs text-gray-500">Only fill this to change the password</p>}
+            </div>
                         
             <div>
               <Label htmlFor="staffRole" className="text-sm font-medium">Role</Label>

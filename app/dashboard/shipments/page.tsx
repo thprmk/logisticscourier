@@ -71,6 +71,8 @@ interface IShipment {
   createdBy?: {
     _id: string;
     name: string;
+    role: 'superAdmin' | 'admin' | 'staff';
+    isManager?: boolean;
   };
 
   originBranchId?: string | IBranch;
@@ -134,8 +136,8 @@ export default function ShipmentsPage() {
   const [statusFilter, setStatusFilter] = useState('');
   const [assignedToFilter, setAssignedToFilter] = useState('');
   const [createdByFilter, setCreatedByFilter] = useState('');
-  const [dateRangeStart, setDateRangeStart] = useState<string>('');
-  const [dateRangeEnd, setDateRangeEnd] = useState<string>('');
+  const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(undefined);
+  const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(undefined);
 
   // Bulk actions state
   const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(new Set());
@@ -206,14 +208,17 @@ export default function ShipmentsPage() {
     }
 
     // Apply date range filter
-    if (dateRangeStart) {
-      const startDate = new Date(dateRangeStart);
-      filtered = filtered.filter(shipment => new Date(shipment.createdAt) >= startDate);
-    }
-    if (dateRangeEnd) {
+    if (dateRangeStart && dateRangeEnd) {
+      console.log('Filtering by date range:', { dateRangeStart, dateRangeEnd });
+      // Set end date to end of day for inclusive filtering
       const endDate = new Date(dateRangeEnd);
       endDate.setHours(23, 59, 59, 999);
-      filtered = filtered.filter(shipment => new Date(shipment.createdAt) <= endDate);
+      filtered = filtered.filter(shipment => {
+        const shipmentDate = new Date(shipment.createdAt);
+        console.log('Comparing:', { shipmentDate: shipmentDate.toISOString(), dateRangeStart: dateRangeStart.toISOString(), endDate: endDate.toISOString(), match: shipmentDate >= dateRangeStart && shipmentDate <= endDate });
+        return shipmentDate >= dateRangeStart && shipmentDate <= endDate;
+      });
+      console.log('Filtered shipments count:', filtered.length);
     }
 
     // Apply search query
@@ -563,8 +568,8 @@ export default function ShipmentsPage() {
     setStatusFilter('');
     setAssignedToFilter('');
     setCreatedByFilter('');
-    setDateRangeStart('');
-    setDateRangeEnd('');
+    setDateRangeStart(undefined);
+    setDateRangeEnd(undefined);
   };
 
   // Pagination calculations
@@ -670,33 +675,43 @@ export default function ShipmentsPage() {
                     className="h-9 w-full justify-start text-sm font-normal"
                   >
                     {dateRangeStart && dateRangeEnd
-                      ? `${format(new Date(dateRangeStart), 'MMM dd')} - ${format(new Date(dateRangeEnd), 'MMM dd')}`
-                      : dateRangeStart
-                      ? `${format(new Date(dateRangeStart), 'MMM dd')} - Pick end`
+                      ? `${dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} - ${dateRangeEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`
                       : 'Pick date range'}
                   </Button>
                 </PopoverTrigger>
                 <PopoverContent className="w-auto p-0" align="start">
                   <div className="flex gap-0">
                     <div className="p-3">
-                      <Label className="text-xs mb-2 block">Start Date</Label>
                       <Calendar
                         mode="single"
-                        selected={dateRangeStart ? new Date(dateRangeStart) : undefined}
-                        onSelect={(date) => setDateRangeStart(date ? format(date, 'yyyy-MM-dd') : '')}
+                        selected={dateRangeStart}
+                        onSelect={(date) => {
+                          console.log('Start date selected:', date);
+                          setDateRangeStart(date);
+                          // If selecting the same date twice, set it as both start and end
+                          if (date && dateRangeStart && dateRangeStart.toDateString() === date.toDateString()) {
+                            console.log('Setting end date to same as start');
+                            setDateRangeEnd(date);
+                          } else if (date && dateRangeEnd && date > dateRangeEnd) {
+                            console.log('Start date after end date, clearing end');
+                            setDateRangeEnd(undefined);
+                          }
+                        }}
                         disabled={(date) =>
-                          dateRangeEnd ? date > new Date(dateRangeEnd) : false
+                          dateRangeEnd ? date > dateRangeEnd : false
                         }
                       />
                     </div>
                     <div className="p-3">
-                      <Label className="text-xs mb-2 block">End Date</Label>
                       <Calendar
                         mode="single"
-                        selected={dateRangeEnd ? new Date(dateRangeEnd) : undefined}
-                        onSelect={(date) => setDateRangeEnd(date ? format(date, 'yyyy-MM-dd') : '')}
+                        selected={dateRangeEnd}
+                        onSelect={(date) => {
+                          console.log('End date selected:', date);
+                          setDateRangeEnd(date);
+                        }}
                         disabled={(date) =>
-                          dateRangeStart ? date < new Date(dateRangeStart) : false
+                          dateRangeStart ? date < dateRangeStart : false
                         }
                       />
                     </div>
@@ -824,11 +839,32 @@ export default function ShipmentsPage() {
                   </TableCell>
                   <TableCell className="text-base">
                     <div className="flex items-center gap-2">
-                      <span className="text-gray-700 text-base">
-                        {shipment.createdBy?.name || <span className="text-gray-400 italic">System</span>}
+                      <span className="text-gray-700 text-base font-medium">
+                        {/* Display "You" if created by current user, otherwise show role */}
+                        {shipment.createdBy ? (
+                          user?.id === shipment.createdBy._id ? 'You' : shipment.createdBy.name
+                        ) : (
+                          <span className="text-gray-400 italic">System</span>
+                        )}
                       </span>
-                      {canEditShipment(shipment) && (
-                        <Badge className="bg-green-100 text-green-800">(You)</Badge>
+                      {/* Show role badge if not created by current user */}
+                      {shipment.createdBy && user?.id !== shipment.createdBy._id && (
+                        <Badge 
+                          className={`text-xs ${
+                            shipment.createdBy.role === 'superAdmin' ? 'bg-blue-100 text-blue-800' :
+                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-purple-100 text-purple-800' : 
+                            shipment.createdBy.role === 'admin' ? 'bg-blue-100 text-blue-800' :
+                            'bg-green-100 text-green-800'
+                          }`}
+                        >
+                          {shipment.createdBy.role === 'superAdmin' ? 'Super Admin' :
+                           shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'Branch Manager' : 
+                           shipment.createdBy.role === 'admin' ? 'Dispatcher' : 'Delivery Staff'}
+                        </Badge>
+                      )}
+                      {/* Green "You" badge if created by current user */}
+                      {user?.id === shipment.createdBy?._id && (
+                        <Badge className="bg-green-100 text-green-800 font-semibold text-xs">You</Badge>
                       )}
                     </div>
                   </TableCell>

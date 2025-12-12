@@ -61,7 +61,7 @@ export async function GET(request: NextRequest) {
     const shipments = await Shipment.find(query)
       .sort({ createdAt: -1 }) // Show newest first
       .populate('assignedTo', 'name email') // Later, this will fetch the driver's name
-      .populate('createdBy', 'name');
+      .populate('createdBy', 'name role isManager');
 
     return NextResponse.json(shipments);
   } catch (error) {

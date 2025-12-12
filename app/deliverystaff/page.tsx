@@ -89,7 +89,6 @@ export default function DeliveryStaffPage() {
   const [currentPage, setCurrentPage] = useState(1);
   const [updatingShipment, setUpdatingShipment] = useState<string | null>(null);
   const [showProofModal, setShowProofModal] = useState<string | null>(null);
-  const [proofType, setProofType] = useState<'signature' | 'photo'>('signature');
   const [showFailureModal, setShowFailureModal] = useState<string | null>(null);
   const [proofImageViewer, setProofImageViewer] = useState<string | null>(null);
   const [dropdownOpen, setDropdownOpen] = useState(false);
@@ -97,7 +96,7 @@ export default function DeliveryStaffPage() {
 
   const failureReasons = [
     'Customer Not Available',
-    'Address Incorrect / Incomplete',
+    'Address Incorrect or Incomplete',
     'Customer Refused Delivery',
     'Package Damaged',
     'Wrong Item',
@@ -197,7 +196,6 @@ export default function DeliveryStaffPage() {
       // Close modals immediately
       setShowProofModal(null);
       setShowFailureModal(null);
-      setProofType('signature');
       
       toast.success('Delivery status updated successfully!', { id: toastId });
     } catch (error: any) {
@@ -913,11 +911,11 @@ function ProofOfDeliveryModal({
 
   const handleSubmit = () => {
     if (!proofUrl) {
-      toast.error(`Please provide ${proofType === 'signature' ? 'a signature' : 'a photo'}`);
+      toast.error('Please provide a photo');
       return;
     }
     onSubmit({
-      type: proofType,
+      type: 'photo',
       url: proofUrl,
     });
   };
@@ -927,96 +925,40 @@ function ProofOfDeliveryModal({
       <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto">
         <DialogHeader>
           <DialogTitle>Proof of Delivery</DialogTitle>
-          <DialogDescription>Capture signature or photo</DialogDescription>
+          <DialogDescription>Upload photo as proof</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
           <div className="space-y-2">
-            <Label>Proof Type</Label>
-            <div className="flex gap-4">
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  id="sig"
-                  value="signature"
-                  checked={proofType === 'signature'}
-                  onChange={(e) => {
-                    setProofType(e.target.value as 'signature' | 'photo');
-                    setProofUrl('');
-                  }}
-                  className="w-4 h-4"
-                />
-                <label htmlFor="sig" className="text-sm cursor-pointer">Signature</label>
+            <Label htmlFor="photo-upload">Upload Photo</Label>
+            <Input
+              id="photo-upload"
+              type="file"
+              accept="image/*"
+              capture="environment"
+              onChange={handlePhotoCapture}
+            />
+            {isUploading && (
+              <div className="text-center py-4">
+                <Loader className="inline-block animate-spin h-6 w-6 text-blue-500 mb-2" />
+                <p className="text-xs text-gray-600">Uploading photo...</p>
               </div>
-              <div className="flex items-center gap-2">
-                <input
-                  type="radio"
-                  id="photo"
-                  value="photo"
-                  checked={proofType === 'photo'}
-                  onChange={(e) => {
-                    setProofType(e.target.value as 'signature' | 'photo');
-                    setProofUrl('');
+            )}
+            {proofUrl && !isUploading && (
+              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
+                <p className="text-xs text-green-600 font-medium">Photo uploaded successfully</p>
+                <img 
+                  src={proofUrl} 
+                  alt="Delivery proof" 
+                  className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 shadow-sm" 
+                  onError={(e) => {
+                    console.error('Image failed to load:', proofUrl);
+                    (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22sans-serif%22 font-size=%2220%22 fill=%22%23999%22%3EImage failed to load%3C/text%3E%3C/svg%3E';
                   }}
-                  className="w-4 h-4"
                 />
-                <label htmlFor="photo" className="text-sm cursor-pointer">Photo</label>
               </div>
-            </div>
+            )}
           </div>
-
-          {proofType === 'photo' ? (
-            <div className="space-y-2">
-              <Label htmlFor="photo-upload">Upload Photo</Label>
-              <Input
-                id="photo-upload"
-                type="file"
-                accept="image/*"
-                capture="environment"
-                onChange={handlePhotoCapture}
-              />
-              {isUploading && (
-                <div className="text-center py-4">
-                  <Loader className="inline-block animate-spin h-6 w-6 text-blue-500 mb-2" />
-                  <p className="text-xs text-gray-600">Uploading photo...</p>
-                </div>
-              )}
-              {proofUrl && !isUploading && (
-                <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                  <p className="text-xs text-green-600 font-medium">Photo uploaded successfully</p>
-                  <img 
-                    src={proofUrl} 
-                    alt="Delivery proof" 
-                    className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 shadow-sm" 
-                    onError={(e) => {
-                      console.error('Image failed to load:', proofUrl);
-                      (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22sans-serif%22 font-size=%2220%22 fill=%22%23999%22%3EImage failed to load%3C/text%3E%3C/svg%3E';
-                    }}
-                  />
-                </div>
-              )}
-            </div>
-          ) : (
-            <div className="space-y-2">
-              <Label>Customer Signature</Label>
-              <p className="text-xs text-gray-500">Note: Signature capture is a placeholder. In production, use a signature pad library.</p>
-              <div className="border-2 border-dashed border-gray-300 rounded-lg p-8 text-center bg-gray-50 min-h-[120px] flex flex-col items-center justify-center">
-                <p className="text-sm text-gray-600 mb-2">Customer to sign here</p>
-                <Button
-                  type="button"
-                  variant="ghost"
-                  size="sm"
-                  onClick={() => {
-                    setProofUrl('data:image/png;base64,iVBORw0KGgoAAAANSUhEUgAAAAEAAAABCAYAAAAfFcSJAAAADUlEQVR42mNk+M9QDwADhgGAWjR9awAAAABJRU5ErkJggg==');
-                    toast.success('Signature captured (placeholder)');
-                  }}
-                  className="text-blue-600 hover:text-blue-700"
-                >
-                  {proofUrl ? 'Signature Captured' : 'Confirm Signature'}
-                </Button>
-              </div>
-            </div>
-          )}
         </div>
 
         <DialogFooter className="flex gap-2">

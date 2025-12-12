@@ -51,19 +51,49 @@ export async function PATCH(request: NextRequest) {
           return NextResponse.json({ message: 'Invalid email format' }, { status: 400 });
         }
 
+        // Get current user (who is making the request)
+        const requesterUser = await User.findById(payload.userId);
+        if (!requesterUser) {
+            return NextResponse.json({ message: 'Requester not found' }, { status: 404 });
+        }
+
         // Check if user exists and belongs to the same tenant
         const user = await User.findOne({ _id: userId, tenantId: payload.tenantId });
         
         if (!user) {
             return NextResponse.json({ message: 'User not found or access denied' }, { status: 404 });
         }
+        
+        // Prevent editing own account
+        if (user._id.toString() === payload.userId) {
+            return NextResponse.json({ message: 'You cannot edit your own account. Contact Super Admin.' }, { status: 403 });
+        }
+
+        // SECURITY: Role Hierarchy Check
+        // Only Branch Managers (admin + isManager=true) can edit other users
+        // Dispatchers (admin + isManager=false) cannot edit anyone
+        if (!requesterUser.isManager) {
+            return NextResponse.json({ message: 'You do not have permission to edit users.' }, { status: 403 });
+        }
+
+        // SECURITY: Prevent editing Branch Managers
+        // Only a Branch Manager can edit other staff/dispatchers, not other Branch Managers
+        if (user.isManager) {
+            return NextResponse.json({ message: 'Cannot edit a Branch Manager. Contact Super Admin.' }, { status: 403 });
+        }
+
+        // SECURITY: Prevent creating or promoting to Branch Manager
+        // Validate that role is only 'staff' or 'admin', and if admin, must be dispatcher (isManager=false)
+        if (!['admin', 'staff'].includes(role)) {
+            return NextResponse.json({ message: 'Invalid role' }, { status: 400 });
+        }
 
         // Update user fields with sanitized data
         user.name = sanitizedName;
         user.email = sanitizedEmail;
         user.role = role;
-        // Set isManager based on role
-        user.isManager = role === 'admin' ? true : false;
+        // CRITICAL: Always set isManager to false for non-Branch-Manager admins (Dispatchers)
+        user.isManager = false;
         
         // Hash password if it's being updated
         if (password && password.trim() !== '') {
@@ -100,6 +130,12 @@ export async function DELETE(request: NextRequest) {
     try {
         const userId = getUserIdFromUrl(request.url);
 
+        // Get current user (who is making the request)
+        const requesterUser = await User.findById(payload.userId);
+        if (!requesterUser) {
+            return NextResponse.json({ message: 'Requester not found' }, { status: 404 });
+        }
+
         // Check if user exists and belongs to the same tenant
         const user = await User.findOne({ _id: userId, tenantId: payload.tenantId });
         
@@ -109,7 +145,20 @@ export async function DELETE(request: NextRequest) {
 
         // Prevent users from deleting themselves
         if (user._id.toString() === payload.userId) {
-            return NextResponse.json({ message: 'You cannot delete yourself' }, { status: 400 });
+            return NextResponse.json({ message: 'You cannot delete yourself. Contact Super Admin.' }, { status: 400 });
+        }
+
+        // SECURITY: Role Hierarchy Check
+        // Only Branch Managers (admin + isManager=true) can delete other users
+        // Dispatchers (admin + isManager=false) cannot delete anyone
+        if (!requesterUser.isManager) {
+            return NextResponse.json({ message: 'You do not have permission to delete users.' }, { status: 403 });
+        }
+
+        // SECURITY: Prevent deleting Branch Managers
+        // Only a Branch Manager can delete staff/dispatchers, not other Branch Managers
+        if (user.isManager) {
+            return NextResponse.json({ message: 'Cannot delete a Branch Manager. Contact Super Admin.' }, { status: 403 });
         }
 
         await User.deleteOne({ _id: userId });
@@ -117,6 +166,7 @@ export async function DELETE(request: NextRequest) {
         return NextResponse.json({ message: 'User removed successfully' }, { status: 200 });
 
     } catch (error: any) {
+        console.error('User delete error:', error);
         return NextResponse.json({ message: 'Internal server error' }, { status: 500 });
     }
 }

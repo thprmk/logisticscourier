@@ -66,7 +66,8 @@ export async function PATCH(request: NextRequest) {
 
     // Sanitize string inputs to prevent XSS
     const sanitizedNotes = notes ? sanitizeInput(notes, 500) : undefined;
-    const sanitizedFailureReason = failureReason ? sanitizeInput(failureReason, 500) : undefined;
+    // Note: failureReason comes from predefined list, no sanitization needed
+    const sanitizedFailureReason = failureReason;
 
     // Find the shipment
     const shipment = await Shipment.findById(shipmentId)

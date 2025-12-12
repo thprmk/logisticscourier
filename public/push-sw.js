@@ -3,20 +3,24 @@
  * This file supplements the main service worker with push notification handling
  */
 
+console.log('[Push-SW] Push notification handler loaded');
+
 // Handle incoming push notifications
 self.addEventListener('push', function(event) {
-  console.log('Push notification received:', event);
+  console.log('[Push-SW] Push notification received:', event);
 
   if (!event.data) {
-    console.warn('Push notification received with no data');
+    console.warn('[Push-SW] Push notification received with no data');
     return;
   }
 
   let notificationData;
   try {
     notificationData = event.data.json();
+    console.log('[Push-SW] Notification data parsed:', notificationData);
   } catch (e) {
     // If data is not JSON, treat it as plain text
+    console.log('[Push-SW] Data is not JSON, treating as text');
     notificationData = {
       title: 'Notification',
       body: event.data.text(),
@@ -46,13 +50,17 @@ self.addEventListener('push', function(event) {
     self.registration.showNotification(
       notificationData.title || 'Netta Logistics',
       options
-    )
+    ).then(function() {
+      console.log('[Push-SW] Notification displayed successfully');
+    }).catch(function(error) {
+      console.error('[Push-SW] Failed to display notification:', error);
+    })
   );
 });
 
 // Handle notification clicks
 self.addEventListener('notificationclick', function(event) {
-  console.log('Notification clicked:', event.notification.tag);
+  console.log('[Push-SW] Notification clicked:', event.notification.tag);
 
   event.notification.close();
 
@@ -77,5 +85,5 @@ self.addEventListener('notificationclick', function(event) {
 
 // Handle notification close button
 self.addEventListener('notificationclose', function(event) {
-  console.log('Notification closed:', event.notification.tag);
+  console.log('[Push-SW] Notification closed:', event.notification.tag);
 });

@@ -12,157 +12,231 @@ export default function PWASetup() {
   const [isInstalled, setIsInstalled] = useState(false);
   const [showPermissionPrompt, setShowPermissionPrompt] = useState(false);
   const [deferredPrompt, setDeferredPrompt] = useState<any>(null);
+  const [isMobile, setIsMobile] = useState(false);
+
+  // Detect mobile device
+  useEffect(() => {
+    const checkMobile = () => {
+      const mobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
+      setIsMobile(mobile);
+      console.log('[PWASetup] Device type:', mobile ? 'Mobile' : 'Desktop');
+    };
+    checkMobile();
+  }, []);
 
   // Register Service Worker on mount
   useEffect(() => {
     if (typeof window !== 'undefined' && 'serviceWorker' in navigator) {
+      console.log('[PWASetup] Registering service worker...');
       navigator.serviceWorker
-        .register('/sw.js')
+        .register('/sw.js', { scope: '/' })
         .then((registration) => {
-          console.log('Service Worker registered:', registration);
-          // Also load push notification handlers
-          registration.scope;
-          // The push handlers will be loaded from next-pwa's sw.js
+          console.log('[PWASetup] Service Worker registered:', registration.scope);
         })
         .catch((error) => {
-          console.error('Service Worker registration failed:', error);
+          console.error('[PWASetup] Service Worker registration failed:', error);
         });
+    } else {
+      console.log('[PWASetup] Service Worker not supported');
     }
 
-    // Check if app is already installed
-    if (window.matchMedia('(display-mode: standalone)').matches) {
+    // Check if app is already installed as PWA
+    const isStandalone = window.matchMedia('(display-mode: standalone)').matches 
+      || (window.navigator as any).standalone === true;  // iOS check
+    if (isStandalone) {
+      console.log('[PWASetup] App is running as installed PWA');
       setIsInstalled(true);
+    } else {
+      console.log('[PWASetup] App is running in browser');
     }
   }, []);
 
   // Request notification permission when user logs in
   // Show for: delivery staff, admins, and dispatchers who need push notifications
   useEffect(() => {
-    if (user && (user.role === 'delivery_staff' || user.role === 'staff' || user.role === 'admin' || user.role === 'dispatcher') && !isInstalled) {
-      // Wait a moment before showing the prompt for better UX
-      const timer = setTimeout(() => {
-        if ('Notification' in window) {
-          // 👇 FIX: Only show prompt if permission has NOT been asked yet
-          // Don't show if already granted or denied
-          if (Notification.permission === 'default') {
-            setShowPermissionPrompt(true);
-          }
-        }
-      }, 2000);
-
-      return () => clearTimeout(timer);
+    console.log('[PWASetup] User check - user:', user?.email, 'role:', user?.role, 'isInstalled:', isInstalled, 'isMobile:', isMobile);
+    
+    // Only show for valid roles
+    const validRoles = ['delivery_staff', 'staff', 'admin', 'dispatcher'];
+    if (!user || !validRoles.includes(user.role || '')) {
+      console.log('[PWASetup] User not logged in or invalid role, skipping prompt');
+      return;
     }
-  }, [user, isInstalled]);
+
+    // Wait a moment before showing the prompt for better UX
+    const timer = setTimeout(() => {
+      console.log('[PWASetup] Checking notification support...');
+      
+      if (!('Notification' in window)) {
+        console.log('[PWASetup] Notifications not supported in this browser');
+        return;
+      }
+
+      console.log('[PWASetup] Current Notification.permission:', Notification.permission);
+      
+      // Only show prompt if permission has NOT been asked yet
+      if (Notification.permission === 'default') {
+        console.log('[PWASetup] Permission is default, showing prompt');
+        setShowPermissionPrompt(true);
+      } else if (Notification.permission === 'granted') {
+        console.log('[PWASetup] Permission already granted, auto-subscribing...');
+        // Auto-subscribe if permission was already granted
+        subscribeToNotifications().catch(err => {
+          console.error('[PWASetup] Auto-subscribe failed:', err);
+        });
+      } else {
+        console.log('[PWASetup] Permission was denied, not showing prompt');
+      }
+    }, 2000);
+
+    return () => clearTimeout(timer);
+  }, [user, isInstalled, isMobile]);
 
   const handleEnableNotifications = async () => {
+    console.log('[PWASetup] handleEnableNotifications called');
+    
     if (!('Notification' in window)) {
+      console.error('[PWASetup] Notifications not supported');
       toast.error('Notifications not supported on this device');
       return;
     }
 
     try {
+      console.log('[PWASetup] Current permission:', Notification.permission);
+      
       // Check if permission was already denied
       if (Notification.permission === 'denied') {
+        console.log('[PWASetup] Permission already denied');
         toast.error('Notification permission was denied. Please enable it in browser settings.');
         setShowPermissionPrompt(false);
         return;
       }
 
       // Request permission
+      console.log('[PWASetup] Requesting permission...');
       const permission = await Notification.requestPermission();
-      console.log('Permission result:', permission);
+      console.log('[PWASetup] Permission result:', permission);
 
       if (permission === 'granted') {
-        console.log('Notification permission granted');
+        console.log('[PWASetup] Notification permission granted');
         try {
           await subscribeToNotifications();
           toast.success('Notifications enabled successfully');
           setShowPermissionPrompt(false);
         } catch (subError: any) {
-          console.error('Subscription error:', subError);
+          console.error('[PWASetup] Subscription error:', subError);
           toast.error(`Subscription failed: ${subError.message}`);
         }
       } else if (permission === 'denied') {
+        console.log('[PWASetup] Permission denied by user');
         toast.error('You denied notification permission. Enable it in browser settings.');
+        setShowPermissionPrompt(false);
       } else {
+        console.log('[PWASetup] Permission dismissed');
         toast.error('Notification permission dismissed');
       }
     } catch (error: any) {
-      console.error('Error requesting notification permission:', error);
+      console.error('[PWASetup] Error requesting notification permission:', error);
       toast.error(`Permission error: ${error.message}`);
     }
   };
 
   const subscribeToNotifications = async () => {
+    console.log('[PWASetup] subscribeToNotifications called');
+    
     try {
+      // Check for iOS Safari
+      const isIOS = /iPad|iPhone|iPod/.test(navigator.userAgent);
+      const isStandalone = (window.navigator as any).standalone === true 
+        || window.matchMedia('(display-mode: standalone)').matches;
+      
+      if (isIOS && !isStandalone) {
+        console.log('[PWASetup] iOS detected but not installed as PWA');
+        // On iOS, we can still show in-app notifications, just not push
+        toast.success('For push notifications, add this app to your Home Screen');
+        return; // Don't throw error, just return gracefully
+      }
+      
       if (!('serviceWorker' in navigator)) {
-        console.error('Service Worker not supported');
+        console.error('[PWASetup] Service Worker not supported');
         throw new Error('Service workers are not supported in this browser');
       }
       
       if (!('PushManager' in window)) {
-        console.error('PushManager not available');
+        console.error('[PWASetup] PushManager not available');
+        // For iOS Safari without PWA, this is expected
+        if (isIOS) {
+          toast.success('Notifications will appear in-app');
+          return;
+        }
         throw new Error('Push notifications are not supported in this browser');
       }
 
+      console.log('[PWASetup] Waiting for service worker ready...');
       // Wait for service worker to be ready
       const registration = await navigator.serviceWorker.ready;
-      console.log('Service Worker ready:', registration);
+      console.log('[PWASetup] Service Worker ready:', registration);
 
       // Check if already subscribed
       let subscription = await registration.pushManager.getSubscription();
-      console.log('Existing subscription:', subscription);
+      console.log('[PWASetup] Existing subscription:', subscription);
 
       if (!subscription) {
         // Subscribe to push notifications
         const vapidPublicKey = process.env.NEXT_PUBLIC_VAPID_PUBLIC_KEY;
+        console.log('[PWASetup] VAPID key exists:', !!vapidPublicKey);
 
         if (!vapidPublicKey) {
-          console.error('VAPID public key not found in environment');
+          console.error('[PWASetup] VAPID public key not found in environment');
           throw new Error('VAPID public key not configured. Contact administrator.');
         }
 
-        console.log('VAPID key found, subscribing...');
+        console.log('[PWASetup] VAPID key found, subscribing...');
         try {
           subscription = await registration.pushManager.subscribe({
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
           });
-          console.log('Successfully subscribed to push:', subscription);
+          console.log('[PWASetup] Successfully subscribed to push:', subscription);
         } catch (subError: any) {
-          console.error('Push subscription failed:', subError.message);
+          console.error('[PWASetup] Push subscription failed:', subError.message);
           throw new Error(`Failed to subscribe: ${subError.message}`);
         }
       } else {
-        console.log('Already subscribed, skipping push subscription');
+        console.log('[PWASetup] Already subscribed, using existing subscription');
       }
 
       // Send subscription to backend
       try {
-        console.log('Saving subscription to backend...');
-        console.log('Subscription data:', subscription.toJSON());
+        console.log('[PWASetup] Saving subscription to backend...');
+        const subscriptionData = subscription.toJSON();
+        console.log('[PWASetup] Subscription data:', JSON.stringify(subscriptionData));
+        
         const response = await fetch('/api/notifications/subscribe', {
           method: 'POST',
           headers: {
             'Content-Type': 'application/json',
           },
           credentials: 'include',
-          body: JSON.stringify(subscription.toJSON()),
+          body: JSON.stringify(subscriptionData),
         });
 
+        console.log('[PWASetup] Backend response status:', response.status);
+        
         if (!response.ok) {
           const errorData = await response.json().catch(() => ({}));
-          console.error('Backend error:', errorData);
+          console.error('[PWASetup] Backend error:', errorData);
           throw new Error(errorData.message || `Server error: ${response.status}`);
         }
 
-        console.log('Subscription saved successfully to backend');
+        const result = await response.json();
+        console.log('[PWASetup] Subscription saved successfully to backend:', result);
       } catch (fetchError: any) {
-        console.error('Error saving subscription to backend:', fetchError);
+        console.error('[PWASetup] Error saving subscription to backend:', fetchError);
         throw new Error(`Failed to save subscription: ${fetchError.message}`);
       }
     } catch (error: any) {
-      console.error('Error subscribing to notifications:', error);
+      console.error('[PWASetup] Error subscribing to notifications:', error);
       throw error;
     }
   };
@@ -202,18 +276,30 @@ export default function PWASetup() {
           Get instant alerts for new assignments and critical updates on your device.
         </p>
 
-        {/* Buttons - Side by Side */}
-        <div className="flex gap-1.5 justify-center">
+        {/* Buttons - Side by Side with proper touch targets for mobile */}
+        <div className="flex gap-2 justify-center">
           <Button
-            onClick={handleEnableNotifications}
-            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1 text-xs rounded transition-colors"
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('[PWASetup] Enable button clicked');
+              handleEnableNotifications();
+            }}
+            className="bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white font-semibold px-6 py-2 text-sm rounded-lg transition-colors min-h-[44px] touch-manipulation"
           >
             Enable
           </Button>
           <Button
-            onClick={() => setShowPermissionPrompt(false)}
+            type="button"
+            onClick={(e) => {
+              e.preventDefault();
+              e.stopPropagation();
+              console.log('[PWASetup] Later button clicked');
+              setShowPermissionPrompt(false);
+            }}
             variant="outline"
-            className="text-gray-700 font-semibold px-4 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+            className="text-gray-700 font-semibold px-6 py-2 text-sm rounded-lg border border-gray-300 hover:bg-gray-50 active:bg-gray-100 transition-colors min-h-[44px] touch-manipulation"
           >
             Later
           </Button>

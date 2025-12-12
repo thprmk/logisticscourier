@@ -52,14 +52,14 @@ export default function LoginPage() {
     <main className="min-h-screen bg-gradient-to-b from-blue-100 to-blue-50">
       {/* Main Content */}
       <div className="flex h-screen flex-col lg:flex-row">
-        {/* Left Side - Illustration Background */}
-        <div className="hidden lg:flex w-full lg:w-1/2 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-50 items-center justify-center p-8 relative overflow-hidden bg-cover bg-center" style={{backgroundImage: 'url(/bg-login.png)'}}>
+        {/* Left Side - Illustration Background - Hidden on mobile, shown on desktop */}
+        <div className="hidden lg:flex w-full lg:w-1/2 bg-gradient-to-br from-blue-100 via-blue-50 to-cyan-50 items-center justify-center p-8 relative overflow-hidden" style={{backgroundImage: 'url(/bg-login.png)', backgroundSize: 'cover', backgroundPosition: 'center'}}>
           {/* Decorative elements */}
           <div className="absolute top-20 left-20 w-32 h-32 bg-blue-200/30 rounded-full blur-3xl"></div>
           <div className="absolute bottom-20 right-20 w-40 h-40 bg-cyan-200/20 rounded-full blur-3xl"></div>
         </div>
 
-        {/* Right Side - Login Form */}
+        {/* Right Side - Login Form - Full width on mobile, half on desktop */}
         <div className="w-full lg:w-1/2 bg-white flex items-center justify-center p-4 sm:p-6 md:p-8 min-h-screen lg:min-h-auto">
           <div className="w-full max-w-sm md:max-w-md space-y-6 md:space-y-8">
             {/* Header */}

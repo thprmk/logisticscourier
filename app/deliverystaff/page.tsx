@@ -323,53 +323,53 @@ export default function DeliveryStaffPage() {
   };
 
   return (
-    <div className="space-y-6 pb-8">
+    <div className="space-y-4 sm:space-y-6 pb-8">
       {/* Header */}
-      <div className="mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">My Deliveries</h1>
-        <p className="text-gray-600 mt-2">Track and manage your assigned deliveries</p>
+      <div className="mb-4 sm:mb-6">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Deliveries</h1>
+        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Track and manage your assigned deliveries</p>
       </div>
 
       {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-        <div className="bg-white rounded-xl border border-green-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
+      <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
+        <div className="bg-white rounded-lg sm:rounded-xl border border-green-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">Delivered</p>
-              <p className="text-4xl font-bold text-green-900 mt-3 font-mono">{deliveredCount}</p>
+              <p className="text-2xl sm:text-4xl font-bold text-green-900 mt-1 sm:mt-3 font-mono">{ deliveredCount}</p>
             </div>
             <div className="bg-green-500/15 rounded-2xl p-4">
               <CheckCircle className="h-10 w-10 text-green-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-cyan-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white rounded-lg sm:rounded-xl border border-cyan-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-xs font-semibold text-cyan-700 uppercase tracking-widest">Assigned</p>
-              <p className="text-4xl font-bold text-cyan-900 mt-3 font-mono">{assignedCount}</p>
+              <p className="text-2xl sm:text-4xl font-bold text-cyan-900 mt-1 sm:mt-3 font-mono">{assignedCount}</p>
             </div>
             <div className="bg-cyan-500/15 rounded-2xl p-4">
               <Truck className="h-10 w-10 text-cyan-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-purple-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white rounded-lg sm:rounded-xl border border-purple-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-xs font-semibold text-purple-700 uppercase tracking-widest">At Origin</p>
-              <p className="text-4xl font-bold text-purple-900 mt-3 font-mono">{atOriginCount}</p>
+              <p className="text-2xl sm:text-4xl font-bold text-purple-900 mt-1 sm:mt-3 font-mono">{atOriginCount}</p>
             </div>
             <div className="bg-purple-500/15 rounded-2xl p-4">
               <Building className="h-10 w-10 text-purple-600" strokeWidth={1.5} />
             </div>
           </div>
         </div>
-        <div className="bg-white rounded-xl border border-red-200/60 p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
+        <div className="bg-white rounded-lg sm:rounded-xl border border-red-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
+          <div className="flex items-center justify-between gap-2 sm:gap-4">
+            <div className="min-w-0">
               <p className="text-xs font-semibold text-red-700 uppercase tracking-widest">Failed</p>
-              <p className="text-4xl font-bold text-red-900 mt-3 font-mono">{failedCount}</p>
+              <p className="text-2xl sm:text-4xl font-bold text-red-900 mt-1 sm:mt-3 font-mono">{failedCount}</p>
             </div>
             <div className="bg-red-500/15 rounded-2xl p-4">
               <XCircle className="h-10 w-10 text-red-600" strokeWidth={1.5} />

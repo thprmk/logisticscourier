@@ -155,11 +155,31 @@ export default function BranchDashboardPage() {
         credentials: "include",
       });
 
-      if (!shipmentsRes.ok || !manifestsRes.ok)
-        throw new Error("Failed to fetch data");
+      if (!shipmentsRes.ok) throw new Error("Failed to fetch shipments");
 
       const shipments: IShipment[] = await shipmentsRes.json();
-      const manifests: IManifest[] = await manifestsRes.json();
+      
+      // 👇 FIX: Handle both direct array and wrapped object responses from /api/manifests
+      let manifests: IManifest[] = []; // Default to empty array for safety
+      if (manifestsRes.ok) {
+        const manifestsData = await manifestsRes.json();
+        console.log('Manifests API response:', manifestsData);
+        
+        // Check if it's an array (direct response)
+        if (Array.isArray(manifestsData)) {
+          manifests = manifestsData;
+        }
+        // Check if it has a .data property (wrapped response from pagination)
+        else if (manifestsData?.data && Array.isArray(manifestsData.data)) {
+          manifests = manifestsData.data;
+        }
+        // Otherwise warn and keep empty array
+        else {
+          console.warn('API /api/manifests returned unexpected format:', manifestsData);
+        }
+      } else {
+        console.error('Failed to fetch manifests, status:', manifestsRes.status);
+      }
 
       setReadyForAssignment(
         shipments
@@ -281,32 +301,35 @@ export default function BranchDashboardPage() {
     <div className="min-h-screen bg-gray-50/50">
       {/* Header Section */}
       <div className="border-b border-gray-200/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-4">
-          <div className="flex flex-row items-center justify-between gap-6">
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-4">
+          <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             {/* Left: Branch Name and Welcome */}
-            <div className="flex-1 min-w-0">
-              <h1 className="text-2xl font-bold text-gray-900">{user?.tenantName || 'Your Branch'}</h1>
-              <p className="text-sm text-gray-600 font-medium">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
+            <div className="flex-1 min-w-0 mb-2 sm:mb-0">
+              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{user?.tenantName || 'Your Branch'}</h1>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-0.5">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
             </div>
 
             {/* Right: Date Range Picker with Buttons */}
-            <div className="flex items-center gap-2 flex-shrink-0">
-              <div className="flex-1 min-w-[180px]">
+            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+              <div className="flex-1 sm:flex-none sm:min-w-[180px] min-w-[140px]">
                 <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <PopoverTrigger asChild>
                     <Button
                       variant="ghost"
-                      className="w-full h-9 justify-start text-sm font-normal text-gray-600 hover:bg-gray-100/50 border border-gray-200/50"
+                      className="w-full sm:w-auto h-8 sm:h-9 justify-start text-xs sm:text-sm font-normal text-gray-600 hover:bg-gray-100/50 border border-gray-200/50 px-2 sm:px-3"
                     >
-                      <Calendar className="h-4 w-4 mr-2 text-gray-500" />
-                      {customStart && customEnd
+                      <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-gray-500 flex-shrink-0" />
+                      <span className="truncate text-left hidden sm:inline">{customStart && customEnd
                         ? `${customStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })} - ${customEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}`
-                        : 'Pick a date range'}
+                        : 'Pick a date range'}</span>
+                      <span className="truncate text-left sm:hidden">{customStart && customEnd
+                        ? `${customStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} - ${customEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`
+                        : 'Pick date'}</span>
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <div className="flex gap-0">
-                      <div className="p-3">
+                    <div className="flex gap-0 flex-col sm:flex-row">
+                      <div className="p-2 sm:p-3">
                         <CalendarComponent
                           mode="single"
                           selected={customStart}
@@ -318,18 +341,16 @@ export default function BranchDashboardPage() {
                             customEnd ? date > customEnd : false
                           }
                           onDayClick={(day) => {
-                            // Double-click handling: if same date clicked twice, apply filter
                             if (customStart && customStart.toDateString() === day.toDateString() && !customEnd) {
                               setCustomEnd(day);
                               setDateRange("custom");
                               setDropdownOpen(false);
-                              // Auto-apply filter when double-clicked
                               setTimeout(() => handleApplyFilter(), 0);
                             }
                           }}
                         />
                       </div>
-                      <div className="p-3">
+                      <div className="p-2 sm:p-3">
                         <CalendarComponent
                           mode="single"
                           selected={customEnd}
@@ -348,16 +369,16 @@ export default function BranchDashboardPage() {
                 </Popover>
               </div>
 
-              {/* Apply Filter Button */}
+              {/* Buttons - Compact on mobile, normal on desktop */}
               <Button
                 onClick={handleApplyFilter}
                 disabled={!customStart || !customEnd}
-                className="h-9 px-4 text-sm bg-blue-600 hover:bg-blue-700 text-white"
+                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
               >
-                Apply Filter
+                <span className="hidden sm:inline">Apply Filter</span>
+                <span className="sm:hidden">Apply</span>
               </Button>
 
-              {/* All Time Button */}
               <Button
                 size="sm"
                 variant="secondary"
@@ -366,7 +387,6 @@ export default function BranchDashboardPage() {
                   setCustomStart(undefined);
                   setCustomEnd(undefined);
                   setDropdownOpen(false);
-                  // Fetch all-time data (no date filter)
                   fetch(`/api/shipments`, { credentials: 'include' })
                     .then(res => {
                       if (!res.ok) throw new Error(`Failed: ${res.status}`);
@@ -382,12 +402,12 @@ export default function BranchDashboardPage() {
                     })
                     .catch(err => console.error('All Time Error:', err));
                 }}
-                className="h-9 px-4 text-sm"
+                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm"
               >
-                All Time
+                <span className="hidden sm:inline">All Time</span>
+                <span className="sm:hidden">All</span>
               </Button>
 
-              {/* Reset Button */}
               <Button
                 size="sm"
                 variant="ghost"
@@ -396,7 +416,6 @@ export default function BranchDashboardPage() {
                   setCustomStart(undefined);
                   setCustomEnd(undefined);
                   setDropdownOpen(false);
-                  // Fetch today's data
                   const today = new Date();
                   today.setHours(0, 0, 0, 0);
                   const tomorrow = new Date(today);
@@ -418,7 +437,7 @@ export default function BranchDashboardPage() {
                     })
                     .catch(err => console.error('Reset Error:', err));
                 }}
-                className="h-9 px-4 text-sm"
+                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm"
               >
                 Reset
               </Button>
@@ -428,8 +447,8 @@ export default function BranchDashboardPage() {
       </div>
 
       <div className="max-w-7xl mx-auto px-4 sm:px-6 py-6 sm:py-8 space-y-6 sm:space-y-8">
-        {/* KPI Grid */}
-        <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 sm:gap-6">
+        {/* KPI Grid - Responsive */}
+        <div className="grid grid-cols-2 sm:grid-cols-2 lg:grid-cols-4 gap-2 sm:gap-4">
           <KPICard
             label="Total Shipments"
             value={kpis.totalCreated.toString()}
@@ -456,9 +475,9 @@ export default function BranchDashboardPage() {
           />
         </div>
 
-        {/* Main Content - Shipment Overview (Left) & Operational Stats (Right) */}
-        <div className="grid grid-cols-1 lg:grid-cols-3 gap-6">
-  {/* Shipment Overview Chart - Left Side (takes 2 columns) */}
+        {/* Main Content - Responsive Grid */}
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-4 sm:gap-6">
+          {/* Shipment Overview Chart */}
           <div className="lg:col-span-2">
             <ShipmentOverviewChart
               dateRange={chartDateRange}
@@ -466,56 +485,56 @@ export default function BranchDashboardPage() {
             />
           </div>
 
-          {/* Operational Stats - Right Side (compact & detailed) */}
+          {/* Operational Stats - Responsive */}
           <div className="space-y-3">
-            <h3 className="text-sm font-semibold text-gray-900 px-2">Operational Status</h3>
-            <div className="space-y-3">
-              <div className="bg-white rounded-lg border border-blue-200/60 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-blue-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Ready for Assignment</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Action Required</p>
+            <h3 className="text-xs sm:text-sm font-semibold text-gray-900 px-2">Operational Status</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
+              <div className="bg-white rounded-lg border border-blue-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Ready</p>
+                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Action Required</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-blue-900">{readyForAssignment.length}</span>
+                  <span className="text-lg sm:text-2xl font-bold text-blue-900 flex-shrink-0">{readyForAssignment.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-red-200/60 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <AlertCircle className="h-5 w-5 text-red-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Failed Deliveries</p>
-                      <p className="text-xs text-gray-500 mt-0.5">Needs Attention</p>
+              <div className="bg-white rounded-lg border border-red-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Failed</p>
+                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Needs Attention</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-red-900">{failedDeliveries.length}</span>
+                  <span className="text-lg sm:text-2xl font-bold text-red-900 flex-shrink-0">{failedDeliveries.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-purple-200/60 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Package className="h-5 w-5 text-purple-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Incoming Manifests</p>
-                      <p className="text-xs text-gray-500 mt-0.5">In Transit</p>
+              <div className="bg-white rounded-lg border border-purple-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Incoming</p>
+                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">In Transit</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-purple-900">{incomingManifests.length}</span>
+                  <span className="text-lg sm:text-2xl font-bold text-purple-900 flex-shrink-0">{incomingManifests.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-teal-200/60 p-4 hover:shadow-md transition-shadow">
-                <div className="flex items-start justify-between mb-2">
-                  <div className="flex items-center gap-2">
-                    <Send className="h-5 w-5 text-teal-600 flex-shrink-0" />
-                    <div>
-                      <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider">Outgoing Manifests</p>
-                      <p className="text-xs text-gray-500 mt-0.5">In Transit</p>
+              <div className="bg-white rounded-lg border border-teal-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
+                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
+                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
+                    <Send className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600 flex-shrink-0" />
+                    <div className="min-w-0">
+                      <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider">Outgoing</p>
+                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">In Transit</p>
                     </div>
                   </div>
-                  <span className="text-2xl font-bold text-teal-900">{outgoingManifests.length}</span>
+                  <span className="text-lg sm:text-2xl font-bold text-teal-900 flex-shrink-0">{outgoingManifests.length}</span>
                 </div>
               </div>
             </div>
@@ -523,49 +542,51 @@ export default function BranchDashboardPage() {
         </div>
 
         {/* Recent Shipments Table */}
-        <div>
-          <div className="flex items-center justify-between mb-4 sm:mb-6">
-            <h2 className="text-xl sm:text-lg font-bold text-gray-900">Recent Activity</h2>
+        <div className="overflow-hidden">
+          <div className="flex items-center justify-between mb-3 sm:mb-6">
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Activity</h2>
           </div>
 
-          <ModernTable
-            headers={['Tracking ID', 'Recipient', 'Status', 'Date']}
-            data={[...readyForAssignment, ...failedDeliveries].slice(0, 5)}
-            isLoading={operationalLoading}
-            emptyMessage="No recent shipments found"
-            renderRow={(shipment, i) => (
-              <tr key={shipment._id} className="hover:bg-gray-50/50 transition-colors group">
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                  <span className="text-base sm:text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors">
-                    {shipment.trackingId}
-                  </span>
-                </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                  <div className="flex flex-col">
-                    <span className="text-base sm:text-base text-gray-900 font-medium">{shipment.recipient.name}</span>
-                    <span className="text-sm text-gray-500 truncate max-w-[250px]">{shipment.recipient.address}</span>
-                  </div>
-                </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5">
-                  <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide ${shipment.status === "Failed"
-                    ? "bg-red-100 text-red-700"
-                    : shipment.status === "At Destination Branch"
-                      ? "bg-blue-100 text-blue-700"
-                      : "bg-yellow-100 text-yellow-700"
-                    }`}>
-                    {shipment.status}
-                  </span>
-                </td>
-                <td className="px-4 sm:px-8 py-4 sm:py-5 text-sm text-gray-500 font-medium">
-                  {new Date(shipment.createdAt).toLocaleDateString(undefined, {
-                    month: 'short',
-                    day: 'numeric',
-                    year: 'numeric'
-                  })}
-                </td>
-              </tr>
-            )}
-          />
+          <div className="overflow-x-auto">
+            <ModernTable
+              headers={['Tracking ID', 'Recipient', 'Status', 'Date']}
+              data={[...readyForAssignment, ...failedDeliveries].slice(0, 5)}
+              isLoading={operationalLoading}
+              emptyMessage="No recent shipments found"
+              renderRow={(shipment, i) => (
+                <tr key={shipment._id} className="hover:bg-gray-50/50 transition-colors group border-b border-gray-100/50">
+                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
+                    <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors break-all">
+                      {shipment.trackingId}
+                    </span>
+                  </td>
+                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
+                    <div className="flex flex-col min-w-0">
+                      <span className="text-xs sm:text-sm md:text-base text-gray-900 font-medium truncate">{shipment.recipient.name}</span>
+                      <span className="text-xs text-gray-500 truncate">{shipment.recipient.address}</span>
+                    </div>
+                  </td>
+                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
+                    <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap ${shipment.status === "Failed"
+                      ? "bg-red-100 text-red-700"
+                      : shipment.status === "At Destination Branch"
+                        ? "bg-blue-100 text-blue-700"
+                        : "bg-yellow-100 text-yellow-700"
+                      }`}>
+                      {shipment.status}
+                    </span>
+                  </td>
+                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5 text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
+                    {new Date(shipment.createdAt).toLocaleDateString(undefined, {
+                      month: 'short',
+                      day: 'numeric',
+                      year: '2-digit'
+                    })}
+                  </td>
+                </tr>
+              )}
+            />
+          </div>
         </div>
       </div>
     </div>

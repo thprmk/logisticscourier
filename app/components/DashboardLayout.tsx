@@ -48,6 +48,18 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   const [notificationList, setNotificationList] = useState<any[]>([]);
   const [showLogoutModal, setShowLogoutModal] = useState(false);
   const [isMobileMenuOpen, setIsMobileMenuOpen] = useState(false);
+
+  // Prevent body scroll when mobile menu is open
+  useEffect(() => {
+    if (isMobileMenuOpen) {
+      document.body.style.overflow = 'hidden';
+    } else {
+      document.body.style.overflow = 'unset';
+    }
+    return () => {
+      document.body.style.overflow = 'unset';
+    };
+  }, [isMobileMenuOpen]);
   const [isPollingPaused, setIsPollingPaused] = useState(false);
   const fetchedRef = useRef(false);
 
@@ -372,7 +384,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             onClick={() => setIsMobileMenuOpen(false)}
           />
         )}
-        <div className={`md:hidden fixed top-16 left-0 h-[calc(100vh-64px)] w-64 bg-white border-r border-gray-200 shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
+        <div className={`md:hidden fixed top-16 left-0 w-64 h-screen bg-white border-r border-gray-200 shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${
           isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
         }`}>
             <nav className="px-3 sm:px-4 py-4 sm:py-3 space-y-2 sm:space-y-1">
@@ -444,7 +456,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
       
       {/* Main Content */}
-      <main className="max-w-7xl mx-auto px-6 py-8">
+      <main className="md:max-w-7xl md:mx-auto px-4 sm:px-6 py-6 sm:py-8">
         {children}
       </main>
     </div>

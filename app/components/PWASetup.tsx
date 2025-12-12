@@ -2,6 +2,9 @@
 
 import { useEffect, useState } from 'react';
 import { useUser } from '@/app/context/UserContext';
+import { BellRing } from 'lucide-react';
+import { Dialog, DialogContent, DialogDescription, DialogHeader, DialogTitle } from '@/app/components/ui/dialog';
+import { Button } from '@/app/components/ui/button';
 import toast from 'react-hot-toast';
 
 export default function PWASetup() {
@@ -179,42 +182,43 @@ export default function PWASetup() {
 
   // ... existing code ...
 
-  if (!showPermissionPrompt) {
-    return null;
-  }
-
   return (
-    <div className="fixed inset-0 bg-black bg-opacity-50 flex items-center justify-center z-50 p-4">
-      <div className="bg-white rounded-lg shadow-xl max-w-md w-full">
-        <div className="p-6 border-b border-gray-200">
-          <h2 className="text-lg font-semibold text-gray-900">Enable Notifications</h2>
-          <p className="text-sm text-gray-600 mt-1">Get instant alerts for new deliveries</p>
+    <Dialog open={showPermissionPrompt} onOpenChange={setShowPermissionPrompt}>
+      <DialogContent className="backdrop-blur-sm bg-white/95 max-w-xs p-4">
+        {/* Centered Icon */}
+        <div className="flex justify-center mb-3">
+          <div className="flex items-center justify-center w-12 h-12 rounded-full bg-blue-100">
+            <BellRing className="w-6 h-6 text-blue-600" strokeWidth={2} />
+          </div>
         </div>
 
-        <div className="p-6">
-          <p className="text-sm text-gray-700 mb-4">
-            Receive real-time notifications when new deliveries are assigned to you or when delivery statuses change.
-          </p>
-          <p className="text-xs text-gray-600 mb-6">
-            You can manage notification permissions anytime in your device settings.
-          </p>
+        {/* Title Only */}
+        <div className="text-center mb-3">
+          <h2 className="text-base font-bold text-gray-900">Enable Notifications</h2>
         </div>
 
-        <div className="p-6 border-t border-gray-200 flex gap-3">
-          <button
-            onClick={() => setShowPermissionPrompt(false)}
-            className="flex-1 px-4 py-2 text-sm font-medium text-gray-700 bg-gray-100 rounded-lg hover:bg-gray-200 transition-colors"
-          >
-            Later
-          </button>
-          <button
+        {/* Brief Description */}
+        <p className="text-center text-xs text-gray-600 mb-4">
+          Get instant alerts for new assignments and critical updates on your device.
+        </p>
+
+        {/* Buttons - Side by Side */}
+        <div className="flex gap-1.5 justify-center">
+          <Button
             onClick={handleEnableNotifications}
-            className="flex-1 px-4 py-2 text-sm font-medium text-white bg-blue-600 rounded-lg hover:bg-blue-700 transition-colors"
+            className="bg-blue-600 hover:bg-blue-700 text-white font-semibold px-4 py-1 text-xs rounded transition-colors"
           >
             Enable
-          </button>
+          </Button>
+          <Button
+            onClick={() => setShowPermissionPrompt(false)}
+            variant="outline"
+            className="text-gray-700 font-semibold px-4 py-1 text-xs rounded border border-gray-300 hover:bg-gray-50 transition-colors"
+          >
+            Later
+          </Button>
         </div>
-      </div>
-    </div>
+      </DialogContent>
+    </Dialog>
   );
 }

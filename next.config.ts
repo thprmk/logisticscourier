@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  disable: process.env.NODE_ENV === 'development', // Only disable PWA in development to avoid build issues
+  disable: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production', // Temporarily disable PWA in production due to Next.js 15 compatibility issue
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   workboxOptions: {

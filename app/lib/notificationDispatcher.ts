@@ -143,12 +143,22 @@ async function handleManifestCreated(context: NotificationContext) {
 async function handleManifestDispatched(context: NotificationContext) {
   const { manifestId, trackingId, fromBranch, toBranch, tenantId } = context;
 
+  console.log('[Manifest Dispatched] Processing:', {
+    manifestId,
+    trackingId,
+    fromBranch,
+    toBranch,
+    destinationTenantId: tenantId,
+  });
+
   // 👇 FIX: For inter-branch delivery, notify DESTINATION branch admins/dispatchers
   // They need to know a manifest is coming to them
   const destinationUsers = await User.find({
     tenantId,  // This should be the DESTINATION tenantId, not origin
     role: { $in: ['admin', 'dispatcher'] }
   }).select('_id').lean();
+
+  console.log(`[Manifest Dispatched] Found ${destinationUsers.length} admins/dispatchers at destination branch`);
 
   const destNotifications = destinationUsers.map(user => ({
     tenantId,
@@ -162,7 +172,7 @@ async function handleManifestDispatched(context: NotificationContext) {
 
   if (destNotifications.length > 0) {
     await Notification.insertMany(destNotifications);
-    console.log(`Manifest dispatch notifications created for ${destNotifications.length} users at destination`);
+    console.log(`[Manifest Dispatched] Notifications created for ${destNotifications.length} users at destination`);
     
     // 👇 Send push notifications to destination branch
     await Promise.all(
@@ -174,10 +184,12 @@ async function handleManifestDispatched(context: NotificationContext) {
           'Manifest In Transit',
           'manifest_dispatched'
         ).catch(err => {
-          console.error(`Failed to send push to destination user:`, err);
+          console.error(`Failed to send push to destination user ${user._id}:`, err);
         })
       )
     );
+  } else {
+    console.warn('[Manifest Dispatched] No destination users to notify');
   }
 }
 
@@ -188,12 +200,21 @@ async function handleManifestDispatched(context: NotificationContext) {
 async function handleManifestArrived(context: NotificationContext) {
   const { tenantId, manifestId, trackingId, toBranch } = context;
 
+  console.log('[Manifest Arrived] Processing:', {
+    manifestId,
+    trackingId,
+    toBranch,
+    originTenantId: tenantId,
+  });
+
   // 👇 FIX: For inter-branch delivery, notify ORIGIN branch admins/dispatchers
   // They need to know the manifest has been received at the destination
   const originUsers = await User.find({
     tenantId,  // This should be the ORIGIN tenantId, not destination
     role: { $in: ['admin', 'dispatcher'] }
   }).select('_id').lean();
+
+  console.log(`[Manifest Arrived] Found ${originUsers.length} admins/dispatchers at origin branch`);
 
   const notificationRecords = originUsers.map(user => ({
     tenantId,
@@ -207,7 +228,7 @@ async function handleManifestArrived(context: NotificationContext) {
 
   if (notificationRecords.length > 0) {
     await Notification.insertMany(notificationRecords);
-    console.log(`Manifest arrival notifications created for ${notificationRecords.length} users at origin`);
+    console.log(`[Manifest Arrived] Notifications created for ${notificationRecords.length} users at origin`);
     
     // 👇 Send push notifications to origin branch
     await Promise.all(
@@ -219,10 +240,12 @@ async function handleManifestArrived(context: NotificationContext) {
           'Manifest Delivered',
           'manifest_arrived'
         ).catch(err => {
-          console.error(`Failed to send push to origin user:`, err);
+          console.error(`Failed to send push to origin user ${user._id}:`, err);
         })
       )
     );
+  } else {
+    console.warn('[Manifest Arrived] No origin users to notify');
   }
 }
 
@@ -293,18 +316,25 @@ async function handleDeliveryAssigned(context: NotificationContext) {
     console.warn('[Delivery Assigned] No notifications to save');
   }
 
-  // Send PUSH notification to staff (immediate alert)
+  // Send PUSH notification to staff ONLY (immediate alert)
+  // Admin/Dispatcher only get in-app notifications, NOT push notifications
+  console.log('[Delivery Assigned] Sending push notification to staff:', assignedStaffId);
   await sendShipmentNotification(
     assignedStaffId.toString(),
     shipmentId!,
     trackingId,
     'Assigned',
     'delivery_assigned'
-  ).catch(err => {
-    console.error('Failed to send push notification to staff:', err);
+  ).then(result => {
+    console.log('[Delivery Assigned] Staff push notification result:', result);
+    if (!result.success) {
+      console.error('[Delivery Assigned] Staff push notification failed:', result.error);
+    }
+  }).catch(err => {
+    console.error('[Delivery Assigned] Failed to send push notification to staff:', err);
   });
 
-  console.log(`Delivery assignment notifications created for ${allNotifications.length} users`);
+  console.log(`[Delivery Assigned] Notifications created for ${allNotifications.length} users (admin/dispatcher: in-app only, staff: push + in-app)`);
 }
 
 /**
@@ -341,8 +371,15 @@ async function handleOutForDelivery(context: NotificationContext) {
       message: `Your delivery is out for delivery - ${trackingId}`,
       read: false,
     });
+  }
 
-    // Send push notification to staff
+  if (notificationRecords.length > 0) {
+    await Notification.insertMany(notificationRecords);
+    console.log(`Out for delivery notifications created for ${notificationRecords.length} users`);
+  }
+
+  // Send push notification to staff
+  if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),
       shipmentId!,
@@ -354,10 +391,20 @@ async function handleOutForDelivery(context: NotificationContext) {
     });
   }
 
-  if (notificationRecords.length > 0) {
-    await Notification.insertMany(notificationRecords);
-    console.log(`Out for delivery notifications created for ${notificationRecords.length} users`);
-  }
+  // 👇 FIX: Send push notifications to admins and dispatchers
+  await Promise.all(
+    adminUsers.map(user =>
+      sendShipmentNotification(
+        (user._id as any).toString(),
+        shipmentId!,
+        trackingId,
+        'Out for Delivery',
+        'out_for_delivery'
+      ).catch(err => {
+        console.error(`Failed to send push to admin ${user._id}:`, err);
+      })
+    )
+  );
 }
 
 /**
@@ -394,8 +441,15 @@ async function handleDelivered(context: NotificationContext) {
       message: `Delivery completed successfully - ${trackingId}`,
       read: false,
     });
+  }
 
-    // Send push notification to staff
+  if (notificationRecords.length > 0) {
+    await Notification.insertMany(notificationRecords);
+    console.log(`Delivery completed notifications created for ${notificationRecords.length} users`);
+  }
+
+  // Send push notification to staff
+  if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),
       shipmentId!,
@@ -421,11 +475,6 @@ async function handleDelivered(context: NotificationContext) {
       })
     )
   );
-
-  if (notificationRecords.length > 0) {
-    await Notification.insertMany(notificationRecords);
-    console.log(`Delivery completed notifications created for ${notificationRecords.length} users`);
-  }
 }
 
 /**
@@ -462,8 +511,15 @@ async function handleDeliveryFailed(context: NotificationContext) {
       message: `Delivery attempt failed - ${trackingId}`,
       read: false,
     });
+  }
 
-    // Send push notification to staff
+  if (notificationRecords.length > 0) {
+    await Notification.insertMany(notificationRecords);
+    console.log(`Delivery failed notifications created for ${notificationRecords.length} users`);
+  }
+
+  // Send push notification to staff
+  if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),
       shipmentId!,
@@ -489,9 +545,4 @@ async function handleDeliveryFailed(context: NotificationContext) {
       })
     )
   );
-
-  if (notificationRecords.length > 0) {
-    await Notification.insertMany(notificationRecords);
-    console.log(`Delivery failed notifications created for ${notificationRecords.length} users`);
-  }
 }

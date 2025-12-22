@@ -216,15 +216,26 @@ export async function PATCH(request: NextRequest) {
       }
       
       if (notificationEvent) {
+        const assignedStaffIdValue = shipment.assignedTo?.toString();
+        console.log(`[Shipment Update] Dispatching ${notificationEvent} notification:`, {
+          shipmentId: shipment._id.toString(),
+          trackingId: shipment.trackingId,
+          tenantId: payload.tenantId,
+          assignedStaffId: assignedStaffIdValue,
+          assignedToType: typeof shipment.assignedTo,
+          assignedToValue: shipment.assignedTo,
+          createdBy: payload.userId,
+        });
+        
         await dispatchNotification({
           event: notificationEvent,
           shipmentId: shipment._id.toString(),
           trackingId: shipment.trackingId,
           tenantId: payload.tenantId as string,
-          assignedStaffId: shipment.assignedTo?.toString(),
+          assignedStaffId: assignedStaffIdValue,
           createdBy: payload.userId as string,
         } as any).catch(err => {
-          console.error(`Error dispatching ${notificationEvent} notification:`, err);
+          console.error(`[Shipment Update] Error dispatching ${notificationEvent} notification:`, err);
         });
       }
     }

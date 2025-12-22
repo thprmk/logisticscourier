@@ -155,20 +155,13 @@ export default function PWASetup() {
         console.log('[PWASetup] Permission already granted');
         setNotificationPermission('granted');
         setShowPermissionPrompt(false);
-        // Still try to subscribe if not already subscribed
-        try {
-          await subscribeToNotifications();
-          toast.success('Notifications enabled successfully');
-        } catch (subError: any) {
-          console.error('[PWASetup] Subscription error:', subError);
-          // Don't show error if already subscribed, just show success
-          if (!subError.message?.includes('already')) {
-            toast.error(`Subscription failed: ${subError.message}`);
-          } else {
-            toast.success('Notifications enabled successfully');
-          }
-        }
         setIsEnabling(false);
+        hasShownPromptRef.current = true;
+        // Subscribe in background without blocking UI
+        subscribeToNotifications().catch(err => {
+          console.error('[PWASetup] Background subscription error:', err);
+        });
+        toast.success('Notifications enabled successfully');
         return;
       }
 
@@ -192,38 +185,40 @@ export default function PWASetup() {
 
       if (permission === 'granted') {
         console.log('[PWASetup] Notification permission granted');
-        try {
-          await subscribeToNotifications();
-          // Show success toast
-          toast.success('Notifications enabled successfully!', {
-            duration: 4000,
+        
+        // Update UI immediately - don't wait for subscription
+        setShowPermissionPrompt(false);
+        setIsEnabling(false);
+        hasShownPromptRef.current = true;
+        toast.success('Notifications enabled successfully!', {
+          duration: 3000,
+        });
+        
+        // Subscribe in background without blocking UI
+        // Use setTimeout to ensure UI updates first
+        setTimeout(() => {
+          subscribeToNotifications().catch(err => {
+            console.error('[PWASetup] Background subscription error:', err);
+            // Don't show error to user - permission was already granted
           });
-          // Close dialog immediately
-          setShowPermissionPrompt(false);
-          hasShownPromptRef.current = true; // Mark as shown to prevent re-prompting
-        } catch (subError: any) {
-          console.error('[PWASetup] Subscription error:', subError);
-          // Even if subscription fails, permission was granted, so show success
-          toast.success('Notification permission enabled!', {
-            duration: 4000,
-          });
-          setShowPermissionPrompt(false);
-          // Log the subscription error but don't show it to user
-          console.warn('[PWASetup] Subscription failed but permission granted:', subError);
-        }
+        }, 100);
       } else if (permission === 'denied') {
         console.log('[PWASetup] Permission denied by user');
-        toast.error('You denied notification permission. Enable it in browser settings.');
+        setNotificationPermission('denied');
         setShowPermissionPrompt(false);
+        setIsEnabling(false);
+        toast.error('You denied notification permission. Enable it in browser settings.');
       } else {
         console.log('[PWASetup] Permission dismissed');
+        setNotificationPermission('default');
+        setShowPermissionPrompt(false);
+        setIsEnabling(false);
         toast.error('Notification permission dismissed');
       }
     } catch (error: any) {
       console.error('[PWASetup] Error requesting notification permission:', error);
-      toast.error(`Permission error: ${error.message}`);
-    } finally {
       setIsEnabling(false);
+      toast.error(`Permission error: ${error.message}`);
     }
   };
 
@@ -238,34 +233,49 @@ export default function PWASetup() {
       
       if (isIOS && !isStandalone) {
         console.log('[PWASetup] iOS detected but not installed as PWA');
-        // On iOS, we can still show in-app notifications, just not push
-        // Don't show toast here, let the main handler show success
         return; // Don't throw error, just return gracefully
       }
       
       if (!('serviceWorker' in navigator)) {
         console.error('[PWASetup] Service Worker not supported');
-        throw new Error('Service workers are not supported in this browser');
+        return; // Don't throw, just return
       }
       
       if (!('PushManager' in window)) {
         console.error('[PWASetup] PushManager not available');
-        // For iOS Safari without PWA, this is expected
         if (isIOS) {
-          // Don't show toast here, let the main handler show success
-          return;
+          return; // Expected on iOS Safari without PWA
         }
-        throw new Error('Push notifications are not supported in this browser');
+        console.warn('[PWASetup] Push notifications not supported');
+        return; // Don't throw, just return
       }
 
       console.log('[PWASetup] Waiting for service worker ready...');
-      // Wait for service worker to be ready
-      const registration = await navigator.serviceWorker.ready;
-      console.log('[PWASetup] Service Worker ready:', registration);
+      
+      // Add timeout for service worker ready (10 seconds max)
+      const serviceWorkerPromise = navigator.serviceWorker.ready;
+      const timeoutPromise = new Promise((_, reject) => 
+        setTimeout(() => reject(new Error('Service worker timeout')), 10000)
+      );
+      
+      let registration;
+      try {
+        registration = await Promise.race([serviceWorkerPromise, timeoutPromise]) as ServiceWorkerRegistration;
+        console.log('[PWASetup] Service Worker ready:', registration);
+      } catch (swError: any) {
+        console.error('[PWASetup] Service worker not ready:', swError);
+        return; // Don't throw, just return
+      }
 
       // Check if already subscribed
-      let subscription = await registration.pushManager.getSubscription();
-      console.log('[PWASetup] Existing subscription:', subscription);
+      let subscription;
+      try {
+        subscription = await registration.pushManager.getSubscription();
+        console.log('[PWASetup] Existing subscription:', subscription ? 'Yes' : 'No');
+      } catch (subCheckError: any) {
+        console.error('[PWASetup] Error checking subscription:', subCheckError);
+        return; // Don't throw, just return
+      }
 
       if (!subscription) {
         // Subscribe to push notifications
@@ -274,7 +284,7 @@ export default function PWASetup() {
 
         if (!vapidPublicKey) {
           console.error('[PWASetup] VAPID public key not found in environment');
-          throw new Error('VAPID public key not configured. Contact administrator.');
+          return; // Don't throw, just return
         }
 
         console.log('[PWASetup] VAPID key found, subscribing...');
@@ -283,47 +293,55 @@ export default function PWASetup() {
             userVisibleOnly: true,
             applicationServerKey: urlBase64ToUint8Array(vapidPublicKey) as BufferSource,
           });
-          console.log('[PWASetup] Successfully subscribed to push:', subscription);
+          console.log('[PWASetup] Successfully subscribed to push');
         } catch (subError: any) {
           console.error('[PWASetup] Push subscription failed:', subError.message);
-          throw new Error(`Failed to subscribe: ${subError.message}`);
+          return; // Don't throw, just return
         }
       } else {
         console.log('[PWASetup] Already subscribed, using existing subscription');
       }
 
-      // Send subscription to backend
-      try {
-        console.log('[PWASetup] Saving subscription to backend...');
-        const subscriptionData = subscription.toJSON();
-        console.log('[PWASetup] Subscription data:', JSON.stringify(subscriptionData));
-        
-        const response = await fetch('/api/notifications/subscribe', {
-          method: 'POST',
-          headers: {
-            'Content-Type': 'application/json',
-          },
-          credentials: 'include',
-          body: JSON.stringify(subscriptionData),
-        });
+      // Send subscription to backend with timeout
+      if (subscription) {
+        try {
+          console.log('[PWASetup] Saving subscription to backend...');
+          const subscriptionData = subscription.toJSON();
+          
+          // Add timeout for fetch (8 seconds max)
+          const fetchPromise = fetch('/api/notifications/subscribe', {
+            method: 'POST',
+            headers: {
+              'Content-Type': 'application/json',
+            },
+            credentials: 'include',
+            body: JSON.stringify(subscriptionData),
+          });
+          
+          const fetchTimeoutPromise = new Promise((_, reject) => 
+            setTimeout(() => reject(new Error('Request timeout')), 8000)
+          );
+          
+          const response = await Promise.race([fetchPromise, fetchTimeoutPromise]) as Response;
 
-        console.log('[PWASetup] Backend response status:', response.status);
-        
-        if (!response.ok) {
-          const errorData = await response.json().catch(() => ({}));
-          console.error('[PWASetup] Backend error:', errorData);
-          throw new Error(errorData.message || `Server error: ${response.status}`);
+          console.log('[PWASetup] Backend response status:', response.status);
+          
+          if (!response.ok) {
+            const errorData = await response.json().catch(() => ({}));
+            console.error('[PWASetup] Backend error:', errorData);
+            return; // Don't throw, just return
+          }
+
+          const result = await response.json();
+          console.log('[PWASetup] Subscription saved successfully to backend');
+        } catch (fetchError: any) {
+          console.error('[PWASetup] Error saving subscription to backend:', fetchError.message);
+          // Don't throw, just return - subscription is optional
         }
-
-        const result = await response.json();
-        console.log('[PWASetup] Subscription saved successfully to backend:', result);
-      } catch (fetchError: any) {
-        console.error('[PWASetup] Error saving subscription to backend:', fetchError);
-        throw new Error(`Failed to save subscription: ${fetchError.message}`);
       }
     } catch (error: any) {
       console.error('[PWASetup] Error subscribing to notifications:', error);
-      throw error;
+      // Don't throw - this runs in background
     }
   };
 

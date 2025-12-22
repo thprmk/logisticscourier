@@ -97,6 +97,8 @@ export async function sendShipmentNotification(
     'Out for Delivery': 'Package is out for delivery',
     'Delivered': 'Delivery completed',
     'Failed': 'Delivery attempt failed',
+    'Delivery Completed': 'Delivery completed',
+    'Delivery Failed': 'Delivery attempt failed',
     'At Destination Branch': 'Package arrived at destination',
     'Manifest In Transit': 'Manifest arriving to your branch',
     'Manifest Delivered': 'Manifest successfully received',

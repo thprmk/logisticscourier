@@ -83,6 +83,11 @@ const ShipmentSchema = new Schema<IShipment>({
   failureReason: String,
 }, { timestamps: true }); // Automatically adds 'createdAt' and 'updatedAt' fields
 
+// ✅ FIX: Add compound indexes for common query patterns (performance optimization)
+ShipmentSchema.index({ tenantId: 1, status: 1 }); // For filtering by tenant and status
+ShipmentSchema.index({ tenantId: 1, createdAt: -1 }); // For date-sorted tenant queries
+ShipmentSchema.index({ tenantId: 1, assignedTo: 1 }); // For staff assignment queries
+
 const Shipment = models.Shipment || model<IShipment>('Shipment', ShipmentSchema);
 
 export default Shipment;

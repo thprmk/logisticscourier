@@ -729,8 +729,9 @@ export default function DeliveryStaffPage() {
                       <div className="space-y-2">
                         {isAssigned && (
                           <Button
-                            className="w-full bg-blue-600 hover:bg-blue-700"
+                            className="w-full bg-blue-600 hover:bg-blue-700 touch-manipulation"
                             disabled={updatingShipment === shipment._id}
+                            onClick={() => handleStatusUpdate(shipment._id, 'Out for Delivery')}
                           >
                             {updatingShipment === shipment._id ? 'Starting...' : 'Start Delivery'}
                           </Button>

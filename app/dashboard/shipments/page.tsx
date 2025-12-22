@@ -3,7 +3,7 @@
 import { useState, useEffect, FormEvent, useMemo } from 'react';
 import { useUser } from '../../context/UserContext';
 import toast from 'react-hot-toast';
-import { Plus, Edit, Trash2, Eye, Search, Building, Package as PackageIcon, Loader, Users } from 'lucide-react';
+import { Plus, Edit, Trash2, Eye, Search, Building, Package as PackageIcon, Loader, Users, X } from 'lucide-react';
 import { sanitizeInput, isValidEmail, isValidPhone, isValidAddress } from '@/lib/sanitize';
 import { Button } from '@/components/ui/button';
 import { Input } from '@/components/ui/input';
@@ -602,21 +602,21 @@ export default function ShipmentsPage() {
             placeholder="Search shipments..."
             value={searchQuery}
             onChange={(e) => setSearchQuery(e.target.value)}
-            className="pl-10"
+            className="pl-10 h-10 sm:h-9 text-sm touch-manipulation"
           />
         </div>
 
         {/* Filters and Button */}
-        <div className="flex flex-col gap-4 w-full">
-          <div className="flex items-center gap-2 sm:gap-3 flex-wrap">
+        <div className="flex flex-col gap-3 sm:gap-4 w-full">
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-3 items-end">
             {/* Status Filter */}
-            <div className="flex-1 min-w-[150px]">
-              <Label htmlFor="filter-status" className="text-xs block mb-1">Status</Label>
+            <div className="w-full">
+              <Label htmlFor="filter-status" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Status</Label>
               <Select value={statusFilter || 'all'} onValueChange={(val) => setStatusFilter(val === 'all' ? '' : val)}>
-                <SelectTrigger id="filter-status" className="h-9 text-sm">
+                <SelectTrigger id="filter-status" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Statuses" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">All Statuses</SelectItem>
                   <SelectItem value="At Origin Branch">At Origin Branch</SelectItem>
                   <SelectItem value="In Transit to Destination">In Transit</SelectItem>
@@ -630,13 +630,13 @@ export default function ShipmentsPage() {
             </div>
 
             {/* Assigned To Filter */}
-            <div className="flex-1 min-w-[150px]">
-              <Label htmlFor="filter-assigned" className="text-xs block mb-1">Assigned Staff</Label>
+            <div className="w-full">
+              <Label htmlFor="filter-assigned" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Assigned Staff</Label>
               <Select value={assignedToFilter || 'all'} onValueChange={(val) => setAssignedToFilter(val === 'all' ? '' : val)}>
-                <SelectTrigger id="filter-assigned" className="h-9 text-sm">
+                <SelectTrigger id="filter-assigned" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Staff" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">All Staff</SelectItem>
                   {drivers.map(driver => (
                     <SelectItem key={driver._id} value={driver._id}>
@@ -648,13 +648,13 @@ export default function ShipmentsPage() {
             </div>
 
             {/* Created By Filter */}
-            <div className="flex-1 min-w-[150px]">
-              <Label htmlFor="filter-created" className="text-xs block mb-1">Created By</Label>
+            <div className="w-full">
+              <Label htmlFor="filter-created" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Created By</Label>
               <Select value={createdByFilter || 'all'} onValueChange={(val) => setCreatedByFilter(val === 'all' ? '' : val)}>
-                <SelectTrigger id="filter-created" className="h-9 text-sm">
+                <SelectTrigger id="filter-created" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Users" />
                 </SelectTrigger>
-                <SelectContent>
+                <SelectContent className="max-h-[300px]">
                   <SelectItem value="all">All Users</SelectItem>
                   {admins.map(admin => (
                     <SelectItem key={admin._id} value={admin._id}>
@@ -665,71 +665,102 @@ export default function ShipmentsPage() {
               </Select>
             </div>
 
-            {/* From Date */}
-            <div className="flex-1 min-w-[150px]">
-              <Label className="text-xs block mb-1">Date Range</Label>
+            {/* Date Range */}
+            <div className="w-full">
+              <Label className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Date Range</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
                     variant="outline"
-                    className="h-9 w-full justify-start text-sm font-normal"
+                    className="h-10 sm:h-9 w-full justify-start text-sm font-normal touch-manipulation"
                   >
                     {dateRangeStart && dateRangeEnd
-                      ? `${dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })} - ${dateRangeEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit' })}`
+                      ? dateRangeStart.toDateString() === dateRangeEnd.toDateString()
+                        ? <span className="truncate">{dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
+                        : <span className="truncate">{dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric' })} - {dateRangeEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}</span>
                       : 'Pick date range'}
                   </Button>
                 </PopoverTrigger>
-                <PopoverContent className="w-auto p-0" align="start">
-                  <div className="flex gap-0">
-                    <div className="p-3">
-                      <Calendar
-                        mode="single"
-                        selected={dateRangeStart}
-                        onSelect={(date) => {
-                          console.log('Start date selected:', date);
+                <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)] sm:max-w-none" align="start" side="bottom" sideOffset={4}>
+                  <div className="p-2 sm:p-3">
+                    {(dateRangeStart || dateRangeEnd) && (
+                      <div className="mb-2 sm:mb-3 text-xs text-gray-600 px-1">
+                        {dateRangeStart && dateRangeEnd && dateRangeStart.toDateString() === dateRangeEnd.toDateString() && (
+                          <span>
+                            <span className="font-semibold text-blue-600">Selected:</span> {dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
+                        {dateRangeStart && dateRangeEnd && dateRangeStart.toDateString() !== dateRangeEnd.toDateString() && (
+                          <span>
+                            <span className="font-semibold text-blue-600">Range:</span> {dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {dateRangeEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                          </span>
+                        )}
+                      </div>
+                    )}
+                    <Calendar
+                      mode="single"
+                      selected={dateRangeStart || undefined}
+                      onSelect={(date) => {
+                        if (!date) return;
+                        
+                        // First click: set start date (single date by default)
+                        if (!dateRangeStart) {
                           setDateRangeStart(date);
-                          // If selecting the same date twice, set it as both start and end
-                          if (date && dateRangeStart && dateRangeStart.toDateString() === date.toDateString()) {
-                            console.log('Setting end date to same as start');
-                            setDateRangeEnd(date);
-                          } else if (date && dateRangeEnd && date > dateRangeEnd) {
-                            console.log('Start date after end date, clearing end');
-                            setDateRangeEnd(undefined);
-                          }
-                        }}
-                        disabled={(date) =>
-                          dateRangeEnd ? date > dateRangeEnd : false
-                        }
-                      />
-                    </div>
-                    <div className="p-3">
-                      <Calendar
-                        mode="single"
-                        selected={dateRangeEnd}
-                        onSelect={(date) => {
-                          console.log('End date selected:', date);
                           setDateRangeEnd(date);
-                        }}
-                        disabled={(date) =>
-                          dateRangeStart ? date < dateRangeStart : false
                         }
-                      />
-                    </div>
+                        // Second click: determine if range or single date
+                        else if (!dateRangeEnd || dateRangeStart.toDateString() === dateRangeEnd.toDateString()) {
+                          // If clicking same date, keep as single date
+                          if (date.toDateString() === dateRangeStart.toDateString()) {
+                            return;
+                          }
+                          // If clicking before start, swap
+                          else if (date < dateRangeStart) {
+                            setDateRangeEnd(dateRangeStart);
+                            setDateRangeStart(date);
+                          }
+                          // If clicking after start, create range
+                          else {
+                            setDateRangeEnd(date);
+                          }
+                        }
+                        // Both dates exist: reset and start fresh
+                        else {
+                          setDateRangeStart(date);
+                          setDateRangeEnd(date);
+                        }
+                      }}
+                      disabled={(date) => false}
+                      className="rounded-md"
+                    />
+                    {dateRangeStart && dateRangeEnd && (
+                      <div className="mt-2 sm:mt-3 pt-2 sm:pt-3 border-t flex gap-2">
+                        <Button
+                          size="sm"
+                          variant="outline"
+                          onClick={() => {
+                            setDateRangeStart(undefined);
+                            setDateRangeEnd(undefined);
+                          }}
+                          className="flex-1 text-xs h-9 sm:h-8 touch-manipulation"
+                        >
+                          Clear
+                        </Button>
+                      </div>
+                    )}
                   </div>
                 </PopoverContent>
               </Popover>
             </div>
 
-            {/* To Date */}
-
-            {/* Clear and Add Buttons */}
-            <div className="flex items-end gap-2">
+            {/* Action Buttons */}
+            <div className="w-full sm:w-auto flex items-end gap-2 sm:gap-2">
               {(statusFilter || assignedToFilter || createdByFilter || dateRangeStart || dateRangeEnd) && (
                 <Button
                   size="sm"
                   variant="outline"
                   onClick={clearAllFilters}
-                  className="h-9 text-xs"
+                  className="h-10 sm:h-9 text-xs sm:text-xs flex-1 sm:flex-none min-w-[80px] touch-manipulation"
                 >
                   Clear
                 </Button>
@@ -737,9 +768,9 @@ export default function ShipmentsPage() {
               
               <Button 
                 onClick={() => openModal('create')}
-                className="h-9 gap-2 whitespace-nowrap text-sm"
+                className="h-10 sm:h-9 gap-2 whitespace-nowrap text-sm bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none min-w-[100px] touch-manipulation"
               >
-                <Plus size={16} /> 
+                <Plus size={16} className="flex-shrink-0" /> 
                 <span className="hidden sm:inline">Add New</span>
                 <span className="sm:hidden">Add</span>
               </Button>
@@ -784,11 +815,11 @@ export default function ShipmentsPage() {
       )}
 
       {/* Shipments Table - Desktop */}
-      <div className="hidden md:block table-container border rounded-lg">
-        <Table className="text-base">
+      <div className="hidden md:block table-container border border-gray-200 rounded-lg bg-white">
+        <Table className="text-base w-full table-auto">
           <TableHeader>
-            <TableRow className="bg-gray-50 h-16">
-              <TableHead className="w-16 text-sm font-semibold">
+            <TableRow className="bg-gray-50/80 border-b border-gray-200">
+              <TableHead className="w-10 px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
                 <input
                   type="checkbox"
                   checked={selectedShipmentIds.size === filteredShipments.length && filteredShipments.length > 0}
@@ -797,30 +828,30 @@ export default function ShipmentsPage() {
                   title="Select all"
                 />
               </TableHead>
-              <TableHead>S/No</TableHead>
-              <TableHead>Tracking ID</TableHead>
-              <TableHead>Recipient</TableHead>
-              <TableHead>Status</TableHead>
-              <TableHead>Created By</TableHead>
-              <TableHead>Assigned To</TableHead>
-              <TableHead>Date</TableHead>
-              <TableHead className="text-right">Actions</TableHead>
+              <TableHead className="w-12 px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">S/No</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Tracking ID</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Recipient</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Created By</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Assigned To</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</TableHead>
+              <TableHead className="w-24 px-2 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
                     <Loader className="animate-spin h-8 w-8 text-blue-500 mb-3" />
-                    <p className="text-gray-600">Loading shipments...</p>
+                    <p className="text-gray-600 text-sm">Loading shipments...</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : paginatedShipments.length > 0 ? (
               paginatedShipments.map((shipment, index) => (
-                <TableRow key={shipment._id} className="h-20 hover:bg-gray-50">
-                  <TableCell>
+                <TableRow key={shipment._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                  <TableCell className="px-2 py-2.5">
                     <input
                       type="checkbox"
                       checked={selectedShipmentIds.has(shipment._id)}
@@ -828,29 +859,29 @@ export default function ShipmentsPage() {
                       className="w-4 h-4 cursor-pointer"
                     />
                   </TableCell>
-                  <TableCell className="font-medium text-base">{startIndex + index + 1}</TableCell>
-                  <TableCell className="font-mono text-blue-600 font-bold text-base">{shipment.trackingId}</TableCell>
-                  <TableCell>
-                    <div className="font-medium text-gray-900 text-base">{shipment.recipient.name}</div>
-                    <div className="text-gray-500 text-sm mt-1">{shipment.recipient.address}</div>
+                  <TableCell className="px-2 py-2.5 font-medium text-sm text-gray-900">{startIndex + index + 1}</TableCell>
+                  <TableCell className="px-2 py-2.5">
+                    <span className="font-mono text-blue-600 font-semibold text-sm hover:text-blue-700 cursor-pointer">{shipment.trackingId}</span>
                   </TableCell>
-                  <TableCell className="text-base">
+                  <TableCell className="px-2 py-2.5">
+                    <div className="font-semibold text-gray-900 text-sm">{shipment.recipient.name}</div>
+                    <div className="text-gray-500 text-xs mt-0.5 line-clamp-1">{shipment.recipient.address}</div>
+                  </TableCell>
+                  <TableCell className="px-2 py-2.5">
                     <StatusBadge status={shipment.status} />
                   </TableCell>
-                  <TableCell className="text-base">
-                    <div className="flex items-center gap-2">
-                      <span className="text-gray-700 text-base font-medium">
-                        {/* Display "You" if created by current user, otherwise show role */}
+                  <TableCell className="px-2 py-2.5">
+                    <div className="flex items-center gap-1 flex-wrap">
+                      <span className="text-gray-700 text-sm font-medium">
                         {shipment.createdBy ? (
                           user?.id === shipment.createdBy._id ? 'You' : shipment.createdBy.name
                         ) : (
                           <span className="text-gray-400 italic">System</span>
                         )}
                       </span>
-                      {/* Show role badge if not created by current user */}
                       {shipment.createdBy && user?.id !== shipment.createdBy._id && (
                         <Badge 
-                          className={`text-xs ${
+                          className={`text-xs px-1 py-0.5 ${
                             shipment.createdBy.role === 'superAdmin' ? 'bg-blue-100 text-blue-800' :
                             shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-purple-100 text-purple-800' : 
                             shipment.createdBy.role === 'admin' ? 'bg-blue-100 text-blue-800' :
@@ -862,61 +893,69 @@ export default function ShipmentsPage() {
                            shipment.createdBy.role === 'admin' ? 'Dispatcher' : 'Delivery Staff'}
                         </Badge>
                       )}
-                      {/* Green "You" badge if created by current user */}
                       {user?.id === shipment.createdBy?._id && (
-                        <Badge className="bg-green-100 text-green-800 font-semibold text-xs">You</Badge>
+                        <Badge className="bg-green-100 text-green-800 font-semibold text-xs px-1 py-0.5">You</Badge>
                       )}
                     </div>
                   </TableCell>
-                  <TableCell className="text-gray-700 text-base">
-                    {shipment.assignedTo?.name || (
-                      <span className="text-gray-400 italic">Unassigned</span>
-                    )}
+                  <TableCell className="px-2 py-2.5">
+                    <span className="text-gray-700 text-sm">
+                      {shipment.assignedTo?.name || (
+                        <span className="text-gray-400 italic">Unassigned</span>
+                      )}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-gray-500 text-base">
-                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                  <TableCell className="px-2 py-2.5">
+                    <span className="text-gray-600 text-sm whitespace-nowrap">
+                      {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
                   </TableCell>
-                  <TableCell className="text-right space-x-2">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('view', shipment)}
-                      title="View Details"
-                    >
-                      <Eye size={20} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('update', shipment)}
-                      disabled={!canEditShipment(shipment)}
-                      title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
-                    >
-                      <Edit size={20} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('delete', shipment)}
-                      disabled={!canEditShipment(shipment)}
-                      title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
-                    >
-                      <Trash2 size={20} />
-                    </Button>
+                  <TableCell className="px-2 py-2.5">
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('view', shipment)}
+                        title="View Details"
+                        className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Eye size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('update', shipment)}
+                        disabled={!canEditShipment(shipment)}
+                        title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
+                        className="h-7 w-7 p-0 hover:bg-green-50 hover:text-green-600 disabled:opacity-50"
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('delete', shipment)}
+                        disabled={!canEditShipment(shipment)}
+                        title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
+                        className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={9} className="text-center py-12">
+                <TableCell colSpan={9} className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
                     <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 mb-1">No shipments found</h3>
-                    <p className="text-gray-500">
+                    <p className="text-gray-500 text-sm">
                       {shipments.length > 0 
                         ? "No shipments match your filters." 
                         : "No shipments have been created yet."}
@@ -1423,11 +1462,22 @@ export default function ShipmentsPage() {
       <Sheet open={modalType === 'view'} onOpenChange={(open) => !open && closeModal()}>
         <SheetContent style={{ width: '90vw', maxWidth: '600px' }} className="overflow-y-auto p-0">
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-gray-200 sticky top-0 bg-white z-10">
-            <div>
-              <SheetTitle className="text-2xl font-bold">Shipment Details</SheetTitle>
-              <SheetDescription className="text-sm text-gray-600 mt-1">
-                Tracking ID: <span className="font-mono font-semibold text-gray-900">{selectedShipment?.trackingId}</span>
-              </SheetDescription>
+            <div className="flex items-start justify-between">
+              <div>
+                <SheetTitle className="text-2xl font-bold">Shipment Details</SheetTitle>
+                <SheetDescription className="text-sm text-gray-600 mt-1">
+                  Tracking ID: <span className="font-mono font-semibold text-gray-900">{selectedShipment?.trackingId}</span>
+                </SheetDescription>
+              </div>
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={closeModal}
+                className="h-8 w-8 rounded-full hover:bg-gray-100"
+                title="Close"
+              >
+                <X className="h-5 w-5" />
+              </Button>
             </div>
           </SheetHeader>
 

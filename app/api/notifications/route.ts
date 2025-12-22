@@ -22,6 +22,11 @@ export async function GET(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
+    // ✅ FIX: Check tenantId for tenant data isolation
+    if (!payload.tenantId && payload.role !== 'superAdmin') {
+      return NextResponse.json({ message: 'Unauthorized - tenant required' }, { status: 401 });
+    }
+
     console.log('Fetching notifications for user:', userId);
     console.log('User ID Type:', typeof userId);
 
@@ -31,8 +36,14 @@ export async function GET(request: NextRequest) {
     const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
     console.log('User ID String:', userIdString);
 
+    // ✅ FIX: Filter by both userId AND tenantId for proper data isolation
+    const query: any = { userId: userIdString };
+    if (payload.tenantId && payload.role !== 'superAdmin') {
+      query.tenantId = payload.tenantId;
+    }
+
     // Fetch notifications for the logged-in user, sorted by newest first
-    const notifications = await Notification.find({ userId: userIdString })
+    const notifications = await Notification.find(query)
       .sort({ createdAt: -1 })
       .limit(50)
       .lean();
@@ -78,6 +89,11 @@ export async function PATCH(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
+    // ✅ FIX: Check tenantId for tenant data isolation
+    if (!payload.tenantId && payload.role !== 'superAdmin') {
+      return NextResponse.json({ message: 'Unauthorized - tenant required' }, { status: 401 });
+    }
+
     const body = await request.json();
     const { notificationIds } = body; // Expect an array of IDs
 
@@ -90,9 +106,15 @@ export async function PATCH(request: NextRequest) {
     // Convert userId to string for consistent comparison
     const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
     
+    // ✅ FIX: Filter by both userId AND tenantId for proper data isolation
+    const updateQuery: any = { _id: { $in: notificationIds }, userId: userIdString };
+    if (payload.tenantId && payload.role !== 'superAdmin') {
+      updateQuery.tenantId = payload.tenantId;
+    }
+    
     // Use $in to update multiple documents at once
     await Notification.updateMany(
-      { _id: { $in: notificationIds }, userId: userIdString },
+      updateQuery,
       { $set: { read: true } }
     );
 
@@ -122,13 +144,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Invalid token' }, { status: 401 });
     }
 
+    // ✅ FIX: Check tenantId for tenant data isolation
+    if (!payload.tenantId && payload.role !== 'superAdmin') {
+      return NextResponse.json({ message: 'Unauthorized - tenant required' }, { status: 401 });
+    }
+
     await dbConnect();
 
     // Convert userId to string for consistent comparison
     const userIdString = typeof userId === 'object' ? userId.toString() : String(userId);
 
+    // ✅ FIX: Filter by both userId AND tenantId for proper data isolation
+    const updateQuery: any = { userId: userIdString, read: false };
+    if (payload.tenantId && payload.role !== 'superAdmin') {
+      updateQuery.tenantId = payload.tenantId;
+    }
+
     await Notification.updateMany(
-      { userId: userIdString, read: false },
+      updateQuery,
       { read: true }
     );
 

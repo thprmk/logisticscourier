@@ -27,6 +27,7 @@ const UserSchema = new Schema({
   tenantId: {
     type: Schema.Types.ObjectId,
     ref: 'Tenant', // This tells Mongoose that this ID refers to a document in the 'Tenant' collection
+    index: true, // ✅ FIX: Index for performance when filtering users by tenant
   },
 
   isManager: {

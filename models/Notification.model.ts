@@ -32,6 +32,8 @@ const NotificationSchema = new Schema<INotification>({
 
 // Index for efficient querying
 NotificationSchema.index({ userId: 1, read: 1, createdAt: -1 });
+// ✅ FIX: Add compound index for tenant-based queries (performance optimization)
+NotificationSchema.index({ tenantId: 1, userId: 1, read: 1, createdAt: -1 });
 
 const Notification = models.Notification || model<INotification>('Notification', NotificationSchema);
 

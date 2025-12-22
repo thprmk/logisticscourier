@@ -56,8 +56,8 @@ export default function PWASetup() {
   useEffect(() => {
     console.log('[PWASetup] User check - user:', user?.email, 'role:', user?.role, 'isInstalled:', isInstalled, 'isMobile:', isMobile);
     
-    // Only show for valid roles
-    const validRoles = ['delivery_staff', 'staff', 'admin', 'dispatcher'];
+    // Only show for valid roles (staff = delivery staff, admin includes dispatchers)
+    const validRoles = ['staff', 'admin', 'superAdmin'];
     if (!user || !validRoles.includes(user.role || '')) {
       console.log('[PWASetup] User not logged in or invalid role, skipping prompt');
       return;

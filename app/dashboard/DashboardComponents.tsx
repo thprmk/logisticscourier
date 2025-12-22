@@ -29,8 +29,6 @@ interface ShipmentChartData {
 
 interface ShipmentOverviewChartProps {
   dateRange: 'week' | 'month' | 'last3months' | 'year';
-  customStart?: string;
-  customEnd?: string;
   onDateRangeChange: (range: 'week' | 'month' | 'last3months' | 'year') => void;
 }
 
@@ -250,14 +248,13 @@ export function StatCard({
 // Shipment Overview Chart Component
 export function ShipmentOverviewChart({
   dateRange,
-  customStart,
-  customEnd,
   onDateRangeChange,
 }: ShipmentOverviewChartProps) {
   const [chartData, setChartData] = useState<ShipmentChartData[]>([]);
   const [loading, setLoading] = useState(true);
 
   const getDateRange = () => {
+    // Calculate based on dateRange preset
     const today = new Date();
     today.setHours(0, 0, 0, 0);
     const tomorrow = new Date(today);
@@ -268,21 +265,25 @@ export function ShipmentOverviewChart({
 
     switch (dateRange) {
       case 'week':
+        // Last 7 days (including today)
         start = new Date(today);
-        const dayOfWeek = today.getDay();
-        start.setDate(today.getDate() - dayOfWeek);
+        start.setDate(today.getDate() - 6); // 7 days total (today + 6 days back)
         end = tomorrow;
         break;
       case 'month':
+        // Current month (from first day of month to first day of next month)
         start = new Date(today.getFullYear(), today.getMonth(), 1);
         end = new Date(today.getFullYear(), today.getMonth() + 1, 1);
         break;
       case 'last3months':
+        // Last 3 months (from 3 months ago to today)
         start = new Date(today);
         start.setMonth(today.getMonth() - 3);
+        start.setDate(1); // Start from first day of that month
         end = tomorrow;
         break;
       case 'year':
+        // Current year (from Jan 1 to Jan 1 of next year)
         start = new Date(today.getFullYear(), 0, 1);
         end = new Date(today.getFullYear() + 1, 0, 1);
         break;
@@ -299,39 +300,90 @@ export function ShipmentOverviewChart({
       setLoading(true);
       const { from, to } = getDateRange();
 
+      console.log('Fetching chart data for range:', { from, to });
+
       const response = await fetch(`/api/shipments?from=${from}&to=${to}`, {
         credentials: 'include',
       });
 
-      if (!response.ok) throw new Error('Failed to fetch shipments');
+      if (!response.ok) {
+        const errorText = await response.text();
+        console.error('API Error:', response.status, errorText);
+        throw new Error(`Failed to fetch shipments: ${response.status}`);
+      }
 
       const shipments: any[] = await response.json();
+      console.log('Fetched shipments:', shipments.length);
 
+      if (!Array.isArray(shipments)) {
+        console.error('Invalid response format - expected array, got:', typeof shipments);
+        setChartData([]);
+        return;
+      }
+
+      if (shipments.length === 0) {
+        console.log('No shipments found for date range');
+        setChartData([]);
+        return;
+      }
+
+      // Group shipments by date (simpler approach)
       const groupedByDate: { [key: string]: ShipmentChartData } = {};
 
       shipments.forEach((shipment) => {
-        const date = new Date(shipment.createdAt).toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
-
-        if (!groupedByDate[date]) {
-          groupedByDate[date] = { date, created: 0, delivered: 0, failed: 0 };
+        if (!shipment.createdAt) {
+          console.warn('Shipment missing createdAt:', shipment._id);
+          return;
         }
 
-        groupedByDate[date].created++;
+        try {
+          const shipmentDate = new Date(shipment.createdAt);
+          
+          // Check if date is valid
+          if (isNaN(shipmentDate.getTime())) {
+            console.warn('Invalid date for shipment:', shipment._id, shipment.createdAt);
+            return;
+          }
 
-        if (shipment.status === 'Delivered') {
-          groupedByDate[date].delivered++;
-        } else if (shipment.status === 'Failed') {
-          groupedByDate[date].failed++;
+          // Use ISO date string for grouping (YYYY-MM-DD)
+          const dateKey = shipmentDate.toISOString().split('T')[0];
+          
+          // Format for display (e.g., "Jan 1")
+          const dateDisplay = shipmentDate.toLocaleDateString('en-US', {
+            month: 'short',
+            day: 'numeric',
+          });
+
+          // Initialize if doesn't exist
+          if (!groupedByDate[dateKey]) {
+            groupedByDate[dateKey] = { 
+              date: dateDisplay, 
+              created: 0, 
+              delivered: 0, 
+              failed: 0 
+            };
+          }
+
+          // Count created
+          groupedByDate[dateKey].created++;
+
+          // Count by status
+          if (shipment.status === 'Delivered') {
+            groupedByDate[dateKey].delivered++;
+          } else if (shipment.status === 'Failed') {
+            groupedByDate[dateKey].failed++;
+          }
+        } catch (error) {
+          console.error('Error processing shipment:', shipment._id, error);
         }
       });
 
-      const data = Object.values(groupedByDate).sort((a, b) => {
-        return new Date(a.date).getTime() - new Date(b.date).getTime();
-      });
+      // Convert to array and sort by date key (which is sortable YYYY-MM-DD format)
+      const data = Object.entries(groupedByDate)
+        .sort(([dateA], [dateB]) => dateA.localeCompare(dateB))
+        .map(([, data]) => data);
 
+      console.log('Processed chart data:', data);
       setChartData(data);
     } catch (error) {
       console.error('Error fetching chart data:', error);
@@ -343,7 +395,7 @@ export function ShipmentOverviewChart({
 
   useEffect(() => {
     fetchChartData();
-  }, [dateRange, customStart, customEnd]);
+  }, [dateRange]);
 
   if (loading) {
     return (
@@ -364,8 +416,13 @@ export function ShipmentOverviewChart({
   if (chartData.length === 0) {
     return (
       <div className="bg-white rounded-xl border border-gray-200/60 p-6">
-        <div className="flex items-center justify-center h-80">
-          <p className="text-gray-500 font-medium">No shipment data available for this period</p>
+        <div className="flex flex-col items-center justify-center h-80 gap-3">
+          <div className="text-center">
+            <p className="text-gray-500 font-medium text-base mb-1">No shipment data available for this period</p>
+            <p className="text-gray-400 text-sm">
+              Try selecting a different date range or create some shipments first.
+            </p>
+          </div>
         </div>
       </div>
     );

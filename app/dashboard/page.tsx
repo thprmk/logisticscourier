@@ -64,7 +64,7 @@ export default function BranchDashboardPage() {
   const [customEnd, setCustomEnd] = useState<Date | undefined>(undefined);
   const [showCustom, setShowCustom] = useState(false);
   const [dropdownOpen, setDropdownOpen] = useState(false);
-  const [chartDateRange, setChartDateRange] = useState<'week' | 'month' | 'last3months' | 'year'>('week');
+  const [chartDateRange, setChartDateRange] = useState<'week' | 'month' | 'last3months' | 'year'>('last3months');
 
   const [kpis, setKpis] = useState<KPIData>({
     totalCreated: 0,
@@ -277,6 +277,7 @@ export default function BranchDashboardPage() {
             totalFailed: shipments.filter((s) => s.status === 'Failed').length,
           });
           setDropdownOpen(false);
+          // Chart will automatically update because customStart and customEnd changed
         } catch (err) {
           console.error('Error fetching custom KPIs:', err);
         } finally {
@@ -328,42 +329,86 @@ export default function BranchDashboardPage() {
                     </Button>
                   </PopoverTrigger>
                   <PopoverContent className="w-auto p-0" align="end">
-                    <div className="flex gap-0 flex-col sm:flex-row">
-                      <div className="p-2 sm:p-3">
-                        <CalendarComponent
-                          mode="single"
-                          selected={customStart}
-                          onSelect={(date) => {
+                    <div className="p-3">
+                      {(customStart || customEnd) && (
+                        <div className="mb-3 text-xs sm:text-sm text-gray-600 px-1">
+                          {customStart && customEnd && customStart.toDateString() === customEnd.toDateString() && (
+                            <span>
+                              <span className="font-semibold text-blue-600">Selected:</span> {customStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                          {customStart && customEnd && customStart.toDateString() !== customEnd.toDateString() && (
+                            <span>
+                              <span className="font-semibold text-blue-600">Range:</span> {customStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} - {customEnd.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
+                            </span>
+                          )}
+                        </div>
+                      )}
+                      <CalendarComponent
+                        mode="single"
+                        selected={customStart || undefined}
+                        onSelect={(date) => {
+                          if (!date) return;
+                          
+                          // First click: set start date (single date by default)
+                          if (!customStart) {
                             setCustomStart(date);
-                            setDateRange("custom");
-                          }}
-                          disabled={(date) =>
-                            customEnd ? date > customEnd : false
-                          }
-                          onDayClick={(day) => {
-                            if (customStart && customStart.toDateString() === day.toDateString() && !customEnd) {
-                              setCustomEnd(day);
-                              setDateRange("custom");
-                              setDropdownOpen(false);
-                              setTimeout(() => handleApplyFilter(), 0);
-                            }
-                          }}
-                        />
-                      </div>
-                      <div className="p-2 sm:p-3">
-                        <CalendarComponent
-                          mode="single"
-                          selected={customEnd}
-                          onSelect={(date) => {
                             setCustomEnd(date);
                             setDateRange("custom");
-                          }}
-                          disabled={(date) =>
-                            customStart ? date < customStart : false
                           }
-                          numberOfMonths={1}
-                        />
-                      </div>
+                          // Second click: determine if range or single date
+                          else if (!customEnd || customStart.toDateString() === customEnd.toDateString()) {
+                            // If clicking same date, keep as single date
+                            if (date.toDateString() === customStart.toDateString()) {
+                              // Already selected, do nothing
+                              return;
+                            }
+                            // If clicking before start, swap
+                            else if (date < customStart) {
+                              setCustomEnd(customStart);
+                              setCustomStart(date);
+                              setDateRange("custom");
+                            }
+                            // If clicking after start, create range
+                            else {
+                              setCustomEnd(date);
+                              setDateRange("custom");
+                            }
+                          }
+                          // Both dates exist: reset and start fresh
+                          else {
+                            setCustomStart(date);
+                            setCustomEnd(date);
+                            setDateRange("custom");
+                          }
+                        }}
+                        disabled={(date) => false}
+                      />
+                      {customStart && customEnd && (
+                        <div className="mt-3 pt-3 border-t flex gap-2">
+                          <Button
+                            size="sm"
+                            variant="outline"
+                            onClick={() => {
+                              setCustomStart(undefined);
+                              setCustomEnd(undefined);
+                            }}
+                            className="flex-1 text-xs sm:text-sm"
+                          >
+                            Clear
+                          </Button>
+                          <Button
+                            size="sm"
+                            onClick={() => {
+                              setDropdownOpen(false);
+                              handleApplyFilter();
+                            }}
+                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
+                          >
+                            Apply
+                          </Button>
+                        </div>
+                      )}
                     </div>
                   </PopoverContent>
                 </Popover>

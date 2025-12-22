@@ -21,7 +21,7 @@ const nextConfig: NextConfig = {
 const withPWA = withPWAInit({
   dest: 'public',
   register: true,
-  disable: process.env.NODE_ENV === 'development' || process.env.NODE_ENV === 'production', // Disable PWA in development and production to avoid Babel issues
+  disable: process.env.NODE_ENV === 'development', // Only disable PWA in development to avoid build issues
   cacheOnFrontEndNav: true,
   aggressiveFrontEndNavCaching: true,
   workboxOptions: {

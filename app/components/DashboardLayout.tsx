@@ -5,7 +5,6 @@ import { useUser } from '../context/UserContext';
 import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
-import PWASetup from '@/app/components/PWASetup';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
 import { 
   LogOut, 
@@ -250,7 +249,6 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   return (
     <div className="min-h-screen bg-gray-50">
-      <PWASetup />
      {/* Top Header */}
       <header className="bg-white/95 backdrop-blur-sm border-b border-gray-200/50 sticky top-0 z-50 shadow-sm">
         <div className="max-w-7xl mx-auto px-3 sm:px-4 md:px-6 relative">

@@ -6,7 +6,7 @@ export interface IUser extends Document {
   name: string;
   email: string;
   password?: string; // The '?' makes it optional, as we won't always send it
-  role: 'superAdmin' | 'admin' | 'staff'; // Defines the allowed roles
+  role: 'superAdmin' | 'admin' | 'dispatcher' | 'staff'; // Defines the allowed roles
   tenantId?: Schema.Types.ObjectId; // The link to the Tenant/Branch
   isManager: boolean;
 }
@@ -22,7 +22,7 @@ const UserSchema = new Schema({
   role: {
     type: String,
     required: true,
-    enum: ['superAdmin', 'admin', 'staff'],
+    enum: ['superAdmin', 'admin', 'dispatcher', 'staff'],
   },
   tenantId: {
     type: Schema.Types.ObjectId,

@@ -31,17 +31,22 @@ self.addEventListener('push', function(event) {
     body: notificationData.body || 'You have a new notification',
     icon: '/icons/icon-192x192.png',
     badge: '/icons/icon-192x192.png',
-    tag: notificationData.data?.shipmentId || 'notification',
-    requireInteraction: false,
+    tag: notificationData.data?.shipmentId || 'notification-' + Date.now(),
+    
+    // 👇 --- THE FIX --- 👇
+    // requireInteraction: true, // This can be annoying, better to use renotify and vibrate
+    renotify: true, // If a notification with the same tag exists, it will be replaced and re-alert the user
+    vibrate: [100, 50, 100], // Vibrate pattern: vibrate 100ms, pause 50ms, vibrate 100ms
+    
     data: notificationData.data || {},
     actions: [
       {
         action: 'open',
-        title: 'Open',
+        title: 'Open App',
       },
       {
         action: 'close',
-        title: 'Close',
+        title: 'Dismiss',
       },
     ],
   };

@@ -468,7 +468,7 @@ async function handleDelivered(context: NotificationContext) {
         (user._id as any).toString(),
         shipmentId!,
         trackingId,
-        'Delivery Completed',
+        'Delivered', // 👈 Standardized to match staff notification
         'delivered'
       ).catch(err => {
         console.error(`Failed to send push to admin ${user._id}:`, err);
@@ -538,7 +538,7 @@ async function handleDeliveryFailed(context: NotificationContext) {
         (user._id as any).toString(),
         shipmentId!,
         trackingId,
-        'Delivery Failed',
+        'Failed', // 👈 Standardized to match staff notification
         'delivery_failed'
       ).catch(err => {
         console.error(`Failed to send push to admin ${user._id}:`, err);

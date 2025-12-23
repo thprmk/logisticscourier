@@ -306,8 +306,8 @@ export default function BranchDashboardPage() {
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             {/* Left: Branch Name and Welcome */}
             <div className="flex-1 min-w-0 mb-2 sm:mb-0">
-              <h1 className="text-lg sm:text-2xl font-bold text-gray-900 truncate">{user?.tenantName || 'Your Branch'}</h1>
-              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-0.5">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
+              <h1 className="text-3xl font-bold text-gray-900 leading-tight">{user?.tenantName || 'Your Branch'}</h1>
+              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1.5 leading-tight">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
             </div>
 
             {/* Right: Date Range Picker with Buttons */}

@@ -304,7 +304,7 @@ export default function StaffManagementPage() {
   return (
     <div className="space-y-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User & Role Management</h1>
+        <h1 className="text-3xl font-bold text-gray-900">User & Role Management</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage staff members and their roles within your branch.</p>
       </div>
 

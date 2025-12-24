@@ -166,7 +166,7 @@ export default function LoginPage() {
               {/* Demo Credentials */}
               <div className="mt-5 sm:mt-6 pt-5 sm:pt-6 border-t border-gray-200">
                 <p className="text-[10px] xs:text-xs text-center text-gray-600 px-2 break-words">
-                Admin: superadmin@logistics.com / superpassword123
+                SuperAdmin: superadmin@logistics.com / superpassword123
               </p>
           </div>
         </div>

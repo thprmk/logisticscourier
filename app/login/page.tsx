@@ -73,7 +73,7 @@ export default function LoginPage() {
         backgroundAttachment: 'fixed'
       }}
     >
-      <div className="absolute inset-0 bg-black/20"></div>
+      <div className="absolute inset-0 bg-white/10"></div>
 
       {/* Centered Container */}
       <div className="relative min-h-screen flex items-center justify-center px-3 sm:px-4 py-6 sm:py-8 lg:py-12">

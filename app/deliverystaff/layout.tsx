@@ -140,13 +140,12 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
   if (!user) {
     return (
       <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="flex flex-col items-center justify-center gap-4">
-          <div className="relative w-24 h-24">
+        <div className="flex flex-col items-center gap-4">
+          <div className="relative h-12 w-12">
             <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{
-              animation: 'spin 2s cubic-bezier(0.4, 0, 0.6, 1) infinite'
-            }}></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
           </div>
+          <p className="text-sm font-semibold text-gray-700">Loading...</p>
         </div>
       </div>
     );
@@ -201,7 +200,7 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
             <div className="flex items-center gap-3 flex-shrink-0">
               <Package className="h-7 w-7 sm:h-6 sm:w-6 text-orange-500" strokeWidth={2} />
               <div>
-                <h1 className="text-lg sm:text-lg font-bold text-gray-900 tracking-tight">Netta</h1>
+                <h1 className="text-lg sm:text-lg font-bold text-gray-900 tracking-tight">Nettaa</h1>
                 {user?.tenantName && (
                   <p className="text-xs text-gray-500 font-medium hidden sm:block">{user.tenantName}</p>
                 )}

@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import { useRouter } from "next/navigation";
 import { useUser } from "../context/UserContext";
 import {
   Package,
@@ -56,6 +57,7 @@ interface KPIData {
 }
 
 export default function BranchDashboardPage() {
+  const router = useRouter();
   const { user } = useUser();
   const [dateRange, setDateRange] = useState<
     "today" | "yesterday" | "last7" | "month" | "custom" | "all"
@@ -151,7 +153,12 @@ export default function BranchDashboardPage() {
       const shipmentsRes = await fetch("/api/shipments", {
         credentials: "include",
       });
-      const manifestsRes = await fetch("/api/manifests", {
+      
+      // Fetch incoming and outgoing manifests separately using type parameter
+      const incomingRes = await fetch("/api/manifests?type=incoming&status=In Transit&limit=10", {
+        credentials: "include",
+      });
+      const outgoingRes = await fetch("/api/manifests?type=outgoing&status=In Transit&limit=10", {
         credentials: "include",
       });
 
@@ -159,26 +166,26 @@ export default function BranchDashboardPage() {
 
       const shipments: IShipment[] = await shipmentsRes.json();
       
-      // 👇 FIX: Handle both direct array and wrapped object responses from /api/manifests
-      let manifests: IManifest[] = []; // Default to empty array for safety
-      if (manifestsRes.ok) {
-        const manifestsData = await manifestsRes.json();
-        console.log('Manifests API response:', manifestsData);
-        
-        // Check if it's an array (direct response)
-        if (Array.isArray(manifestsData)) {
-          manifests = manifestsData;
+      // Handle incoming manifests response
+      let incomingManifests: IManifest[] = [];
+      if (incomingRes.ok) {
+        const incomingData = await incomingRes.json();
+        if (Array.isArray(incomingData)) {
+          incomingManifests = incomingData;
+        } else if (incomingData?.data && Array.isArray(incomingData.data)) {
+          incomingManifests = incomingData.data;
         }
-        // Check if it has a .data property (wrapped response from pagination)
-        else if (manifestsData?.data && Array.isArray(manifestsData.data)) {
-          manifests = manifestsData.data;
+      }
+      
+      // Handle outgoing manifests response
+      let outgoingManifests: IManifest[] = [];
+      if (outgoingRes.ok) {
+        const outgoingData = await outgoingRes.json();
+        if (Array.isArray(outgoingData)) {
+          outgoingManifests = outgoingData;
+        } else if (outgoingData?.data && Array.isArray(outgoingData.data)) {
+          outgoingManifests = outgoingData.data;
         }
-        // Otherwise warn and keep empty array
-        else {
-          console.warn('API /api/manifests returned unexpected format:', manifestsData);
-        }
-      } else {
-        console.error('Failed to fetch manifests, status:', manifestsRes.status);
       }
 
       setReadyForAssignment(
@@ -187,14 +194,10 @@ export default function BranchDashboardPage() {
           .slice(0, 8)
       );
       setFailedDeliveries(shipments.filter((s) => s.status === "Failed").slice(0, 8));
-      setIncomingManifests(
-        manifests.filter((m) => m.status === "In Transit").slice(0, 5)
-      );
-      setOutgoingManifests(
-        manifests.filter((m) => m.status === "In Transit").slice(0, 5)
-      );
+      setIncomingManifests(incomingManifests.slice(0, 5));
+      setOutgoingManifests(outgoingManifests.slice(0, 5));
     } catch (err) {
-      console.error(err);
+      console.error('Error fetching operational data:', err);
     } finally {
       setOperationalLoading(false);
     }
@@ -301,25 +304,25 @@ export default function BranchDashboardPage() {
   return (
     <div className="min-h-screen bg-gray-50/50">
       {/* Header Section */}
-      <div className="border-b border-gray-200/30">
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 py-2 sm:py-4">
+      <div>
+        <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-4 sm:pt-4 sm:pb-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             {/* Left: Branch Name and Welcome */}
-            <div className="flex-1 min-w-0 mb-2 sm:mb-0">
-              <h1 className="text-3xl font-bold text-gray-900 leading-tight">{user?.tenantName || 'Your Branch'}</h1>
-              <p className="text-xs sm:text-sm text-gray-600 font-medium mt-1.5 leading-tight">Welcome back, <span className="text-gray-900 font-semibold">{user?.name || 'Admin'}</span></p>
+            <div className="flex-1 min-w-0 mb-3 sm:mb-0">
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 truncate tracking-tight">{user?.tenantName || 'Your Branch'}</h1>
+              <p className="text-sm sm:text-base text-gray-500 font-medium mt-1.5">Welcome back, <span className="text-gray-900 font-bold">{user?.name || 'Admin'}</span></p>
             </div>
 
             {/* Right: Date Range Picker with Buttons */}
-            <div className="flex items-center gap-1 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
-              <div className="flex-1 sm:flex-none sm:min-w-[180px] min-w-[140px]">
+            <div className="flex items-center gap-1.5 sm:gap-2 flex-shrink-0 flex-wrap sm:flex-nowrap">
+              <div className={`flex-1 sm:flex-none transition-all duration-200 ${customStart && customEnd ? 'sm:min-w-[220px] min-w-[160px]' : 'sm:w-auto min-w-[140px]'}`}>
                 <Popover open={dropdownOpen} onOpenChange={setDropdownOpen}>
                   <PopoverTrigger asChild>
                     <Button
-                      variant="ghost"
-                      className="w-full sm:w-auto h-8 sm:h-9 justify-start text-xs sm:text-sm font-normal text-gray-600 hover:bg-gray-100/50 border border-gray-200/50 px-2 sm:px-3"
+                      variant="outline"
+                      className={`w-full sm:w-auto h-10 sm:h-11 justify-start text-sm font-medium text-gray-700 hover:bg-gray-50 border-2 border-gray-200 hover:border-gray-300 bg-white rounded-lg shadow-sm transition-all duration-200 ${customStart && customEnd ? 'sm:px-4 px-3' : 'sm:px-3 px-2'}`}
                     >
-                      <Calendar className="h-3.5 w-3.5 sm:h-4 sm:w-4 mr-1 sm:mr-2 text-gray-500 flex-shrink-0" />
+                      <Calendar className="h-4 w-4 sm:h-5 sm:w-5 mr-2 text-gray-500 flex-shrink-0" strokeWidth={2} />
                       <span className="truncate text-left hidden sm:inline">{customStart && customEnd
                         ? `${customStart.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })} - ${customEnd.toLocaleDateString('en-US', { month: 'short', day: '2-digit', year: 'numeric' })}`
                         : 'Pick a date range'}</span>
@@ -344,10 +347,10 @@ export default function BranchDashboardPage() {
                           )}
                         </div>
                       )}
-                      <CalendarComponent
-                        mode="single"
+                        <CalendarComponent
+                          mode="single"
                         selected={customStart || undefined}
-                        onSelect={(date) => {
+                          onSelect={(date) => {
                           if (!date) return;
                           
                           // First click: set start date (single date by default)
@@ -366,8 +369,8 @@ export default function BranchDashboardPage() {
                             // If clicking before start, swap
                             else if (date < customStart) {
                               setCustomEnd(customStart);
-                              setCustomStart(date);
-                              setDateRange("custom");
+                            setCustomStart(date);
+                            setDateRange("custom");
                             }
                             // If clicking after start, create range
                             else {
@@ -381,7 +384,7 @@ export default function BranchDashboardPage() {
                             setCustomEnd(date);
                             setDateRange("custom");
                           }
-                        }}
+                          }}
                         disabled={(date) => false}
                       />
                       {customStart && customEnd && (
@@ -407,7 +410,7 @@ export default function BranchDashboardPage() {
                           >
                             Apply
                           </Button>
-                        </div>
+                      </div>
                       )}
                     </div>
                   </PopoverContent>
@@ -418,7 +421,7 @@ export default function BranchDashboardPage() {
               <Button
                 onClick={handleApplyFilter}
                 disabled={!customStart || !customEnd}
-                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm bg-blue-600 hover:bg-blue-700 text-white whitespace-nowrap"
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white whitespace-nowrap rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
               >
                 <span className="hidden sm:inline">Apply Filter</span>
                 <span className="sm:hidden">Apply</span>
@@ -447,7 +450,7 @@ export default function BranchDashboardPage() {
                     })
                     .catch(err => console.error('All Time Error:', err));
                 }}
-                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm"
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold bg-gray-100 hover:bg-gray-200 text-gray-700 border-2 border-gray-200 rounded-lg shadow-sm hover:shadow transition-all duration-200"
               >
                 <span className="hidden sm:inline">All Time</span>
                 <span className="sm:hidden">All</span>
@@ -482,7 +485,7 @@ export default function BranchDashboardPage() {
                     })
                     .catch(err => console.error('Reset Error:', err));
                 }}
-                className="h-8 sm:h-9 px-1.5 sm:px-4 text-xs sm:text-sm"
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold text-gray-700 hover:text-gray-900 hover:bg-gray-50 rounded-lg transition-all duration-200"
               >
                 Reset
               </Button>
@@ -532,54 +535,78 @@ export default function BranchDashboardPage() {
 
           {/* Operational Stats - Responsive */}
           <div className="space-y-3">
-            <h3 className="text-xs sm:text-sm font-semibold text-gray-900 px-2">Operational Status</h3>
-            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2 sm:gap-3">
-              <div className="bg-white rounded-lg border border-blue-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-blue-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-blue-700 uppercase tracking-wider">Ready</p>
-                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Action Required</p>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 px-2">Operational Status</h3>
+            <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
+              {/* READY Card */}
+              <div 
+                onClick={() => router.push('/dashboard/shipments?status=At Destination Branch')}
+                className="bg-white rounded-xl border-2 border-blue-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-300"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="bg-blue-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide">Ready</p>
+                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Shipments Ready for Delivery</p>
                     </div>
                   </div>
-                  <span className="text-lg sm:text-2xl font-bold text-blue-900 flex-shrink-0">{readyForAssignment.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-700 flex-shrink-0">{readyForAssignment.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-red-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <AlertCircle className="h-4 w-4 sm:h-5 sm:w-5 text-red-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-red-700 uppercase tracking-wider">Failed</p>
-                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">Needs Attention</p>
+              {/* FAILED Card */}
+              <div 
+                onClick={() => router.push('/dashboard/shipments?status=Failed')}
+                className="bg-white rounded-xl border-2 border-red-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-red-300"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="bg-red-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-extrabold text-red-700 uppercase tracking-wide">Failed</p>
+                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Local Delivery Failed</p>
                     </div>
                   </div>
-                  <span className="text-lg sm:text-2xl font-bold text-red-900 flex-shrink-0">{failedDeliveries.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-red-700 flex-shrink-0">{failedDeliveries.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-purple-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <Package className="h-4 w-4 sm:h-5 sm:w-5 text-purple-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-purple-700 uppercase tracking-wider">Incoming</p>
-                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">In Transit</p>
+              {/* INCOMING Card */}
+              <div 
+                onClick={() => router.push('/dashboard/dispatch?tab=incoming')}
+                className="bg-white rounded-xl border-2 border-purple-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-purple-300"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="bg-purple-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-extrabold text-purple-700 uppercase tracking-wide">Incoming</p>
+                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Manifests from Other Branches</p>
                     </div>
                   </div>
-                  <span className="text-lg sm:text-2xl font-bold text-purple-900 flex-shrink-0">{incomingManifests.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-purple-700 flex-shrink-0">{incomingManifests.length}</span>
                 </div>
               </div>
-              <div className="bg-white rounded-lg border border-teal-200/60 p-2 sm:p-4 hover:shadow-md transition-shadow">
-                <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-2 sm:mb-2">
-                  <div className="flex items-center gap-1.5 sm:gap-2 min-w-0">
-                    <Send className="h-4 w-4 sm:h-5 sm:w-5 text-teal-600 flex-shrink-0" />
-                    <div className="min-w-0">
-                      <p className="text-xs font-semibold text-teal-700 uppercase tracking-wider">Outgoing</p>
-                      <p className="text-xs text-gray-500 mt-0.5 hidden sm:block">In Transit</p>
+              {/* OUTGOING Card */}
+              <div 
+                onClick={() => router.push('/dashboard/dispatch?tab=outgoing&status=In Transit')}
+                className="bg-white rounded-xl border-2 border-teal-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-teal-300"
+              >
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0 flex-1">
+                    <div className="bg-teal-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Send className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" strokeWidth={2.5} />
+                    </div>
+                    <div className="min-w-0 flex-1">
+                      <p className="text-xs sm:text-sm font-extrabold text-teal-700 uppercase tracking-wide">Outgoing</p>
+                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Manifests to Other Branches</p>
                     </div>
                   </div>
-                  <span className="text-lg sm:text-2xl font-bold text-teal-900 flex-shrink-0">{outgoingManifests.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-teal-700 flex-shrink-0">{outgoingManifests.length}</span>
                 </div>
               </div>
             </div>

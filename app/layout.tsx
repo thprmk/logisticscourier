@@ -7,7 +7,7 @@ import PWASetup from "./components/PWASetup";
 import type { Metadata } from "next";
 
 export const metadata: Metadata = {
-  title: "Netta Logistics",
+  title: "Nettaa Logistics",
   description: "Courier and logistics management application",
   manifest: "/manifest.json",
 };

@@ -1,6 +1,6 @@
 // app/dashboard/components/DashboardComponents.tsx
 
-import { Clock, Loader } from 'lucide-react';
+import { Clock, Loader, BarChart3 } from 'lucide-react';
 import { useState, useEffect } from 'react';
 import {
   AreaChart,
@@ -34,14 +34,32 @@ interface ShipmentOverviewChartProps {
 
 const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
+    const total = payload.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0);
     return (
-      <div className="bg-white p-3 rounded-lg shadow-lg border border-gray-200">
-        <p className="text-sm font-semibold text-gray-900">{label}</p>
+      <div className="bg-white p-4 rounded-xl shadow-xl border-2 border-gray-200">
+        <p className="text-sm font-bold text-gray-900 mb-3 pb-2 border-b border-gray-200">{label}</p>
+        <div className="space-y-2">
         {payload.map((entry: any, index: number) => (
-          <p key={index} className="text-sm" style={{ color: entry.color }}>
-            {entry.name}: {entry.value}
-          </p>
+            <div key={index} className="flex items-center justify-between gap-4 min-w-[140px]">
+              <div className="flex items-center gap-2">
+                <div 
+                  className="w-3 h-3 rounded-full" 
+                  style={{ backgroundColor: entry.color }}
+                />
+                <span className="text-sm font-semibold text-gray-700">{entry.name}:</span>
+              </div>
+              <span className="text-sm font-bold" style={{ color: entry.color }}>
+                {entry.value || 0}
+              </span>
+            </div>
         ))}
+          <div className="pt-2 mt-2 border-t border-gray-200">
+            <div className="flex items-center justify-between">
+              <span className="text-sm font-bold text-gray-900">Total:</span>
+              <span className="text-sm font-extrabold text-gray-900">{total}</span>
+            </div>
+          </div>
+        </div>
       </div>
     );
   }
@@ -113,7 +131,7 @@ export interface ChartDataPoint {
   delivered: number;
 }
 
-// KPI Card Component - Minimal Clean Design with Animated Numbers
+// KPI Card Component - Modern Enhanced Design with Animated Numbers
 export function KPICard({
   icon: Icon,
   label,
@@ -125,27 +143,66 @@ export function KPICard({
   value: string;
   color: 'blue' | 'green' | 'red' | 'purple' | 'orange';
 }) {
-  const numValue = parseInt(value, 10);
+  // Handle percentage values (e.g., "33%")
+  const isPercentage = value.includes('%');
+  const numValue = isPercentage ? parseInt(value.replace('%', ''), 10) : parseInt(value, 10);
+  
   const colorStyles = {
-    blue: { border: 'border-blue-200/60', text: 'text-blue-900', label: 'text-blue-700', bgIcon: 'bg-blue-500/15', icon: 'text-blue-600' },
-    green: { border: 'border-green-200/60', text: 'text-green-900', label: 'text-green-700', bgIcon: 'bg-green-500/15', icon: 'text-green-600' },
-    red: { border: 'border-red-200/60', text: 'text-red-900', label: 'text-red-700', bgIcon: 'bg-red-500/15', icon: 'text-red-600' },
-    purple: { border: 'border-purple-200/60', text: 'text-purple-900', label: 'text-purple-700', bgIcon: 'bg-purple-500/15', icon: 'text-purple-600' },
-    orange: { border: 'border-orange-200/60', text: 'text-orange-900', label: 'text-orange-700', bgIcon: 'bg-orange-500/15', icon: 'text-orange-600' },
+    blue: { 
+      text: 'text-blue-700', 
+      label: 'text-blue-600', 
+      bgIcon: 'bg-blue-100', 
+      icon: 'text-blue-600',
+      shadow: 'shadow-md'
+    },
+    green: { 
+      text: 'text-green-700', 
+      label: 'text-green-600', 
+      bgIcon: 'bg-green-100', 
+      icon: 'text-green-600',
+      shadow: 'shadow-md'
+    },
+    red: { 
+      text: 'text-red-700', 
+      label: 'text-red-600', 
+      bgIcon: 'bg-red-100', 
+      icon: 'text-red-600',
+      shadow: 'shadow-md'
+    },
+    purple: { 
+      text: 'text-purple-700', 
+      label: 'text-purple-600', 
+      bgIcon: 'bg-purple-100', 
+      icon: 'text-purple-600',
+      shadow: 'shadow-md'
+    },
+    orange: { 
+      text: 'text-orange-700', 
+      label: 'text-orange-600', 
+      bgIcon: 'bg-orange-100', 
+      icon: 'text-orange-600',
+      shadow: 'shadow-md'
+    },
   };
 
   const style = colorStyles[color];
 
   return (
-    <div className={`bg-white rounded-xl border ${style.border} p-6 flex items-center justify-between hover:shadow-md transition-shadow`}>
-      <div>
-        <p className={`text-xs font-semibold ${style.label} uppercase tracking-widest`}>{label}</p>
-        <p className={`text-4xl font-bold ${style.text} mt-3 font-mono`}>
+    <div className={`bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6 flex items-center justify-between hover:shadow-lg transition-all duration-200 ${style.shadow}`}>
+      <div className="flex-1 min-w-0">
+        <p className={`text-xs sm:text-sm font-bold ${style.label} uppercase tracking-wide mb-2 sm:mb-3`}>{label}</p>
+        <p className={`text-3xl sm:text-4xl md:text-5xl font-extrabold ${style.text} leading-tight`}>
+          {isPercentage ? (
+            <>
+              <AnimatedNumber value={numValue} duration={1200} />%
+            </>
+          ) : (
           <AnimatedNumber value={numValue} duration={1200} />
+          )}
         </p>
       </div>
-      <div className={`${style.bgIcon} rounded-2xl p-4`}>
-        <Icon className={`h-10 w-10 ${style.icon}`} strokeWidth={1.5} />
+      <div className={`${style.bgIcon} rounded-xl sm:rounded-2xl p-3 sm:p-4 flex-shrink-0 ml-3 sm:ml-4 border border-transparent`}>
+        <Icon className={`h-8 w-8 sm:h-10 sm:w-10 ${style.icon}`} strokeWidth={2.5} />
       </div>
     </div>
   );
@@ -206,7 +263,7 @@ export function ModernTable({
   );
 }
 
-// Stat Card for Grid Layout - Minimal Clean Design
+// Stat Card for Grid Layout - Modern Enhanced Design
 export function StatCard({
   label,
   value,
@@ -217,29 +274,72 @@ export function StatCard({
   label: string;
   value: string | number;
   icon: React.ElementType;
-  color: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'teal';
+  color: 'blue' | 'green' | 'red' | 'purple' | 'orange' | 'teal' | 'cyan';
   trend?: string;
 }) {
   const colorStyles = {
-    blue: { border: 'border-blue-200/60', text: 'text-blue-900', label: 'text-blue-700', bgIcon: 'bg-blue-500/15', icon: 'text-blue-600' },
-    green: { border: 'border-green-200/60', text: 'text-green-900', label: 'text-green-700', bgIcon: 'bg-green-500/15', icon: 'text-green-600' },
-    red: { border: 'border-red-200/60', text: 'text-red-900', label: 'text-red-700', bgIcon: 'bg-red-500/15', icon: 'text-red-600' },
-    purple: { border: 'border-purple-200/60', text: 'text-purple-900', label: 'text-purple-700', bgIcon: 'bg-purple-500/15', icon: 'text-purple-600' },
-    orange: { border: 'border-orange-200/60', text: 'text-orange-900', label: 'text-orange-700', bgIcon: 'bg-orange-500/15', icon: 'text-orange-600' },
-    teal: { border: 'border-teal-200/60', text: 'text-teal-900', label: 'text-teal-700', bgIcon: 'bg-teal-500/15', icon: 'text-teal-600' },
+    blue: { 
+      text: 'text-blue-700', 
+      label: 'text-blue-600', 
+      bgIcon: 'bg-blue-100', 
+      icon: 'text-blue-600',
+      shadow: 'shadow-md'
+    },
+    green: { 
+      text: 'text-green-700', 
+      label: 'text-green-600', 
+      bgIcon: 'bg-green-100', 
+      icon: 'text-green-600',
+      shadow: 'shadow-md'
+    },
+    red: { 
+      text: 'text-red-700', 
+      label: 'text-red-600', 
+      bgIcon: 'bg-red-100', 
+      icon: 'text-red-600',
+      shadow: 'shadow-md'
+    },
+    purple: { 
+      text: 'text-purple-700', 
+      label: 'text-purple-600', 
+      bgIcon: 'bg-purple-100', 
+      icon: 'text-purple-600',
+      shadow: 'shadow-md'
+    },
+    orange: { 
+      text: 'text-orange-700', 
+      label: 'text-orange-600', 
+      bgIcon: 'bg-orange-100', 
+      icon: 'text-orange-600',
+      shadow: 'shadow-md'
+    },
+    teal: { 
+      text: 'text-teal-700', 
+      label: 'text-teal-600', 
+      bgIcon: 'bg-teal-100', 
+      icon: 'text-teal-600',
+      shadow: 'shadow-md'
+    },
+    cyan: { 
+      text: 'text-cyan-700', 
+      label: 'text-cyan-600', 
+      bgIcon: 'bg-cyan-100', 
+      icon: 'text-cyan-600',
+      shadow: 'shadow-md'
+    },
   };
 
   const style = colorStyles[color];
 
   return (
-    <div className={`bg-white rounded-xl border ${style.border} p-6 flex items-center justify-between hover:shadow-md transition-shadow`}>
-      <div>
-        <p className={`text-xs font-semibold ${style.label} uppercase tracking-widest`}>{label}</p>
-        <p className={`text-4xl font-bold ${style.text} mt-3 font-mono`}>{value}</p>
-        {trend && <p className="text-sm text-gray-500 mt-2 font-medium">{trend}</p>}
+    <div className={`bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 ${style.shadow}`}>
+      <div className="flex-1 min-w-0">
+        <p className={`text-xs font-bold ${style.label} uppercase tracking-wide mb-1.5 sm:mb-2`}>{label}</p>
+        <p className={`text-2xl sm:text-3xl md:text-4xl font-extrabold ${style.text} leading-tight`}>{value}</p>
+        {trend && <p className="text-xs text-gray-600 mt-1.5 sm:mt-2 font-semibold">{trend}</p>}
       </div>
-      <div className={`${style.bgIcon} rounded-2xl p-4`}>
-        <Icon className={`h-10 w-10 ${style.icon}`} strokeWidth={1.5} />
+      <div className={`${style.bgIcon} rounded-lg sm:rounded-xl p-2.5 sm:p-3 flex-shrink-0 ml-2 sm:ml-3 border border-transparent`}>
+        <Icon className={`h-6 w-6 sm:h-7 sm:w-7 ${style.icon}`} strokeWidth={2.5} />
       </div>
     </div>
   );
@@ -350,9 +450,9 @@ export function ShipmentOverviewChart({
           
           // Format for display (e.g., "Jan 1")
           const dateDisplay = shipmentDate.toLocaleDateString('en-US', {
-            month: 'short',
-            day: 'numeric',
-          });
+          month: 'short',
+          day: 'numeric',
+        });
 
           // Initialize if doesn't exist
           if (!groupedByDate[dateKey]) {
@@ -362,17 +462,17 @@ export function ShipmentOverviewChart({
               delivered: 0, 
               failed: 0 
             };
-          }
+        }
 
           // Count created
           groupedByDate[dateKey].created++;
 
           // Count by status
-          if (shipment.status === 'Delivered') {
+        if (shipment.status === 'Delivered') {
             groupedByDate[dateKey].delivered++;
-          } else if (shipment.status === 'Failed') {
+        } else if (shipment.status === 'Failed') {
             groupedByDate[dateKey].failed++;
-          }
+        }
         } catch (error) {
           console.error('Error processing shipment:', shipment._id, error);
         }
@@ -399,14 +499,14 @@ export function ShipmentOverviewChart({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200/60 p-6">
-        <div className="flex items-center justify-center h-80">
-          <div className="flex flex-col items-center gap-3">
-            <div className="relative h-10 w-10">
+      <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6">
+        <div className="flex items-center justify-center h-80 sm:h-96">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative h-12 w-12">
               <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
               <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
             </div>
-            <p className="text-sm text-gray-600 font-medium">Loading chart data...</p>
+            <p className="text-sm font-semibold text-gray-700">Loading chart data...</p>
           </div>
         </div>
       </div>
@@ -415,11 +515,14 @@ export function ShipmentOverviewChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-xl border border-gray-200/60 p-6">
-        <div className="flex flex-col items-center justify-center h-80 gap-3">
+      <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6">
+        <div className="flex flex-col items-center justify-center h-80 sm:h-96 gap-4">
+          <div className="bg-gray-50 rounded-full p-4">
+            <BarChart3 className="h-10 w-10 text-gray-400" strokeWidth={2} />
+          </div>
           <div className="text-center">
-            <p className="text-gray-500 font-medium text-base mb-1">No shipment data available for this period</p>
-            <p className="text-gray-400 text-sm">
+            <p className="text-gray-700 font-bold text-lg mb-2">No shipment data available</p>
+            <p className="text-gray-500 text-sm font-medium">
               Try selecting a different date range or create some shipments first.
             </p>
           </div>
@@ -429,14 +532,20 @@ export function ShipmentOverviewChart({
   }
 
   return (
-    <div className="bg-white rounded-xl border border-gray-200/60 p-6 hover:shadow-md transition-shadow">
+    <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-all duration-200 shadow-sm">
+      {/* Header Section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
+        <div className="flex items-center gap-3">
+          <div className="bg-blue-50 rounded-xl p-2.5">
+            <BarChart3 className="h-6 w-6 text-blue-600" strokeWidth={2.5} />
+          </div>
         <div>
-          <h2 className="text-lg font-semibold text-gray-900">Shipment Overview</h2>
-          <p className="text-sm text-gray-600 mt-1">Track shipments created, delivered, and failed</p>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">Shipment Overview</h2>
+            <p className="text-sm text-gray-600 mt-0.5 font-medium">Track shipments created, delivered, and failed</p>
+          </div>
         </div>
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-full sm:w-48 h-10 text-sm">
+          <SelectTrigger className="w-full sm:w-48 h-11 text-sm font-semibold border-2 border-gray-200 rounded-lg">
             <SelectValue placeholder="Select date range" />
           </SelectTrigger>
           <SelectContent>
@@ -448,66 +557,74 @@ export function ShipmentOverviewChart({
         </Select>
       </div>
 
-      <div className="w-full h-72">
+      <div className="w-full h-80 sm:h-96">
         <ResponsiveContainer width="100%" height="100%">
-          <AreaChart data={chartData} margin={{ top: 10, right: 20, left: 0, bottom: 20 }}>
+          <AreaChart data={chartData} margin={{ top: 20, right: 30, left: 0, bottom: 20 }}>
             <defs>
               <linearGradient id="createdGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.3} />
+                <stop offset="5%" stopColor="#3b82f6" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="#3b82f6" stopOpacity={0.2} />
                 <stop offset="95%" stopColor="#3b82f6" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="deliveredGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.3} />
+                <stop offset="5%" stopColor="#22c55e" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="#22c55e" stopOpacity={0.2} />
                 <stop offset="95%" stopColor="#22c55e" stopOpacity={0} />
               </linearGradient>
               <linearGradient id="failedGradient" x1="0" y1="0" x2="0" y2="1">
-                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.3} />
+                <stop offset="5%" stopColor="#ef4444" stopOpacity={0.4} />
+                <stop offset="50%" stopColor="#ef4444" stopOpacity={0.2} />
                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.5} />
             <XAxis
               dataKey="date"
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              tickLine={{ stroke: '#e5e7eb' }}
-              axisLine={{ stroke: '#e5e7eb' }}
+              tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 600 }}
+              tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
+              axisLine={{ stroke: '#e5e7eb', strokeWidth: 2 }}
             />
             <YAxis
-              tick={{ fill: '#6b7280', fontSize: 12 }}
-              tickLine={{ stroke: '#e5e7eb' }}
-              axisLine={{ stroke: '#e5e7eb' }}
+              tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 600 }}
+              tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
+              axisLine={{ stroke: '#e5e7eb', strokeWidth: 2 }}
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend wrapperStyle={{ paddingTop: '20px' }} iconType="line" />
+            <Legend 
+              wrapperStyle={{ paddingTop: '24px', paddingBottom: '8px' }} 
+              iconType="circle"
+              iconSize={10}
+              formatter={(value) => <span className="text-sm font-semibold text-gray-700">{value}</span>}
+            />
             <Area
               type="monotone"
               dataKey="created"
               stroke="#3b82f6"
-              strokeWidth={2}
+              strokeWidth={3}
               fill="url(#createdGradient)"
               name="Created"
-              dot={{ fill: '#3b82f6', r: 4 }}
-              activeDot={{ r: 6, fill: '#1d4ed8' }}
+              dot={{ fill: '#3b82f6', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 8, fill: '#1d4ed8', strokeWidth: 3, stroke: '#fff' }}
             />
             <Area
               type="monotone"
               dataKey="delivered"
               stroke="#22c55e"
-              strokeWidth={2}
+              strokeWidth={3}
               fill="url(#deliveredGradient)"
               name="Delivered"
-              dot={{ fill: '#22c55e', r: 4 }}
-              activeDot={{ r: 6, fill: '#15803d' }}
+              dot={{ fill: '#22c55e', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 8, fill: '#15803d', strokeWidth: 3, stroke: '#fff' }}
             />
             <Area
               type="monotone"
               dataKey="failed"
               stroke="#ef4444"
-              strokeWidth={2}
+              strokeWidth={3}
               fill="url(#failedGradient)"
               name="Failed"
-              dot={{ fill: '#ef4444', r: 4 }}
-              activeDot={{ r: 6, fill: '#991b1b' }}
+              dot={{ fill: '#ef4444', r: 5, strokeWidth: 2, stroke: '#fff' }}
+              activeDot={{ r: 8, fill: '#991b1b', strokeWidth: 3, stroke: '#fff' }}
             />
           </AreaChart>
         </ResponsiveContainer>

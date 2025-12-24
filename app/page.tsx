@@ -37,7 +37,7 @@ export default function RootPage() {
           <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
           <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
         </div>
-        <p className="text-sm font-medium text-gray-600">Netta Logistics...</p>
+        <p className="text-sm font-medium text-gray-600">Loading...</p>
       </div>
     </div>
   );

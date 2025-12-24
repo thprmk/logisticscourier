@@ -6,18 +6,21 @@ import { useEffect, useState, useRef } from 'react';
 import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { ScrollArea } from '@/app/components/ui/scroll-area';
+import NProgress from 'nprogress';
+import 'nprogress/nprogress.css';
 import { 
   LogOut, 
   GitFork, 
   LayoutGrid, 
   Package, 
-  Users, 
+  PackageSearch, 
+  UsersRound, 
   User as UserIcon,
   Building,
   Truck,
   Bell,
   Store,
-  Boxes,
+  Rocket,
   Menu,
   X,
   ChevronDown
@@ -61,6 +64,71 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   }, [isMobileMenuOpen]);
   const [isPollingPaused, setIsPollingPaused] = useState(false);
   const fetchedRef = useRef(false);
+
+  // Configure NProgress - optimized for performance
+  useEffect(() => {
+    NProgress.configure({
+      showSpinner: false,
+      trickleSpeed: 80, // Balanced trickle speed
+      minimum: 0.08,
+      easing: 'ease',
+      speed: 350, // Smooth animation speed
+    });
+  }, []);
+
+  // Handle route changes with NProgress - optimized and reliable
+  const prevPathnameRef = useRef(pathname);
+  const timersRef = useRef<{ progress?: NodeJS.Timeout; complete?: NodeJS.Timeout; final?: NodeJS.Timeout }>({});
+  
+  useEffect(() => {
+    // Don't show progress on initial mount
+    if (!fetchedRef.current) {
+      prevPathnameRef.current = pathname;
+      return;
+    }
+
+    // Only start progress if pathname actually changed
+    if (prevPathnameRef.current !== pathname) {
+      // Clear any existing timers to prevent conflicts
+      Object.values(timersRef.current).forEach(timer => {
+        if (timer) clearTimeout(timer);
+      });
+      timersRef.current = {};
+
+      // Start progress immediately
+      NProgress.start();
+      prevPathnameRef.current = pathname;
+
+      // Progress to 85% quickly (allows NProgress trickle to work naturally)
+      timersRef.current.progress = setTimeout(() => {
+        NProgress.set(0.85);
+      }, 150);
+
+      // Progress to 95% 
+      timersRef.current.complete = setTimeout(() => {
+        NProgress.set(0.95);
+      }, 300);
+
+      // Complete to 100% and finish - ensures full completion
+      timersRef.current.final = setTimeout(() => {
+        NProgress.set(1.0);
+        // Small delay to show completion before hiding
+        setTimeout(() => {
+          NProgress.done();
+        }, 100);
+      }, 500);
+
+      return () => {
+        // Cleanup: clear all timers
+        Object.values(timersRef.current).forEach(timer => {
+          if (timer) clearTimeout(timer);
+        });
+        timersRef.current = {};
+        // Always ensure progress completes on cleanup
+        NProgress.done();
+      };
+    }
+  }, [pathname]);
 
   useEffect(() => {
     // This effect runs on the client to fetch user data if it's not already there
@@ -138,6 +206,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
             <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
             <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
           </div>
+          <p className="text-sm font-medium text-gray-600">Loading...</p>
         </div>
       </div>
     );
@@ -184,9 +253,9 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
     
     navLinks = [
         { href: '/dashboard', label: 'Dashboard', icon: LayoutGrid },
-        { href: '/dashboard/shipments', label: 'Shipments', icon: Package },
-        { href: '/dashboard/dispatch', label: 'Dispatch', icon: Boxes },
-        { href: '/dashboard/staff', label: 'Staff', icon: Users },
+        { href: '/dashboard/shipments', label: 'Shipments', icon: PackageSearch },
+        { href: '/dashboard/dispatch', label: 'Dispatch', icon: Rocket },
+        { href: '/dashboard/staff', label: 'Staff', icon: UsersRound },
     ];
   }
   
@@ -260,16 +329,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               onClick={() => setIsMobileMenuOpen(!isMobileMenuOpen)}
               className="md:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10"
             >
-              {isMobileMenuOpen ? <X className="h-6 w-6" /> : <Menu className="h-6 w-6" />}
+              {isMobileMenuOpen ? <X className="h-6 w-6" strokeWidth={2.5} /> : <Menu className="h-6 w-6" strokeWidth={2.5} />}
             </Button>
             
             {/* Logo */}
             <div className="flex items-center gap-3 sm:gap-3">
-              <Package className="h-7 w-7 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2} />
+              <Package className="h-7 w-7 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2.5} />
               <div>
-                <h1 className="text-lg sm:text-lg md:text-lg font-bold text-gray-900 tracking-tight">Netta</h1>
+                <h1 className="text-lg sm:text-lg md:text-lg font-extrabold text-gray-900 tracking-tight">Nettaa</h1>
                 {user?.tenantName && (
-                  <p className="text-xs text-gray-500 font-medium hidden sm:block">{user.tenantName}</p>
+                  <p className="text-xs text-gray-500 font-semibold hidden sm:block">{user.tenantName}</p>
                 )}
               </div>
             </div>
@@ -279,14 +348,19 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               {navLinks.map((link) => (
                 <Link 
                   key={link.href}
-                  href={link.href} 
-                  className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-medium transition-all duration-150 ${
+                  href={link.href}
+                  onClick={() => {
+                    if (pathname !== link.href) {
+                      NProgress.start();
+                    }
+                  }}
+                  className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard') 
                       ? 'bg-blue-100 text-blue-700' 
-                      : 'text-gray-600 hover:bg-gray-100 hover:text-gray-900'
+                      : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={1.5} />
+                  <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2.5} />
                   <span>{link.label}</span>
                 </Link>
               ))}
@@ -302,7 +376,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                       size="icon"
                       className="relative h-10 w-10 sm:h-9 sm:w-9 text-gray-600 hover:text-gray-900 hover:bg-gray-100"
                     >
-                      <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={1.5} />
+                      <Bell className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
                       {notifications > 0 && (
                         <span className="absolute -top-1 -right-1 h-5 w-5 sm:h-4 sm:w-4 bg-red-500 text-white text-xs font-bold rounded-full flex items-center justify-center animate-pulse">
                           {notifications}
@@ -312,7 +386,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   </DropdownMenuTrigger>
                   <DropdownMenuContent align="end" className="w-80 p-0">
                     <div className="p-3 border-b">
-                      <h3 className="font-semibold text-gray-900">Notifications</h3>
+                      <h3 className="font-bold text-gray-900">Notifications</h3>
                     </div>
                     <ScrollArea className="h-[300px]">
                       <div className="p-2 space-y-1">
@@ -348,22 +422,22 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
               <DropdownMenu>
                 <DropdownMenuTrigger asChild>
                   <Button variant="ghost" className="gap-2 hidden lg:flex h-10 px-4 sm:h-9 sm:px-3 flex-shrink-0 text-gray-700 hover:bg-gray-100 hover:text-gray-900 transition-colors data-[state=open]:bg-blue-50 data-[state=open]:text-blue-700">
-                    <UserIcon className="h-6 w-6 sm:h-6 sm:w-6 text-blue-600" strokeWidth={1.5} />
+                    <UserIcon className="h-6 w-6 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2.5} />
                     <div className="text-left min-w-max">
-                      <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
-                      <p className="text-xs text-gray-500 -mt-0.5">{userRole}</p>
+                      <p className="text-sm sm:text-xs font-bold text-gray-900">{user.name}</p>
+                      <p className="text-xs text-gray-500 font-medium -mt-0.5">{userRole}</p>
                     </div>
-                    <ChevronDown className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-400 ml-1 flex-shrink-0" />
+                    <ChevronDown className="h-4 w-4 sm:h-3.5 sm:w-3.5 text-gray-400 ml-1 flex-shrink-0" strokeWidth={2.5} />
                   </Button>
                 </DropdownMenuTrigger>
                 <DropdownMenuContent align="end" className="w-56 sm:w-52">
                   <div className="px-4 sm:px-3 py-3 sm:py-2 border-b border-gray-100">
-                    <p className="text-sm sm:text-xs font-semibold text-gray-900">{user.name}</p>
-                    <p className="text-xs text-gray-500 mt-1">{userRole}</p>
+                    <p className="text-sm sm:text-xs font-bold text-gray-900">{user.name}</p>
+                    <p className="text-xs text-gray-500 font-medium mt-1">{userRole}</p>
                   </div>
                   <DropdownMenuSeparator />
-                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer text-base sm:text-sm">
-                    <LogOut className="h-5 w-5 sm:h-4 sm:w-4 mr-2" strokeWidth={1.5} />
+                  <DropdownMenuItem onClick={handleLogout} className="text-red-600 focus:bg-red-50 focus:text-red-600 cursor-pointer text-base sm:text-sm font-semibold">
+                    <LogOut className="h-5 w-5 sm:h-4 sm:w-4 mr-2" strokeWidth={2.5} />
                     Sign Out
                   </DropdownMenuItem>
                 </DropdownMenuContent>
@@ -376,7 +450,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 size="icon"
                 className="lg:hidden text-gray-600 hover:text-gray-900 hover:bg-gray-100 h-10 w-10 sm:h-9 sm:w-9 flex-shrink-0"
               >
-                <LogOut className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={1.5} />
+                <LogOut className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
               </Button>
             </div>
           </div>
@@ -397,24 +471,29 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 <Link 
                   key={link.href}
                   href={link.href}
-                  onClick={() => setIsMobileMenuOpen(false)}
-                  className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-medium transition-all duration-150 ${
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (pathname !== link.href) {
+                      NProgress.start();
+                    }
+                  }}
+                  className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 ${
                     pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
                       ? 'bg-blue-600 text-white shadow-md' 
                       : 'text-gray-700 hover:bg-gray-100 hover:text-gray-900'
                   }`}
                 >
-                  <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2} />
+                  <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
                   <span>{link.label}</span>
                 </Link>
               ))}
               
               {/* Mobile User Info */}
               <div className="flex items-center gap-3 px-4 py-4 sm:py-3 mt-2 border-t border-gray-200 pt-4 sm:pt-3">
-                <UserIcon className="h-8 w-8 text-blue-600 flex-shrink-0" strokeWidth={1.5} />
+                <UserIcon className="h-8 w-8 text-blue-600 flex-shrink-0" strokeWidth={2.5} />
                 <div>
-                  <p className="text-base sm:text-sm font-semibold text-gray-900">{user.name}</p>
-                  <p className="text-xs text-gray-500">{userRole}</p>
+                  <p className="text-base sm:text-sm font-bold text-gray-900">{user.name}</p>
+                  <p className="text-xs text-gray-500 font-medium">{userRole}</p>
                 </div>
               </div>
             </nav>

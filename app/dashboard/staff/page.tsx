@@ -304,7 +304,7 @@ export default function StaffManagementPage() {
   return (
     <div className="space-y-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">User & Role Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User & Role Management</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage staff members and their roles within your branch.</p>
       </div>
 
@@ -413,8 +413,11 @@ export default function StaffManagementPage() {
         {isLoading ? (
           <div className="py-12 flex justify-center">
             <div className="text-center">
-              <Loader className="mx-auto h-8 w-8 animate-spin text-blue-500 mb-2" />
-              <p className="text-sm text-gray-600">Loading staff members...</p>
+              <div className="relative w-8 h-8 mx-auto mb-3">
+                <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+              </div>
+              <p className="text-sm text-gray-600">Loading...</p>
             </div>
           </div>
         ) : filteredStaff.length > 0 ? (

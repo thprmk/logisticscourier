@@ -378,7 +378,7 @@ async function handleOutForDelivery(context: NotificationContext) {
     console.log(`Out for delivery notifications created for ${notificationRecords.length} users`);
   }
 
-  // Send push notification to staff
+    // Send push notification to staff
   if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),
@@ -448,7 +448,7 @@ async function handleDelivered(context: NotificationContext) {
     console.log(`Delivery completed notifications created for ${notificationRecords.length} users`);
   }
 
-  // Send push notification to staff
+    // Send push notification to staff
   if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),
@@ -518,7 +518,7 @@ async function handleDeliveryFailed(context: NotificationContext) {
     console.log(`Delivery failed notifications created for ${notificationRecords.length} users`);
   }
 
-  // Send push notification to staff
+    // Send push notification to staff
   if (assignedStaffId) {
     await sendShipmentNotification(
       assignedStaffId.toString(),

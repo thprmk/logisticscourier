@@ -1,6 +1,7 @@
 // app/dashboard/shipments/page.tsx
 "use client";
 import { useState, useEffect, FormEvent, useMemo } from 'react';
+import { useSearchParams } from 'next/navigation';
 import { useUser } from '../../context/UserContext';
 import toast from 'react-hot-toast';
 import { Plus, Edit, Trash2, Eye, Search, Building, Package as PackageIcon, Loader, Users, X } from 'lucide-react';
@@ -101,6 +102,7 @@ interface IUser {
 type ModalType = 'create' | 'update' | 'delete' | 'view' | null;
 
 export default function ShipmentsPage() {
+  const searchParams = useSearchParams();
   const { user } = useUser();
   const [shipments, setShipments] = useState<IShipment[]>([]);
   const [drivers, setDrivers] = useState<IUser[]>([]);
@@ -133,11 +135,19 @@ export default function ShipmentsPage() {
   const [updateNotes, setUpdateNotes] = useState('');
 
   const [searchQuery, setSearchQuery] = useState('');
-  const [statusFilter, setStatusFilter] = useState('');
+  const [statusFilter, setStatusFilter] = useState(searchParams.get('status') || '');
   const [assignedToFilter, setAssignedToFilter] = useState('');
   const [createdByFilter, setCreatedByFilter] = useState('');
   const [dateRangeStart, setDateRangeStart] = useState<Date | undefined>(undefined);
   const [dateRangeEnd, setDateRangeEnd] = useState<Date | undefined>(undefined);
+
+  // Update status filter when URL parameter changes
+  useEffect(() => {
+    const statusParam = searchParams.get('status');
+    if (statusParam) {
+      setStatusFilter(statusParam);
+    }
+  }, [searchParams]);
 
   // Bulk actions state
   const [selectedShipmentIds, setSelectedShipmentIds] = useState<Set<string>>(new Set());
@@ -586,7 +596,7 @@ export default function ShipmentsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-3xl font-bold text-gray-900">Shipment Management</h1>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shipment Management</h1>
         <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Create, track, and manage all shipments for your branch.</p>
       </div>
 
@@ -697,16 +707,16 @@ export default function ShipmentsPage() {
                         )}
                       </div>
                     )}
-                    <Calendar
-                      mode="single"
+                      <Calendar
+                        mode="single"
                       selected={dateRangeStart || undefined}
-                      onSelect={(date) => {
+                        onSelect={(date) => {
                         if (!date) return;
                         
                         // First click: set start date (single date by default)
                         if (!dateRangeStart) {
                           setDateRangeStart(date);
-                          setDateRangeEnd(date);
+                            setDateRangeEnd(date);
                         }
                         // Second click: determine if range or single date
                         else if (!dateRangeEnd || dateRangeStart.toDateString() === dateRangeEnd.toDateString()) {
@@ -721,7 +731,7 @@ export default function ShipmentsPage() {
                           }
                           // If clicking after start, create range
                           else {
-                            setDateRangeEnd(date);
+                          setDateRangeEnd(date);
                           }
                         }
                         // Both dates exist: reset and start fresh
@@ -746,7 +756,7 @@ export default function ShipmentsPage() {
                         >
                           Clear
                         </Button>
-                      </div>
+                    </div>
                     )}
                   </div>
                 </PopoverContent>
@@ -900,51 +910,51 @@ export default function ShipmentsPage() {
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <span className="text-gray-700 text-sm">
-                      {shipment.assignedTo?.name || (
-                        <span className="text-gray-400 italic">Unassigned</span>
-                      )}
+                    {shipment.assignedTo?.name || (
+                      <span className="text-gray-400 italic">Unassigned</span>
+                    )}
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <span className="text-gray-600 text-sm whitespace-nowrap">
-                      {new Date(shipment.createdAt).toLocaleDateString('en-US', {
-                        month: 'short',
-                        day: 'numeric',
-                        year: 'numeric'
-                      })}
+                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <div className="flex items-center justify-end gap-0.5">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openModal('view', shipment)}
-                        title="View Details"
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openModal('view', shipment)}
+                      title="View Details"
                         className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600"
-                      >
+                    >
                         <Eye size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openModal('update', shipment)}
-                        disabled={!canEditShipment(shipment)}
-                        title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openModal('update', shipment)}
+                      disabled={!canEditShipment(shipment)}
+                      title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
                         className="h-7 w-7 p-0 hover:bg-green-50 hover:text-green-600 disabled:opacity-50"
-                      >
+                    >
                         <Edit size={14} />
-                      </Button>
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => openModal('delete', shipment)}
-                        disabled={!canEditShipment(shipment)}
-                        title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
+                    </Button>
+                    <Button
+                      variant="ghost"
+                      size="sm"
+                      onClick={() => openModal('delete', shipment)}
+                      disabled={!canEditShipment(shipment)}
+                      title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
                         className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
-                      >
+                    >
                         <Trash2 size={14} />
-                      </Button>
+                    </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -1328,77 +1338,71 @@ export default function ShipmentsPage() {
 
       {/* UPDATE MODAL */}
       {modalType === 'update' && selectedShipment && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <form onSubmit={handleUpdateShipment} autoComplete="off">
-              <div className="p-4 sm:p-6 border-b border-gray-200">
-                <h2 className="text-lg sm:text-xl font-bold text-gray-900">Update Shipment</h2>
-                <p className="text-xs sm:text-sm text-gray-600 mt-1">
-                  Update status or assign a driver for <span className="font-semibold">{selectedShipment.trackingId}</span>.
-                </p>
+        <Dialog open={true} onOpenChange={(open) => !open && closeModal()}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
+              <DialogTitle>Update Shipment</DialogTitle>
+              <DialogDescription>
+                Update status or assign a driver for <span className="font-semibold">{selectedShipment.trackingId}</span>.
+              </DialogDescription>
+            </DialogHeader>
+            <form onSubmit={handleUpdateShipment} autoComplete="off" className="space-y-5">
+              <div>
+                <Label htmlFor="update-status" className="text-sm">Status</Label>
+                <Select value={updateStatus || ''} onValueChange={(val) => setUpdateStatus(val as IShipment['status'])}>
+                  <SelectTrigger id="update-status" className="mt-2">
+                    <SelectValue placeholder="Select status" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="At Origin Branch">At Origin Branch</SelectItem>
+                    <SelectItem value="In Transit to Destination">In Transit to Destination</SelectItem>
+                    <SelectItem value="At Destination Branch">At Destination Branch</SelectItem>
+                    <SelectItem value="Assigned">Assigned</SelectItem>
+                    <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
+                    <SelectItem value="Delivered">Delivered</SelectItem>
+                    <SelectItem value="Failed">Failed</SelectItem>
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="px-4 sm:px-6 py-4 sm:py-5 space-y-5">
-                <div>
-                  <Label htmlFor="update-status" className="text-sm">Status</Label>
-                  <Select value={updateStatus || ''} onValueChange={(val) => setUpdateStatus(val as IShipment['status'])}>
-                    <SelectTrigger id="update-status" className="mt-2">
-                      <SelectValue placeholder="Select status" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="At Origin Branch">At Origin Branch</SelectItem>
-                      <SelectItem value="In Transit to Destination">In Transit to Destination</SelectItem>
-                      <SelectItem value="At Destination Branch">At Destination Branch</SelectItem>
-                      <SelectItem value="Assigned">Assigned</SelectItem>
-                      <SelectItem value="Out for Delivery">Out for Delivery</SelectItem>
-                      <SelectItem value="Delivered">Delivered</SelectItem>
-                      <SelectItem value="Failed">Failed</SelectItem>
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="assign-driver" className="text-sm">Assign to Driver</Label>
-                  <Select value={updateAssignedTo || 'unassigned'} onValueChange={(val) => setUpdateAssignedTo(val === 'unassigned' ? '' : val)}>
-                    <SelectTrigger id="assign-driver" className="mt-2">
-                      <SelectValue placeholder="Select driver" />
-                    </SelectTrigger>
-                    <SelectContent>
-                      <SelectItem value="unassigned">-- Unassigned --</SelectItem>
-                      {drivers.map(driver => (
-                        <SelectItem key={driver._id} value={driver._id}>
-                          {driver.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                </div>
-                <div>
-                  <Label htmlFor="update-notes" className="text-sm">Notes (Optional)</Label>
-                  <Textarea
-                    id="update-notes"
-                    value={updateNotes}
-                    onChange={(e) => setUpdateNotes(e.target.value)}
-                    autoComplete="off"
-                    placeholder="e.g., Reason for delivery failure"
-                    className="mt-2"
-                  />
-                </div>
+              <div>
+                <Label htmlFor="assign-driver" className="text-sm">Assign to Driver</Label>
+                <Select value={updateAssignedTo || 'unassigned'} onValueChange={(val) => setUpdateAssignedTo(val === 'unassigned' ? '' : val)}>
+                  <SelectTrigger id="assign-driver" className="mt-2">
+                    <SelectValue placeholder="Select driver" />
+                  </SelectTrigger>
+                  <SelectContent>
+                    <SelectItem value="unassigned">-- Unassigned --</SelectItem>
+                    {drivers.map(driver => (
+                      <SelectItem key={driver._id} value={driver._id}>
+                        {driver.name}
+                      </SelectItem>
+                    ))}
+                  </SelectContent>
+                </Select>
               </div>
-              
-              <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-200">
+              <div>
+                <Label htmlFor="update-notes" className="text-sm">Notes (Optional)</Label>
+                <Textarea
+                  id="update-notes"
+                  value={updateNotes}
+                  onChange={(e) => setUpdateNotes(e.target.value)}
+                  autoComplete="off"
+                  placeholder="e.g., Reason for delivery failure"
+                  className="mt-2"
+                />
+              </div>
+              <DialogFooter>
                 <Button
                   type="button"
                   variant="outline"
                   onClick={closeModal}
                   disabled={isSubmitting}
-                  className="text-sm"
                 >
                   Cancel
                 </Button>
                 <Button
                   type="submit"
                   disabled={isSubmitting}
-                  className="text-sm"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
@@ -1407,36 +1411,35 @@ export default function ShipmentsPage() {
                     </span>
                   ) : 'Save Changes'}
                 </Button>
-              </div>
+              </DialogFooter>
             </form>
-          </div>
-        </div>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* DELETE MODAL */}
       {modalType === 'delete' && selectedShipment && (
-        <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-4 sm:p-6">
+        <Dialog open={true} onOpenChange={(open) => !open && closeModal()}>
+          <DialogContent className="max-w-md">
+            <DialogHeader>
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-10 w-10 rounded-full bg-red-100">
-                  <Trash2 className="h-5 w-5 text-red-600" aria-hidden="true" />
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
+                  <Trash2 className="h-6 w-6 text-red-600" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <h2 className="text-lg sm:text-xl font-bold text-gray-900">Cancel Shipment</h2>
-                  <p className="text-sm text-gray-600 mt-1">
-                    Are you sure you want to cancel shipment <span className="font-semibold">{selectedShipment.trackingId}</span>? 
+                  <DialogTitle>Cancel Shipment</DialogTitle>
+                  <DialogDescription className="mt-1">
+                    Are you sure you want to cancel shipment <span className="font-semibold text-gray-900">{selectedShipment.trackingId}</span>? 
                     This action cannot be undone.
-                  </p>
+                  </DialogDescription>
                 </div>
               </div>
-            </div>
-            <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-200">
+            </DialogHeader>
+            <DialogFooter className="flex gap-3">
               <Button
                 variant="outline"
                 onClick={closeModal}
                 disabled={isSubmitting}
-                className="text-sm"
               >
                 No, Keep It
               </Button>
@@ -1444,7 +1447,6 @@ export default function ShipmentsPage() {
                 variant="destructive"
                 onClick={handleDeleteShipment}
                 disabled={isSubmitting}
-                className="text-sm"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
@@ -1453,9 +1455,9 @@ export default function ShipmentsPage() {
                   </span>
                 ) : 'Yes, Cancel'}
               </Button>
-            </div>
-          </div>
-        </div>
+            </DialogFooter>
+          </DialogContent>
+        </Dialog>
       )}
 
       {/* VIEW MODAL - SHEET */}
@@ -1463,11 +1465,11 @@ export default function ShipmentsPage() {
         <SheetContent style={{ width: '90vw', maxWidth: '600px' }} className="overflow-y-auto p-0">
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-gray-200 sticky top-0 bg-white z-10">
             <div className="flex items-start justify-between">
-              <div>
-                <SheetTitle className="text-2xl font-bold">Shipment Details</SheetTitle>
-                <SheetDescription className="text-sm text-gray-600 mt-1">
-                  Tracking ID: <span className="font-mono font-semibold text-gray-900">{selectedShipment?.trackingId}</span>
-                </SheetDescription>
+            <div>
+              <SheetTitle className="text-2xl font-bold">Shipment Details</SheetTitle>
+              <SheetDescription className="text-sm text-gray-600 mt-1">
+                Tracking ID: <span className="font-mono font-semibold text-gray-900">{selectedShipment?.trackingId}</span>
+              </SheetDescription>
               </div>
               <Button
                 variant="ghost"

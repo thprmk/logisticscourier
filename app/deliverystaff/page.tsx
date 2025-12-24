@@ -7,6 +7,7 @@ import { useRouter } from 'next/navigation';
 import { useDebouncedSearch } from '@/hooks/useDebouncedSearch';
 import { invalidateCache } from '@/lib/requestCache';
 import { MapPin, Phone, Truck, CheckCircle, XCircle, Package, Building, Eye, Loader, Search, Plus, ChevronLeft, ChevronRight, Calendar as CalendarIcon } from 'lucide-react';
+import { StatCard } from '@/app/dashboard/DashboardComponents';
 import { format } from 'date-fns';
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
@@ -330,50 +331,30 @@ export default function DeliveryStaffPage() {
 
       {/* Stats Cards */}
       <div className="grid grid-cols-2 sm:grid-cols-2 md:grid-cols-4 gap-2 sm:gap-4">
-        <div className="bg-white rounded-lg sm:rounded-xl border border-green-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-widest">Delivered</p>
-              <p className="text-2xl sm:text-4xl font-bold text-green-900 mt-1 sm:mt-3 font-mono">{ deliveredCount}</p>
-            </div>
-            <div className="bg-green-500/15 rounded-2xl p-4">
-              <CheckCircle className="h-10 w-10 text-green-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl border border-cyan-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-cyan-700 uppercase tracking-widest">Assigned</p>
-              <p className="text-2xl sm:text-4xl font-bold text-cyan-900 mt-1 sm:mt-3 font-mono">{assignedCount}</p>
-            </div>
-            <div className="bg-cyan-500/15 rounded-2xl p-4">
-              <Truck className="h-10 w-10 text-cyan-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl border border-purple-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-purple-700 uppercase tracking-widest">At Origin</p>
-              <p className="text-2xl sm:text-4xl font-bold text-purple-900 mt-1 sm:mt-3 font-mono">{atOriginCount}</p>
-            </div>
-            <div className="bg-purple-500/15 rounded-2xl p-4">
-              <Building className="h-10 w-10 text-purple-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg sm:rounded-xl border border-red-200/60 p-3 sm:p-6 hover:shadow-md transition-shadow">
-          <div className="flex items-center justify-between gap-2 sm:gap-4">
-            <div className="min-w-0">
-              <p className="text-xs font-semibold text-red-700 uppercase tracking-widest">Failed</p>
-              <p className="text-2xl sm:text-4xl font-bold text-red-900 mt-1 sm:mt-3 font-mono">{failedCount}</p>
-            </div>
-            <div className="bg-red-500/15 rounded-2xl p-4">
-              <XCircle className="h-10 w-10 text-red-600" strokeWidth={1.5} />
-            </div>
-          </div>
-        </div>
+        <StatCard
+          label="Delivered"
+          value={deliveredCount}
+          icon={CheckCircle}
+          color="green"
+        />
+        <StatCard
+          label="Assigned"
+          value={assignedCount}
+          icon={Truck}
+          color="cyan"
+        />
+        <StatCard
+          label="At Origin"
+          value={atOriginCount}
+          icon={Building}
+          color="purple"
+        />
+        <StatCard
+          label="Failed"
+          value={failedCount}
+          icon={XCircle}
+          color="red"
+        />
       </div>
 
       {/* Search and Filters */}
@@ -524,12 +505,12 @@ export default function DeliveryStaffPage() {
       {/* Loading State */}
       {isLoading ? (
         <div className="flex justify-center items-center h-48 bg-white rounded-lg border border-gray-200 shadow-sm">
-          <div className="text-center">
-            <div className="relative h-10 w-10 mx-auto mb-3">
+          <div className="flex flex-col items-center gap-4">
+            <div className="relative h-12 w-12">
               <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
             </div>
-            <p className="text-sm text-gray-600 font-medium">Loading your deliveries...</p>
+            <p className="text-sm font-semibold text-gray-700">Loading...</p>
           </div>
         </div>
       ) : shipments.length === 0 ? (

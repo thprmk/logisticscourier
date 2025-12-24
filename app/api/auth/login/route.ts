@@ -34,7 +34,21 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await dbConnect();
+  // Connect to database (with timeout)
+  const dbConnectPromise = dbConnect();
+  const timeoutPromise = new Promise((_, reject) => 
+    setTimeout(() => reject(new Error('Database connection timeout')), 3000)
+  );
+  
+  try {
+    await Promise.race([dbConnectPromise, timeoutPromise]);
+  } catch (error) {
+    console.error('Database connection failed:', error);
+    return NextResponse.json(
+      { message: 'Database connection failed. Please try again.' },
+      { status: 503 }
+    );
+  }
 
   try {
     let body;
@@ -58,14 +72,24 @@ export async function POST(request: NextRequest) {
       return NextResponse.json({ message: 'Email and password are required.' }, { status: 400 });
     }
 
-    // Find the user by email
-    const user = await User.findOne({ email: sanitizedEmail }).select('+password');
+    // Find the user by email - optimized query with only needed fields
+    // Using select('+password') to explicitly include password field (normally hidden)
+    // Not using .lean() here to ensure password field is properly included
+    const user = await User.findOne({ email: sanitizedEmail })
+      .select('_id role tenantId isManager +password')
+      .exec();
 
-    if (!user) {
+    if (!user || !user.password) {
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
     }
 
-    const isPasswordMatch = await bcrypt.compare(password, user.password);
+    // Compare password with timeout protection
+    const passwordComparePromise = bcrypt.compare(sanitizedPassword, user.password);
+    const passwordTimeoutPromise = new Promise((_, reject) => 
+      setTimeout(() => reject(new Error('Password verification timeout')), 2000)
+    );
+    
+    const isPasswordMatch = await Promise.race([passwordComparePromise, passwordTimeoutPromise]) as boolean;
 
     if (!isPasswordMatch) {
       return NextResponse.json({ message: 'Invalid credentials.' }, { status: 401 });
@@ -75,26 +99,30 @@ export async function POST(request: NextRequest) {
     let tokenPayload = {};
     let redirectTo = '';
 
+    // Convert ObjectId to string for token payload
+    const userId = user._id.toString();
+    const tenantId = user.tenantId ? user.tenantId.toString() : undefined;
+
     if (user.role === 'superAdmin') {
       // If the user is a Super Admin
       tokenPayload = {
-        id: user._id,
-        sub: user._id,
+        id: userId,
+        sub: userId,
         role: user.role,
-        tenantId: user.tenantId,
+        tenantId: tenantId,
       };
       redirectTo = '/superadmin/dashboard';
     } else {
-      // If the user is any other role (e.g., 'admin', 'staff', 'delivery_staff')
+      // If the user is any other role (e.g., 'admin', 'staff', 'dispatcher')
       tokenPayload = {
-        userId: user._id,
+        userId: userId,
         role: user.role,
-        tenantId: user.tenantId, 
-        isManager: user.isManager, 
+        tenantId: tenantId, 
+        isManager: user.isManager || false, 
       };
 
-      // 👇 FIX: Explicitly send delivery staff to their mobile view
-      if (user.role === 'delivery_staff') {
+      // Route based on role
+      if (user.role === 'staff') {
         redirectTo = '/deliverystaff';
       } else {
         redirectTo = '/dashboard';
@@ -104,8 +132,6 @@ export async function POST(request: NextRequest) {
 
     // Generate Token (30 Days)
     const token = jwt.sign(tokenPayload, process.env.JWT_SECRET!, { expiresIn: '30d' });
-    
-    console.log('Login successful for:', email, 'Role:', user.role);
     
     const response = NextResponse.json({
       message: 'Login successful.',

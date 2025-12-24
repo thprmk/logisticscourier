@@ -3,7 +3,8 @@
 
 import { useState, useEffect, FormEvent } from 'react';
 import toast from 'react-hot-toast';
-import { Plus, Building, Edit, Trash2, Eye, EyeOff, Users, TrendingUp, ChevronLeft, ChevronRight, Search } from 'lucide-react';
+import { Plus, Building, Edit, Trash2, Eye, EyeOff, Users, CheckCircle, AlertCircle, Search, Filter, X } from 'lucide-react';
+import { StatCard } from '@/app/dashboard/DashboardComponents';
 import { Button } from '@/app/components/ui/button';
 import { Input } from '@/app/components/ui/input';
 import { Label } from '@/app/components/ui/label';
@@ -15,6 +16,13 @@ import {
   DialogHeader,
   DialogTitle,
 } from '@/app/components/ui/dialog';
+import {
+  Select,
+  SelectContent,
+  SelectItem,
+  SelectTrigger,
+  SelectValue,
+} from '@/app/components/ui/select';
 import {
   Table,
   TableBody,
@@ -38,6 +46,7 @@ export default function SuperAdminDashboardPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [currentPage, setCurrentPage] = useState(1);
   const itemsPerPage = 10;
+  const [statsLoading, setStatsLoading] = useState(false);
   
   // Simplified Modal State: 'view' is removed
   const [modalType, setModalType] = useState<'create' | 'edit' | 'delete' | null>(null);
@@ -51,6 +60,13 @@ export default function SuperAdminDashboardPage() {
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [searchQuery, setSearchQuery] = useState('');
+  const [dateRangeFilter, setDateRangeFilter] = useState<'today' | 'last7' | 'last30' | 'last3months' | 'lastyear' | 'all'>('all');
+  const [branchFilter, setBranchFilter] = useState<string>('all');
+  
+  // Stats state
+  const [totalStaff, setTotalStaff] = useState(0);
+  const [deliveredCount, setDeliveredCount] = useState(0);
+  const [failedCount, setFailedCount] = useState(0);
 
   const fetchTenants = async () => {
     setIsLoading(true);
@@ -68,14 +84,103 @@ export default function SuperAdminDashboardPage() {
 
   // Calculate statistics
   const totalTenants = tenants.length;
-  const tenantsThisMonth = tenants.filter(t => {
-    const created = new Date(t.createdAt);
-    const now = new Date();
-    return created.getMonth() === now.getMonth() && created.getFullYear() === now.getFullYear();
-  }).length;
-  const activeTenants = tenants.length; // All tenants are considered active
   
-  useEffect(() => { fetchTenants(); }, []);
+  // Get date range based on filter
+  const getDateRange = () => {
+    const today = new Date();
+    today.setHours(0, 0, 0, 0);
+    const tomorrow = new Date(today);
+    tomorrow.setDate(tomorrow.getDate() + 1);
+
+    let start: Date | null = null;
+    let end: Date | null = null;
+
+    switch (dateRangeFilter) {
+      case 'today':
+        start = new Date(today);
+        end = tomorrow;
+        break;
+      case 'last7':
+        start = new Date(today);
+        start.setDate(start.getDate() - 6); // 7 days total (today + 6 days back)
+        end = tomorrow;
+        break;
+      case 'last30':
+        start = new Date(today);
+        start.setDate(start.getDate() - 29); // 30 days total
+        end = tomorrow;
+        break;
+      case 'last3months':
+        start = new Date(today);
+        start.setMonth(today.getMonth() - 3);
+        start.setDate(1); // Start from first day of that month
+        end = tomorrow;
+        break;
+      case 'lastyear':
+        start = new Date(today);
+        start.setFullYear(today.getFullYear() - 1);
+        start.setMonth(0, 1); // January 1st of last year
+        end = tomorrow;
+        break;
+      case 'all':
+        // No date filtering
+        break;
+    }
+
+    return { start, end };
+  };
+  
+  // Fetch stats (total staff, delivered, failed) with filters
+  const fetchStats = async () => {
+    try {
+      setStatsLoading(true);
+      // Build query parameters based on current filters
+      const params = new URLSearchParams();
+      
+      if (branchFilter && branchFilter !== 'all') {
+        params.append('branchId', branchFilter);
+      }
+      
+      // Get date range from filter (only send if date range is not 'all')
+      const { start, end } = getDateRange();
+      if (dateRangeFilter !== 'all' && start && end) {
+        params.append('dateFrom', start.toISOString());
+        params.append('dateTo', end.toISOString());
+      }
+      
+      const queryString = params.toString();
+      const url = `/api/superadmin/stats${queryString ? `?${queryString}` : ''}`;
+      
+      const response = await fetch(url);
+      if (!response.ok) throw new Error('Failed to fetch stats');
+      const data = await response.json();
+      setTotalStaff(data.totalStaff || 0);
+      setDeliveredCount(data.deliveredCount || 0);
+      setFailedCount(data.failedCount || 0);
+    } catch (err: any) {
+      console.error('Error fetching stats:', err);
+      toast.error('Failed to load statistics');
+    } finally {
+      setStatsLoading(false);
+    }
+  };
+  
+  useEffect(() => { 
+    fetchTenants();
+    fetchStats(); // Initial fetch
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, []);
+
+  // Fetch stats when filters change (but not when searchQuery changes)
+  useEffect(() => {
+    fetchStats();
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [branchFilter, dateRangeFilter]);
+
+  // Reset to page 1 when filters change
+  useEffect(() => {
+    setCurrentPage(1);
+  }, [searchQuery, dateRangeFilter, branchFilter]);
 
   // ... existing code ...
 
@@ -85,12 +190,28 @@ export default function SuperAdminDashboardPage() {
   const endIndex = startIndex + itemsPerPage;
   const paginatedTenants = tenants.slice(startIndex, endIndex);
 
-  // Filter tenants based on search query
-  const filteredTenants = tenants.filter(tenant =>
-    tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tenant.admin?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-    tenant.admin?.email?.toLowerCase().includes(searchQuery.toLowerCase())
-  );
+  // Filter tenants based on search query, branch filter, and date range
+  const filteredTenants = tenants.filter(tenant => {
+    // Search filter
+    const matchesSearch = 
+      tenant.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.admin?.name?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      tenant.admin?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+
+    // Branch filter
+    const matchesBranch = branchFilter === 'all' || tenant._id === branchFilter;
+
+    // Date range filter
+    const { start, end } = getDateRange();
+    let matchesDate = true;
+    if (start && end) {
+      const tenantDate = new Date(tenant.createdAt);
+      tenantDate.setHours(0, 0, 0, 0);
+      matchesDate = tenantDate >= start && tenantDate < end;
+    }
+
+    return matchesSearch && matchesBranch && matchesDate;
+  });
 
   // Recalculate pagination with filtered data
   const filteredTotalPages = Math.ceil(filteredTenants.length / itemsPerPage);
@@ -204,53 +325,20 @@ export default function SuperAdminDashboardPage() {
   };
   
   return (
-    <div>
-      {/* Stats Cards */}
-      <div className="grid grid-cols-1 md:grid-cols-3 gap-4 mb-8">
-        <div className="bg-white rounded-lg border border-blue-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-blue-700 uppercase tracking-wide">Total Branches</p>
-              <p className="text-3xl font-bold text-blue-900 mt-2">{totalTenants}</p>
-            </div>
-            <div className="bg-blue-100 rounded-full p-3">
-              <Building className="h-8 w-8 text-blue-600" />
-            </div>
-          </div>
+    <div className="space-y-4 sm:space-y-6">
+      {/* Header with Add New Branch Button */}
+      <div className="flex flex-col sm:flex-row sm:items-start sm:justify-between gap-4 sm:gap-6 mb-4 sm:mb-6">
+        <div>
+          <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Branches Dashboard</h1>
+          <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Create, edit, and manage all branches on the platform.</p>
         </div>
-        <div className="bg-white rounded-lg border border-green-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-green-700 uppercase tracking-wide">This Month</p>
-              <p className="text-3xl font-bold text-green-900 mt-2">{tenantsThisMonth}</p>
-            </div>
-            <div className="bg-green-100 rounded-full p-3">
-              <TrendingUp className="h-8 w-8 text-green-600" />
-            </div>
-          </div>
-        </div>
-        <div className="bg-white rounded-lg border border-purple-200 p-6 hover:shadow-lg transition-shadow">
-          <div className="flex items-center justify-between">
-            <div>
-              <p className="text-xs font-semibold text-purple-700 uppercase tracking-wide">Admins</p>
-              <p className="text-3xl font-bold text-purple-900 mt-2">{tenants.filter(t => t.admin).length}</p>
-            </div>
-            <div className="bg-purple-100 rounded-full p-3">
-              <Users className="h-8 w-8 text-purple-600" />
-            </div>
-          </div>
-        </div>
+        <Button onClick={() => openModal('create')} className="gap-2 whitespace-nowrap h-10 sm:h-11 bg-blue-600 hover:bg-blue-700">
+          <Plus size={18} /> Add New Branch
+        </Button>
       </div>
 
-      <div className="flex justify-between items-center mb-6">
-        <div className="mb-6">
-          <h1 className="text-2xl font-semibold text-gray-900">Branches Dashboard</h1>
-          <p className="text-gray-500 mt-1">Create, edit, and manage all branches on the platform.</p>
-        </div>
-      </div>
-
-      {/* Search Bar and Action Bar */}
-      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-3 sm:gap-4 mb-6">
+      {/* Filter Panel - Search, Filter by Branch, Date Range */}
+      <div className="flex flex-col sm:flex-row sm:items-end gap-3 sm:gap-4">
         {/* Search Bar */}
         <div className="relative w-full sm:w-80">
           <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
@@ -264,105 +352,319 @@ export default function SuperAdminDashboardPage() {
               setSearchQuery(e.target.value);
               setCurrentPage(1);
             }}
-            className="pl-10"
+            className="pl-10 h-10 sm:h-9 text-sm touch-manipulation"
           />
         </div>
 
-        <Button onClick={() => openModal('create')} className="gap-2 whitespace-nowrap">
-          <Plus size={18} /> Add New Branch
-        </Button>
+        {/* Filter by Branch */}
+        <div className="w-full sm:w-40">
+          <Label htmlFor="filter-branch" className="text-xs font-medium text-gray-700 block mb-1">Filter by Branch</Label>
+          <Select value={branchFilter} onValueChange={(value) => {
+            setBranchFilter(value);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger id="filter-branch" className="h-8 text-xs w-full touch-manipulation">
+              <SelectValue placeholder="All Branches" />
+            </SelectTrigger>
+            <SelectContent className="max-h-[300px]">
+              <SelectItem value="all">All Branches</SelectItem>
+              {tenants.map((tenant) => (
+                <SelectItem key={tenant._id} value={tenant._id}>
+                  {tenant.name}
+                </SelectItem>
+              ))}
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Date Range Filter */}
+        <div className="w-full sm:w-40">
+          <Label htmlFor="filter-date" className="text-xs font-medium text-gray-700 block mb-1">Date Range</Label>
+          <Select value={dateRangeFilter} onValueChange={(value: any) => {
+            setDateRangeFilter(value);
+            setCurrentPage(1);
+          }}>
+            <SelectTrigger id="filter-date" className="h-8 text-xs w-full touch-manipulation">
+              <SelectValue placeholder="Select date range" />
+            </SelectTrigger>
+            <SelectContent>
+              <SelectItem value="today">Today</SelectItem>
+              <SelectItem value="last7">Last 7 Days</SelectItem>
+              <SelectItem value="last30">Last 30 Days</SelectItem>
+              <SelectItem value="last3months">Last 3 Months</SelectItem>
+              <SelectItem value="lastyear">Last Year</SelectItem>
+              <SelectItem value="all">All Time</SelectItem>
+            </SelectContent>
+          </Select>
+        </div>
+
+        {/* Clear Filters Button */}
+        {(branchFilter !== 'all' || dateRangeFilter !== 'all') && (
+          <div className="flex items-end">
+            <Button
+              size="sm"
+              variant="outline"
+              onClick={() => {
+                setBranchFilter('all');
+                setDateRangeFilter('all');
+                setCurrentPage(1);
+              }}
+              className="h-8 text-xs border-gray-300 hover:bg-gray-50 px-2"
+            >
+              <X className="h-3 w-3 mr-1" />
+              Clear
+            </Button>
+          </div>
+        )}
       </div>
 
-      <div className="border rounded-lg overflow-hidden bg-white">
-        <Table>
-          <TableHeader className="bg-gray-50">
-            <TableRow>
-              <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">S/No</TableHead>
-              <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Details</TableHead>
-              <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Branch Admin</TableHead>
-              <TableHead className="text-xs font-medium text-gray-500 uppercase tracking-wider">Created On</TableHead>
-              <TableHead className="text-right text-xs font-medium text-gray-500 uppercase tracking-wider">Actions</TableHead>
+      {/* Stats Cards - Responsive Grid */}
+      <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-3 sm:gap-4">
+        <StatCard
+          label="Total Branches"
+          value={totalTenants}
+          icon={Building}
+          color="blue"
+        />
+        <StatCard
+          label="Total Staff"
+          value={totalStaff}
+          icon={Users}
+          color="purple"
+        />
+        <StatCard
+          label="Delivered"
+          value={deliveredCount}
+          icon={CheckCircle}
+          color="green"
+        />
+        <StatCard
+          label="Failed"
+          value={failedCount}
+          icon={AlertCircle}
+          color="red"
+        />
+      </div>
+
+      {/* Branches Table */}
+      <div className="hidden md:block table-container border border-gray-200 rounded-lg bg-white">
+        <Table className="text-base w-full table-auto">
+          <TableHeader>
+            <TableRow className="bg-gray-50/80 border-b border-gray-200">
+              <TableHead className="w-12 px-2 py-2.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">S/No</TableHead>
+              <TableHead className="px-2 py-2.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Branch Details</TableHead>
+              <TableHead className="px-2 py-2.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Branch Admin</TableHead>
+              <TableHead className="px-2 py-2.5 text-xs font-semibold text-gray-700 uppercase tracking-wider">Created On</TableHead>
+              <TableHead className="w-24 px-2 py-2.5 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
             {isLoading ? (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10"></TableCell>
+                <TableCell colSpan={5} className="text-center py-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <div className="relative w-8 h-8 mb-3">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
+                    <p className="text-gray-600 text-sm">Loading...</p>
+                  </div>
+                </TableCell>
               </TableRow>
             ) : filteredTenants.length > 0 ? (
               filteredPaginatedTenants.map((tenant, index) => (
-                <TableRow key={tenant._id} className="hover:bg-gray-50">
-                  <TableCell className="text-sm text-gray-500">{filteredStartIndex + index + 1}</TableCell>
-                  <TableCell><div className="text-sm font-semibold text-gray-900">{tenant.name}</div></TableCell>
-                  <TableCell>
-                    <div className="text-sm text-gray-900">{tenant.admin?.name || 'N/A'}</div>
-                    <div className="text-sm text-gray-500">{tenant.admin?.email || 'N/A'}</div>
+                <TableRow key={tenant._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                  <TableCell className="px-2 py-2.5 font-medium text-sm text-gray-900">{filteredStartIndex + index + 1}</TableCell>
+                  <TableCell className="px-2 py-2.5">
+                    <div className="font-semibold text-gray-900 text-sm">{tenant.name}</div>
                   </TableCell>
-                  <TableCell className="text-sm text-gray-500">{new Date(tenant.createdAt).toLocaleDateString()}</TableCell>
-                  <TableCell className="text-right text-sm font-medium space-x-4">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('edit', tenant)}
-                      title="Edit Branch"
-                      className="text-gray-400 hover:text-indigo-600"
-                    >
-                      <Edit size={18} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('delete', tenant)}
-                      title="Delete Branch"
-                      className="text-gray-400 hover:text-red-600"
-                    >
-                      <Trash2 size={18} />
-                    </Button>
+                  <TableCell className="px-2 py-2.5">
+                    <div className="font-semibold text-gray-900 text-sm">{tenant.admin?.name || 'N/A'}</div>
+                    <div className="text-gray-500 text-xs mt-0.5 line-clamp-1">{tenant.admin?.email || 'N/A'}</div>
+                  </TableCell>
+                  <TableCell className="px-2 py-2.5">
+                    <span className="text-gray-600 text-sm whitespace-nowrap">
+                      {new Date(tenant.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
+                    </span>
+                  </TableCell>
+                  <TableCell className="px-2 py-2.5 text-right">
+                    <div className="flex items-center justify-end gap-0.5">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('edit', tenant)}
+                        title="Edit Branch"
+                        className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600"
+                      >
+                        <Edit size={14} />
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('delete', tenant)}
+                        title="Delete Branch"
+                        className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600"
+                      >
+                        <Trash2 size={14} />
+                      </Button>
+                    </div>
                   </TableCell>
                 </TableRow>
               ))
             ) : (
               <TableRow>
-                <TableCell colSpan={5} className="text-center py-10 text-gray-500">No branches have been created yet.</TableCell>
+                <TableCell colSpan={5} className="text-center py-12">
+                  <div className="flex flex-col items-center justify-center">
+                    <Building className="h-12 w-12 text-gray-300 mb-3" strokeWidth={1.5} />
+                    <h3 className="text-lg font-medium text-gray-900 mb-1">No branches found</h3>
+                    <p className="text-gray-500 text-sm">
+                      {tenants.length > 0 
+                        ? "No branches match your search." 
+                        : "No branches have been created yet."}
+                    </p>
+                    {tenants.length === 0 && (
+                      <Button 
+                        onClick={() => openModal('create')}
+                        className="mt-4"
+                      >
+                        Create your first branch
+                      </Button>
+                    )}
+                  </div>
+                </TableCell>
               </TableRow>
             )}
           </TableBody>
         </Table>
       </div>
 
-      {/* Pagination Controls */}
-      {filteredTotalPages > 1 && (
-        <div className="bg-white rounded-lg border border-gray-200 p-4 flex items-center justify-between mt-4">
-          <div className="text-sm text-gray-600">
-            Showing {filteredTenants.length > 0 ? filteredStartIndex + 1 : 0} to {Math.min(filteredEndIndex, filteredTenants.length)} of {filteredTenants.length} branches
+      {/* Branches Cards - Mobile */}
+      <div className="md:hidden space-y-3">
+        {isLoading ? (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <div className="relative w-8 h-8 mb-3">
+              <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+            </div>
+            <p className="text-sm text-gray-600">Loading...</p>
           </div>
-          <div className="flex gap-2">
+        ) : filteredTenants.length > 0 ? (
+          filteredPaginatedTenants.map((tenant, index) => (
+            <div key={tenant._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+              {/* Header */}
+              <div className="flex items-start justify-between mb-3">
+                <div className="flex-1">
+                  <div className="flex items-center gap-2 mb-1">
+                    <span className="text-xs font-medium text-gray-500">#{filteredStartIndex + index + 1}</span>
+                  </div>
+                  <h3 className="text-sm font-semibold text-gray-900">{tenant.name}</h3>
+                </div>
+              </div>
+
+              {/* Details */}
+              <div className="grid grid-cols-1 gap-3 mb-3 text-xs">
+                <div>
+                  <span className="text-gray-500 block mb-0.5">Branch Admin</span>
+                  <span className="text-gray-900 font-medium">{tenant.admin?.name || 'N/A'}</span>
+                  <span className="text-gray-500 text-xs block mt-0.5">{tenant.admin?.email || 'N/A'}</span>
+                </div>
+
+                <div>
+                  <span className="text-gray-500 block mb-0.5">Created On</span>
+                  <span className="text-gray-900 font-medium">
+                    {new Date(tenant.createdAt).toLocaleDateString('en-US', {
+                      month: 'short',
+                      day: 'numeric',
+                      year: 'numeric'
+                    })}
+                  </span>
+                </div>
+              </div>
+
+              {/* Actions */}
+              <div className="flex gap-2 pt-3 border-t border-gray-100">
+                <Button 
+                  onClick={() => openModal('edit', tenant)} 
+                  variant="outline"
+                  className="flex-1"
+                >
+                  <Edit size={14} className="mr-1.5" />
+                  Edit
+                </Button>
+                <Button 
+                  onClick={() => openModal('delete', tenant)} 
+                  variant="destructive"
+                  className="flex-1"
+                >
+                  <Trash2 size={14} className="mr-1.5" />
+                  Delete
+                </Button>
+              </div>
+            </div>
+          ))
+        ) : (
+          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
+            <Building className="h-12 w-12 text-gray-300 mb-3" strokeWidth={1.5} />
+            <h3 className="text-base font-medium text-gray-900 mb-1">No branches found</h3>
+            <p className="text-sm text-gray-500 text-center px-4">
+              {tenants.length > 0 
+                ? "No branches match your search." 
+                : "No branches have been created yet."}
+            </p>
+            {tenants.length === 0 && (
+              <Button 
+                onClick={() => openModal('create')}
+                className="mt-4"
+              >
+                Create your first branch
+              </Button>
+            )}
+          </div>
+        )}
+      </div>
+
+      {/* Pagination Controls */}
+      {filteredTenants.length > 0 && (
+        <div className="flex items-center justify-between mt-6 px-6 py-4">
+          <div className="text-base text-gray-600">
+            Showing <span className="font-medium">{filteredStartIndex + 1}</span> to <span className="font-medium">{Math.min(filteredEndIndex, filteredTenants.length)}</span> of <span className="font-medium">{filteredTenants.length}</span> branches
+          </div>
+          
+          <div className="flex items-center gap-2">
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
+              onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
+              className="text-sm px-4"
             >
               Previous
             </Button>
-            <div className="flex items-center gap-2">
-              {Array.from({ length: filteredTotalPages }, (_, i) => i + 1).map((page) => (
+            
+            <div className="flex items-center gap-1">
+              {Array.from({ length: filteredTotalPages }, (_, i) => i + 1).map(page => (
                 <Button
                   key={page}
-                  variant={currentPage === page ? 'default' : 'outline'}
+                  variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className="min-w-[40px]"
+                  className="text-sm w-10 h-10 p-0"
                 >
                   {page}
                 </Button>
               ))}
             </div>
+            
             <Button
               variant="outline"
               size="sm"
-              onClick={() => setCurrentPage(Math.min(filteredTotalPages, currentPage + 1))}
+              onClick={() => setCurrentPage(prev => Math.min(filteredTotalPages, prev + 1))}
               disabled={currentPage === filteredTotalPages}
+              className="text-sm px-4"
             >
               Next
             </Button>

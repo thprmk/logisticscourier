@@ -853,7 +853,10 @@ export default function ShipmentsPage() {
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
-                    <Loader className="animate-spin h-8 w-8 text-blue-500 mb-3" />
+                    <div className="relative w-8 h-8 mb-3">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-[#333333]"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
                     <p className="text-gray-600 dark:text-[#A3A3A3] text-sm">Loading shipments...</p>
                   </div>
                 </TableCell>
@@ -989,7 +992,10 @@ export default function ShipmentsPage() {
       <div className="md:hidden space-y-3">
         {isLoading ? (
           <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent">
-            <Loader className="animate-spin h-8 w-8 text-green-600 dark:text-green-500 mb-3" />
+            <div className="relative w-8 h-8 mb-3">
+              <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-[#333333]"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+            </div>
             <p className="text-sm text-gray-600 dark:text-gray-400">Loading shipments...</p>
           </div>
         ) : paginatedShipments.length > 0 ? (
@@ -1325,7 +1331,10 @@ export default function ShipmentsPage() {
               <Button type="submit" disabled={isSubmitting} className="bg-[#1A9D4A] hover:bg-[#158A3F] text-white">
                 {isSubmitting ? (
                   <span className="flex items-center">
-                    <Loader className="animate-spin -ml-1 mr-2 h-4 w-4" />
+                    <div className="relative w-4 h-4 -ml-1 mr-2">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-[#444444]"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
                     Saving...
                   </span>
                 ) : 'Create Shipment'}
@@ -1406,7 +1415,10 @@ export default function ShipmentsPage() {
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
-                      <Loader className="h-4 w-4 animate-spin" />
+                      <div className="relative w-4 h-4">
+                        <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-[#444444]"></div>
+                        <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                      </div>
                       Saving...
                     </span>
                   ) : 'Save Changes'}
@@ -1452,7 +1464,10 @@ export default function ShipmentsPage() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <Loader className="h-4 w-4 animate-spin" />
+                    <div className="relative w-4 h-4">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-[#444444]"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
                     Cancelling...
                   </span>
                 ) : 'Yes, Cancel'}
@@ -1686,7 +1701,10 @@ export default function ShipmentsPage() {
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
-                    <Loader className="h-4 w-4 animate-spin" />
+                    <div className="relative w-4 h-4">
+                      <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-[#444444]"></div>
+                      <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                    </div>
                     Assigning...
                   </span>
                 ) : 'Assign'}

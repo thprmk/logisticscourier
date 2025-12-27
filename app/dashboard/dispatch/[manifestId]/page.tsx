@@ -77,7 +77,10 @@ export default function ManifestDetailPage() {
     return (
       <div className="flex items-center justify-center h-96">
         <div className="text-center">
-          <Loader className="h-12 w-12 text-blue-500 dark:text-blue-400 mx-auto mb-3 animate-spin" />
+          <div className="relative w-12 h-12 mx-auto mb-3">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+          </div>
           <p className="text-gray-600 dark:text-white">Loading manifest details...</p>
         </div>
       </div>

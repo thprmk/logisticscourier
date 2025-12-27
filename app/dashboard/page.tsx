@@ -301,6 +301,24 @@ export default function BranchDashboardPage() {
     return dateRange === 'today' ? 'Today' : dateRange === 'yesterday' ? 'Yesterday' : dateRange === 'last7' ? 'Last 7 Days' : 'This Month';
   };
 
+  // StatusBadge component - matches shipments page styles
+  const StatusBadge = ({ status }: { status: string }) => {
+    const styles: { [key: string]: string } = {
+      'At Origin Branch': 'bg-[#8B5CF6] text-white', // Purple - starting point
+      'In Transit to Destination': 'bg-[#3B82F6] text-white', // Blue - in movement
+      'At Destination Branch': 'bg-[#2563EB] text-white', // Darker blue - arrived at destination
+      'Assigned': 'bg-[#06B6D4] text-white', // Cyan - assigned to staff
+      'Out for Delivery': 'bg-[#F97316] text-white', // Orange - active delivery
+      'Delivered': 'bg-[#16A34A] text-white', // Solid green - success/completed
+      'Failed': 'bg-[#E11D48] text-white', // Solid red - error/failure
+    };
+    return (
+      <span className={`px-3 py-1 text-sm font-medium rounded-full text-white ${styles[status] || 'bg-gray-600 text-white'}`}>
+        {status}
+      </span>
+    );
+  };
+
   return (
     <div className="min-h-screen bg-gray-50/50 dark:bg-[#1C1C1C]">
       {/* Header Section */}
@@ -639,14 +657,7 @@ export default function BranchDashboardPage() {
                     </div>
                   </td>
                   <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
-                    <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap ${shipment.status === "Failed"
-                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
-                      : shipment.status === "At Destination Branch"
-                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
-                        : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
-                      }`}>
-                      {shipment.status}
-                    </span>
+                    <StatusBadge status={shipment.status} />
                   </td>
                   <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
                     {new Date(shipment.createdAt).toLocaleDateString(undefined, {

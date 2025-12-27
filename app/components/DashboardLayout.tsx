@@ -204,7 +204,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // While we are fetching the user for the first time, show a loading screen.
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-black">
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#1A1A1A]">
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
@@ -219,7 +219,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
   // If user is delivery staff, don't render this layout at all (they should be redirected)
   if (user.role === 'staff') {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-black">
+      <div className="flex h-screen items-center justify-center bg-gray-50 dark:bg-[#1A1A1A]">
         <div className="flex flex-col items-center justify-center gap-4">
           <div className="relative w-16 h-16">
             <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
@@ -360,7 +360,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                   }}
                   className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
                     ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
-                    : 'text-gray-700 dark:text-white hover:bg-[#DAFED4] dark:hover:bg-[#1A3D2A] hover:text-black dark:hover:text-white focus:bg-[#DAFED4] dark:focus:bg-[#1A3D2A] focus:text-black dark:focus:text-white'
+                    : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
                     }`}
                 >
                   <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2.5} />
@@ -477,8 +477,16 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         {/* Mobile Navigation Menu - Drawer Effect */}
         {isMobileMenuOpen && (
           <div
-            className="md:hidden fixed top-16 inset-x-0 bottom-0 bg-black/30 z-30"
+            className="md:hidden fixed inset-0 top-16 bg-gray-900/50 dark:bg-black/70 backdrop-blur-md z-30"
             onClick={() => setIsMobileMenuOpen(false)}
+            onTouchStart={(e) => {
+              e.preventDefault();
+              setIsMobileMenuOpen(false);
+            }}
+            style={{ 
+              backdropFilter: 'blur(8px)',
+              WebkitBackdropFilter: 'blur(8px)'
+            }}
           />
         )}
         <div className={`md:hidden fixed top-16 left-0 w-64 h-screen bg-white dark:bg-[#1A1A1A] border-r border-gray-200 dark:border-[#333333] shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
@@ -496,7 +504,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
                 }}
                 className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
                   ? 'bg-[#25D366] dark:bg-[#25D366] text-white shadow-md'
-                  : 'text-gray-700 dark:text-white hover:bg-[#DAFED4] dark:hover:bg-[#1A3D2A] hover:text-black dark:hover:text-white focus:bg-[#DAFED4] dark:focus:bg-[#1A3D2A] focus:text-black dark:focus:text-white'
+                  : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
                   }`}
               >
                 <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
@@ -556,7 +564,7 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
       )}
 
       {/* Main Content */}
-      <main className="md:max-w-7xl md:mx-auto px-4 sm:px-6 py-6 sm:py-8 dark:text-gray-100">
+      <main className={`md:max-w-7xl md:mx-auto px-4 sm:px-6 py-6 sm:py-8 dark:text-gray-100 transition-all duration-300 ${isMobileMenuOpen ? 'pointer-events-none md:pointer-events-auto blur-sm md:blur-none' : ''}`}>
         {children}
       </main>
     </div>

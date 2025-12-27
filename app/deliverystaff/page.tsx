@@ -531,7 +531,7 @@ export default function DeliveryStaffPage() {
           <div className="hidden md:block border border-gray-200 dark:border-transparent rounded-lg overflow-hidden bg-white dark:bg-[#222222]">
             <Table className="text-base">
               <TableHeader>
-                <TableRow className="bg-gray-50 dark:bg-[#1C1C1C]/50 h-12 border-b border-gray-200 dark:border-gray-700/50">
+                <TableRow className="bg-gray-50 dark:bg-[#2A2A2A] h-12 border-b border-gray-200 dark:border-[#333333]">
                   <TableHead className="text-gray-700 dark:text-gray-300">S/No</TableHead>
                   <TableHead className="text-gray-700 dark:text-gray-300">Tracking ID</TableHead>
                   <TableHead className="text-gray-700 dark:text-gray-300">Recipient</TableHead>
@@ -549,7 +549,7 @@ export default function DeliveryStaffPage() {
                   const isAssigned = shipment.status === 'Assigned';
 
                   return (
-                    <TableRow key={shipment._id} className="hover:bg-gray-50 dark:hover:bg-[#0F0F0F]/50 border-b border-gray-100 dark:border-gray-700/50">
+                    <TableRow key={shipment._id} className="hover:bg-gray-50 dark:hover:bg-[#2A2A2A] border-b border-gray-100 dark:border-[#333333]">
                       <TableCell className="font-medium text-base text-gray-900 dark:text-white">{startIndex + index + 1}</TableCell>
                       <TableCell className="font-mono text-xs text-gray-900 dark:text-white">{shipment.trackingId}</TableCell>
                       <TableCell className="font-medium text-gray-900 dark:text-white">{shipment.recipient.name}</TableCell>
@@ -686,7 +686,7 @@ export default function DeliveryStaffPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+                            className="flex-1 gap-1 border-gray-200 dark:border-[#333333] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-gray-700 dark:text-gray-200"
                             onClick={() => handleGetDirections(shipment.recipient.address)}
                           >
                             <MapPin className="h-4 w-4" />
@@ -695,7 +695,7 @@ export default function DeliveryStaffPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+                            className="flex-1 gap-1 border-gray-200 dark:border-[#333333] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-gray-700 dark:text-gray-200"
                             onClick={() => handleCallCustomer(shipment.recipient.phone)}
                           >
                             <Phone className="h-4 w-4" />
@@ -706,7 +706,7 @@ export default function DeliveryStaffPage() {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
+                    <div className="border-t border-gray-100 dark:border-[#333333] pt-3">
                       <div className="space-y-2">
                         {isAssigned && (
                           <Button
@@ -738,7 +738,7 @@ export default function DeliveryStaffPage() {
                         {isDelivered && shipment.deliveryProof && (
                           <Button
                             variant="outline"
-                            className="w-full gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+                            className="w-full gap-1 border-gray-200 dark:border-[#333333] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-gray-700 dark:text-gray-200"
                             onClick={() => setProofImageViewer(shipment.deliveryProof!.url)}
                           >
                             <Eye className="h-4 w-4" />
@@ -764,7 +764,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-[#333333] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-gray-700 dark:text-gray-200"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -774,7 +774,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
+                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-[#333333] hover:bg-gray-100 dark:hover:bg-[#2A2A2A] text-gray-700 dark:text-gray-200"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />
@@ -829,11 +829,11 @@ function ImageViewerModal({
 }) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh] bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-white dark:bg-[#222222] border-gray-200 dark:border-[#333333]">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-100">Proof View</DialogTitle>
         </DialogHeader>
-        <div className="flex justify-center bg-gray-50 dark:bg-[#111111] overflow-auto py-6 rounded-md">
+        <div className="flex justify-center bg-gray-50 dark:bg-[#1A1A1A] overflow-auto py-6 rounded-md">
           <img src={imageUrl} alt="Proof" className="max-w-full max-h-[70vh] object-contain rounded" />
         </div>
       </DialogContent>
@@ -904,7 +904,7 @@ function ProofOfDeliveryModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
+      <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto bg-white dark:bg-[#222222] border-gray-200 dark:border-[#333333]">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-100">Proof of Delivery</DialogTitle>
           <DialogDescription className="text-gray-500 dark:text-gray-400">Upload photo as proof</DialogDescription>
@@ -922,17 +922,20 @@ function ProofOfDeliveryModal({
             />
             {isUploading && (
               <div className="text-center py-4">
-                <Loader className="inline-block animate-spin h-6 w-6 text-blue-500 mb-2" />
+                <div className="relative w-6 h-6 mx-auto mb-2">
+                  <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-[#333333]"></div>
+                  <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                </div>
                 <p className="text-xs text-gray-600 dark:text-gray-400">Uploading photo...</p>
               </div>
             )}
             {proofUrl && !isUploading && (
-              <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded-lg space-y-3">
+              <div className="bg-gray-50 dark:bg-[#1A1A1A] p-4 rounded-lg space-y-3">
                 <p className="text-xs text-green-600 dark:text-green-500 font-medium">Photo uploaded successfully</p>
                 <img
                   src={proofUrl}
                   alt="Delivery proof"
-                  className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm"
+                  className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 dark:border-[#333333] shadow-sm"
                   onError={(e) => {
                     console.error('Image failed to load:', proofUrl);
                     (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22sans-serif%22 font-size=%2220%22 fill=%22%23999%22%3EImage failed to load%3C/text%3E%3C/svg%3E';
@@ -948,7 +951,7 @@ function ProofOfDeliveryModal({
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
+            className="border-gray-300 dark:border-[#333333] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
           >
             Cancel
           </Button>
@@ -993,7 +996,7 @@ function FailureReasonModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-[#333333]">
         <DialogHeader>
           <DialogTitle className="text-gray-900 dark:text-gray-100">Delivery Failed</DialogTitle>
           <DialogDescription className="text-gray-500 dark:text-gray-400">Please select a reason</DialogDescription>
@@ -1001,7 +1004,7 @@ function FailureReasonModal({
 
         <div className="space-y-2">
           {reasons.map((reason) => (
-            <label key={reason} className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-[#252525] cursor-pointer transition-colors">
+            <label key={reason} className="flex items-center p-3 border border-gray-200 dark:border-[#333333] rounded-lg hover:bg-gray-50 dark:hover:bg-[#2A2A2A] cursor-pointer transition-colors">
               <input
                 type="radio"
                 value={reason}
@@ -1020,7 +1023,7 @@ function FailureReasonModal({
                 placeholder="Please explain..."
                 value={otherReason}
                 onChange={(e) => setOtherReason(e.target.value)}
-                className="bg-white dark:bg-[#1A1A1A] border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
+                className="bg-white dark:bg-[#1A1A1A] border-gray-300 dark:border-[#333333] text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
           )}
@@ -1031,7 +1034,7 @@ function FailureReasonModal({
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
-            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
+            className="border-gray-300 dark:border-[#333333] text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
           >
             Cancel
           </Button>

@@ -428,7 +428,10 @@ function CreateDispatchTab({
             >
               {isSubmitting ? (
                 <>
-                  <Loader className="h-4 w-4 animate-spin" />
+                  <div className="relative w-4 h-4">
+                    <div className="absolute inset-0 rounded-full border-2 border-gray-300 dark:border-[#444444]"></div>
+                    <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                  </div>
                   Dispatching...
                 </>
               ) : (
@@ -480,7 +483,10 @@ function CreateDispatchTab({
           </div>
         ) : isLoading ? (
           <div className="text-center py-16 bg-gray-50 dark:bg-[#2A2A2A] rounded-xl border-2 border-dashed border-gray-200 dark:border-[#333333]">
-            <Loader className="h-10 w-10 text-blue-500 dark:text-blue-400 mx-auto mb-4 animate-spin" strokeWidth={2} />
+            <div className="relative w-10 h-10 mx-auto mb-4">
+              <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-[#333333]"></div>
+              <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+            </div>
             <p className="text-gray-600 dark:text-white font-semibold text-sm sm:text-base">Loading shipments...</p>
           </div>
         ) : availableShipments.length === 0 ? (
@@ -833,7 +839,10 @@ function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
               className="h-8 sm:h-9 text-xs bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold gap-1.5"
             >
               {isReceiving ? (
-                <Loader className="h-3.5 w-3.5 animate-spin" />
+                <div className="relative w-3.5 h-3.5">
+                  <div className="absolute inset-0 rounded-full border border-gray-300 dark:border-[#444444]"></div>
+                  <div className="absolute inset-0 rounded-full border border-transparent border-t-white border-r-white animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                </div>
               ) : (
                 <Check className="h-3.5 w-3.5" strokeWidth={2.5} />
               )}

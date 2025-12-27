@@ -119,7 +119,8 @@ export default function LoginPage() {
                   placeholder="Enter your email"
                   value={email}
                   onChange={(e) => setEmail(e.target.value)}
-                  className="pl-10 sm:pl-11 h-11 sm:h-12 bg-white border-gray-300 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm sm:text-base"
+                  className="pl-10 sm:pl-11 h-11 sm:h-12 bg-white !bg-white border-gray-300 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-500"
+                  style={{ colorScheme: 'light' }}
                   autoComplete="email"
                   required
                 />
@@ -139,7 +140,8 @@ export default function LoginPage() {
                   placeholder="Enter your password"
                   value={password}
                   onChange={(e) => setPassword(e.target.value)}
-                  className="pl-10 sm:pl-11 pr-11 sm:pr-12 h-11 sm:h-12 bg-white border-gray-300 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm sm:text-base"
+                  className="pl-10 sm:pl-11 pr-11 sm:pr-12 h-11 sm:h-12 bg-white !bg-white border-gray-300 rounded-lg sm:rounded-xl focus:border-blue-500 focus:ring-2 focus:ring-blue-100 transition-all text-sm sm:text-base text-gray-900 placeholder:text-gray-500"
+                  style={{ colorScheme: 'light' }}
                   autoComplete="current-password"
                   required
                 />

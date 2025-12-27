@@ -53,9 +53,9 @@ interface IBranch {
 }
 
 interface IStatusHistory {
-    status: string;
-    timestamp: Date;
-    notes?: string;
+  status: string;
+  timestamp: Date;
+  notes?: string;
 }
 
 interface IShipment {
@@ -65,8 +65,8 @@ interface IShipment {
   recipient: IAddress;
   status: 'At Origin Branch' | 'In Transit to Destination' | 'At Destination Branch' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed';
   assignedTo?: {
-      _id: string;
-      name: string;
+    _id: string;
+    name: string;
   }
 
   createdBy?: {
@@ -109,7 +109,7 @@ export default function ShipmentsPage() {
   const [admins, setAdmins] = useState<IUser[]>([]);
   const [branches, setBranches] = useState<IBranch[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Refined state management from the blueprint
   const [modalType, setModalType] = useState<ModalType>(null);
   const [selectedShipment, setSelectedShipment] = useState<IShipment | null>(null);
@@ -193,7 +193,7 @@ export default function ShipmentsPage() {
       setIsLoading(false);
     }
   };
-  
+
   useEffect(() => {
     fetchData();
   }, []);
@@ -281,7 +281,7 @@ export default function ShipmentsPage() {
       toast.error('You can only edit shipments from your branch or the origin branch');
       return;
     }
-    
+
     resetForms();
     setModalType(type);
     if (shipment) {
@@ -318,7 +318,7 @@ export default function ShipmentsPage() {
 
   const handleCreateShipment = async (event: FormEvent) => {
     event.preventDefault();
-    
+
     // Sanitize and validate inputs
     const sanitizedSenderName = sanitizeInput(senderName);
     const sanitizedSenderAddress = sanitizeInput(senderAddress);
@@ -326,7 +326,7 @@ export default function ShipmentsPage() {
     const sanitizedRecipientName = sanitizeInput(recipientName);
     const sanitizedRecipientAddress = sanitizeInput(recipientAddress);
     const sanitizedRecipientPhone = recipientPhone.trim();
-    
+
     // Validation
     if (!originBranchId) {
       toast.error('Origin branch is required');
@@ -360,37 +360,37 @@ export default function ShipmentsPage() {
       toast.error('Invalid recipient phone number');
       return;
     }
-    
+
     setIsSubmitting(true);
     const toastId = toast.loading('Creating new shipment...');
 
     const newShipmentData = {
-        sender: { name: sanitizedSenderName, address: sanitizedSenderAddress, phone: sanitizedSenderPhone },
-        recipient: { name: sanitizedRecipientName, address: sanitizedRecipientAddress, phone: sanitizedRecipientPhone },
-        packageInfo: { weight: packageWeight, type: packageType },
-        originBranchId: originBranchId,
-        destinationBranchId: destinationBranchId,
-        assignedTo: assignedStaff || undefined // Include assigned staff if selected
+      sender: { name: sanitizedSenderName, address: sanitizedSenderAddress, phone: sanitizedSenderPhone },
+      recipient: { name: sanitizedRecipientName, address: sanitizedRecipientAddress, phone: sanitizedRecipientPhone },
+      packageInfo: { weight: packageWeight, type: packageType },
+      originBranchId: originBranchId,
+      destinationBranchId: destinationBranchId,
+      assignedTo: assignedStaff || undefined // Include assigned staff if selected
     };
-    
+
     try {
-        const response = await fetch('/api/shipments', {
-            method: 'POST',
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(newShipmentData)
-        });
-        if (!response.ok) {
-            const data = await response.json();
-            throw new Error(data.message || "Failed to create shipment");
-        }
-        toast.success('Shipment created successfully', { id: toastId });
-        closeModal();
-        fetchData(); // Refresh all data
+      const response = await fetch('/api/shipments', {
+        method: 'POST',
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(newShipmentData)
+      });
+      if (!response.ok) {
+        const data = await response.json();
+        throw new Error(data.message || "Failed to create shipment");
+      }
+      toast.success('Shipment created successfully', { id: toastId });
+      closeModal();
+      fetchData(); // Refresh all data
     } catch (err: any) {
-        toast.error(err.message || 'Failed to create shipment', { id: toastId });
+      toast.error(err.message || 'Failed to create shipment', { id: toastId });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -411,37 +411,37 @@ export default function ShipmentsPage() {
     };
 
     try {
-        const res = await fetch(`/api/shipments/${selectedShipment._id}`, {
-            method: 'PATCH', // Use PATCH for partial updates
-            credentials: 'include',
-            headers: { 'Content-Type': 'application/json' },
-            body: JSON.stringify(updatePayload),
-        });
-        if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
-        
-        // Show specific status update message based on the status
-        let statusMessage = '';
-        switch (statusToUpdate) {
-          case 'Delivered':
-            statusMessage = 'Status updated to Delivered';
-            break;
-          case 'Out for Delivery':
-            statusMessage = 'Status updated to Out for Delivery';
-            break;
-          case 'Assigned':
-            statusMessage = 'Status updated to Assigned';
-            break;
-          default:
-            statusMessage = `Status updated to ${statusToUpdate}`;
-        }
-        
-        toast.success(statusMessage, { id: toastId });        
-        closeModal();
-        fetchData();
+      const res = await fetch(`/api/shipments/${selectedShipment._id}`, {
+        method: 'PATCH', // Use PATCH for partial updates
+        credentials: 'include',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify(updatePayload),
+      });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
+
+      // Show specific status update message based on the status
+      let statusMessage = '';
+      switch (statusToUpdate) {
+        case 'Delivered':
+          statusMessage = 'Status updated to Delivered';
+          break;
+        case 'Out for Delivery':
+          statusMessage = 'Status updated to Out for Delivery';
+          break;
+        case 'Assigned':
+          statusMessage = 'Status updated to Assigned';
+          break;
+        default:
+          statusMessage = `Status updated to ${statusToUpdate}`;
+      }
+
+      toast.success(statusMessage, { id: toastId });
+      closeModal();
+      fetchData();
     } catch (error: any) {
-        toast.error(error.message || 'Failed to update shipment', { id: toastId });
+      toast.error(error.message || 'Failed to update shipment', { id: toastId });
     } finally {
-        setIsSubmitting(false);
+      setIsSubmitting(false);
     }
   };
 
@@ -450,36 +450,36 @@ export default function ShipmentsPage() {
     setIsSubmitting(true);
     const toastId = toast.loading(`Deleting shipment ${selectedShipment.trackingId}...`);
     try {
-        const res = await fetch(`/api/shipments/${selectedShipment._id}`, { method: 'DELETE', credentials: 'include' });
-        if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
-        toast.success(`Shipment ${selectedShipment.trackingId} deleted successfully`, { id: toastId });
-        closeModal();
-        fetchData();
+      const res = await fetch(`/api/shipments/${selectedShipment._id}`, { method: 'DELETE', credentials: 'include' });
+      if (!res.ok) { const data = await res.json(); throw new Error(data.message); }
+      toast.success(`Shipment ${selectedShipment.trackingId} deleted successfully`, { id: toastId });
+      closeModal();
+      fetchData();
     } catch (error: any) {
-        toast.error(error.message || 'Failed to delete shipment', { id: toastId });
-    } finally { 
-        setIsSubmitting(false);
+      toast.error(error.message || 'Failed to delete shipment', { id: toastId });
+    } finally {
+      setIsSubmitting(false);
     }
   };
-  
+
   // Helper to render status badges
   const StatusBadge = ({ status }: { status: string }) => {
     const styles: { [key: string]: string } = {
-        'At Origin Branch': 'bg-[#8B5CF6] text-white', // Purple - starting point
-        'In Transit to Destination': 'bg-[#3B82F6] text-white', // Blue - in movement
-        'At Destination Branch': 'bg-[#2563EB] text-white', // Darker blue - arrived at destination
-        'Assigned': 'bg-[#06B6D4] text-white', // Cyan - assigned to staff
-        'Out for Delivery': 'bg-[#F97316] text-white', // Orange - active delivery
-        'Delivered': 'bg-[#16A34A] text-white', // Solid green - success/completed
-        'Failed': 'bg-[#E11D48] text-white', // Solid red - error/failure
+      'At Origin Branch': 'bg-[#8B5CF6] text-white', // Purple - starting point
+      'In Transit to Destination': 'bg-[#3B82F6] text-white', // Blue - in movement
+      'At Destination Branch': 'bg-[#2563EB] text-white', // Darker blue - arrived at destination
+      'Assigned': 'bg-[#06B6D4] text-white', // Cyan - assigned to staff
+      'Out for Delivery': 'bg-[#F97316] text-white', // Orange - active delivery
+      'Delivered': 'bg-[#16A34A] text-white', // Solid green - success/completed
+      'Failed': 'bg-[#E11D48] text-white', // Solid red - error/failure
     };
     return (
-        <span className={`px-3 py-1 text-sm font-medium rounded-full text-white ${styles[status] || 'bg-gray-600 text-white'}`}>
-            {status}
-        </span>
+      <span className={`px-3 py-1 text-sm font-medium rounded-full text-white ${styles[status] || 'bg-gray-600 text-white'}`}>
+        {status}
+      </span>
     );
   };
-  
+
   // Bulk actions handlers
   const handleSelectShipment = (shipmentId: string) => {
     const newSelected = new Set(selectedShipmentIds);
@@ -592,7 +592,7 @@ export default function ShipmentsPage() {
   useEffect(() => {
     setCurrentPage(1);
   }, [statusFilter, assignedToFilter, createdByFilter, dateRangeStart, dateRangeEnd, searchQuery]);
-  
+
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="mb-4 sm:mb-6">
@@ -707,16 +707,16 @@ export default function ShipmentsPage() {
                         )}
                       </div>
                     )}
-                      <Calendar
-                        mode="single"
+                    <Calendar
+                      mode="single"
                       selected={dateRangeStart || undefined}
-                        onSelect={(date) => {
+                      onSelect={(date) => {
                         if (!date) return;
-                        
+
                         // First click: set start date (single date by default)
                         if (!dateRangeStart) {
                           setDateRangeStart(date);
-                            setDateRangeEnd(date);
+                          setDateRangeEnd(date);
                         }
                         // Second click: determine if range or single date
                         else if (!dateRangeEnd || dateRangeStart.toDateString() === dateRangeEnd.toDateString()) {
@@ -731,7 +731,7 @@ export default function ShipmentsPage() {
                           }
                           // If clicking after start, create range
                           else {
-                          setDateRangeEnd(date);
+                            setDateRangeEnd(date);
                           }
                         }
                         // Both dates exist: reset and start fresh
@@ -756,7 +756,7 @@ export default function ShipmentsPage() {
                         >
                           Clear
                         </Button>
-                    </div>
+                      </div>
                     )}
                   </div>
                 </PopoverContent>
@@ -775,12 +775,12 @@ export default function ShipmentsPage() {
                   Clear
                 </Button>
               )}
-              
-              <Button 
+
+              <Button
                 onClick={() => openModal('create')}
                 className="h-10 sm:h-9 gap-2 whitespace-nowrap text-sm bg-[#1A9D4A] hover:bg-[#158A3F] text-white flex-1 sm:flex-none min-w-[100px] touch-manipulation"
               >
-                <Plus size={16} className="flex-shrink-0" /> 
+                <Plus size={16} className="flex-shrink-0" />
                 <span className="hidden sm:inline">Add New Shipment</span>
                 <span className="sm:hidden">Add</span>
               </Button>
@@ -890,17 +890,16 @@ export default function ShipmentsPage() {
                         )}
                       </span>
                       {shipment.createdBy && user?.id !== shipment.createdBy._id && (
-                        <Badge 
-                          className={`text-xs px-1 py-0.5 text-white ${
-                            shipment.createdBy.role === 'superAdmin' ? 'bg-[#3B82F6]' :
-                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-[#9333EA]' : 
-                            shipment.createdBy.role === 'admin' ? 'bg-[#06B6D4]' :
-                            'bg-[#10B981]'
-                          }`}
+                        <Badge
+                          className={`text-xs px-1 py-0.5 text-white ${shipment.createdBy.role === 'superAdmin' ? 'bg-[#3B82F6]' :
+                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-[#9333EA]' :
+                              shipment.createdBy.role === 'admin' ? 'bg-[#06B6D4]' :
+                                'bg-[#10B981]'
+                            }`}
                         >
                           {shipment.createdBy.role === 'superAdmin' ? 'Super Admin' :
-                           shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'Branch Manager' : 
-                           shipment.createdBy.role === 'admin' ? 'Dispatcher' : 'Delivery Staff'}
+                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'Branch Manager' :
+                              shipment.createdBy.role === 'admin' ? 'Dispatcher' : 'Delivery Staff'}
                         </Badge>
                       )}
                       {user?.id === shipment.createdBy?._id && (
@@ -910,51 +909,51 @@ export default function ShipmentsPage() {
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <span className="text-gray-700 dark:text-[#E5E5E5] text-sm">
-                    {shipment.assignedTo?.name || (
-                      <span className="text-gray-400 dark:text-[#A3A3A3] italic">Unassigned</span>
-                    )}
+                      {shipment.assignedTo?.name || (
+                        <span className="text-gray-400 dark:text-[#A3A3A3] italic">Unassigned</span>
+                      )}
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <span className="text-gray-600 dark:text-[#A3A3A3] text-sm whitespace-nowrap">
-                    {new Date(shipment.createdAt).toLocaleDateString('en-US', {
-                      month: 'short',
-                      day: 'numeric',
-                      year: 'numeric'
-                    })}
+                      {new Date(shipment.createdAt).toLocaleDateString('en-US', {
+                        month: 'short',
+                        day: 'numeric',
+                        year: 'numeric'
+                      })}
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <div className="flex items-center justify-end gap-0.5">
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('view', shipment)}
-                      title="View Details"
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('view', shipment)}
+                        title="View Details"
                         className="h-7 w-7 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
-                    >
+                      >
                         <Eye size={14} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('update', shipment)}
-                      disabled={!canEditShipment(shipment)}
-                      title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('update', shipment)}
+                        disabled={!canEditShipment(shipment)}
+                        title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
                         className="h-7 w-7 p-0 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-50"
-                    >
+                      >
                         <Edit size={14} />
-                    </Button>
-                    <Button
-                      variant="ghost"
-                      size="sm"
-                      onClick={() => openModal('delete', shipment)}
-                      disabled={!canEditShipment(shipment)}
-                      title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
+                      </Button>
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => openModal('delete', shipment)}
+                        disabled={!canEditShipment(shipment)}
+                        title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
                         className="h-7 w-7 p-0 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
-                    >
+                      >
                         <Trash2 size={14} />
-                    </Button>
+                      </Button>
                     </div>
                   </TableCell>
                 </TableRow>
@@ -966,12 +965,12 @@ export default function ShipmentsPage() {
                     <PackageIcon className="h-12 w-12 text-gray-300 dark:text-[#A3A3A3] mb-3" />
                     <h3 className="text-lg font-medium text-gray-900 dark:text-[#E5E5E5] mb-1">No shipments found</h3>
                     <p className="text-gray-500 dark:text-[#A3A3A3] text-sm">
-                      {shipments.length > 0 
-                        ? "No shipments match your filters." 
+                      {shipments.length > 0
+                        ? "No shipments match your filters."
                         : "No shipments have been created yet."}
                     </p>
                     {shipments.length === 0 && (
-                      <Button 
+                      <Button
                         onClick={() => openModal('create')}
                         className="mt-4"
                       >
@@ -989,19 +988,19 @@ export default function ShipmentsPage() {
       {/* Shipments Cards - Mobile */}
       <div className="md:hidden space-y-3">
         {isLoading ? (
-          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
-            <Loader className="animate-spin h-8 w-8 text-blue-500 mb-3" />
-            <p className="text-sm text-gray-600">Loading shipments...</p>
+          <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent">
+            <Loader className="animate-spin h-8 w-8 text-green-600 dark:text-green-500 mb-3" />
+            <p className="text-sm text-gray-600 dark:text-gray-400">Loading shipments...</p>
           </div>
         ) : paginatedShipments.length > 0 ? (
           paginatedShipments.map((shipment, index) => (
-            <div key={shipment._id} className="bg-white rounded-lg border border-gray-200 shadow-sm p-4">
+            <div key={shipment._id} className="bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent shadow-sm p-4">
               {/* Header */}
               <div className="flex items-start justify-between mb-3">
                 <div className="flex-1">
                   <div className="flex items-center gap-2 mb-1">
-                    <span className="text-xs font-medium text-gray-500">#{startIndex + index + 1}</span>
-                    <span className="text-xs font-mono text-blue-600 font-semibold">{shipment.trackingId}</span>
+                    <span className="text-xs font-medium text-gray-500 dark:text-gray-400">#{startIndex + index + 1}</span>
+                    <span className="text-xs font-mono text-blue-600 dark:text-blue-400 font-semibold">{shipment.trackingId}</span>
                   </div>
                   <h3 className="text-sm font-semibold text-gray-900 dark:text-[#E5E5E5]">{shipment.recipient.name}</h3>
                   <p className="text-xs text-gray-500 dark:text-[#A3A3A3] mt-0.5 line-clamp-1">{shipment.recipient.address}</p>
@@ -1012,22 +1011,22 @@ export default function ShipmentsPage() {
               {/* Details */}
               <div className="grid grid-cols-2 gap-3 mb-3 text-xs">
                 <div>
-                  <span className="text-gray-500 block mb-0.5">Assigned To</span>
-                  <span className="text-gray-900 font-medium">
-                    {shipment.assignedTo?.name || <span className="text-gray-400 italic">Unassigned</span>}
+                  <span className="text-gray-500 dark:text-gray-400 block mb-0.5">Assigned To</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
+                    {shipment.assignedTo?.name || <span className="text-gray-400 dark:text-gray-500 italic">Unassigned</span>}
                   </span>
                 </div>
 
                 <div>
-                <span className="text-gray-500 block mb-0.5">Created By</span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-gray-500 dark:text-gray-400 block mb-0.5">Created By</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
                     {shipment.createdBy?.name || 'System'}
                   </span>
                 </div>
 
                 <div>
-                  <span className="text-gray-500 block mb-0.5">Date</span>
-                  <span className="text-gray-900 font-medium">
+                  <span className="text-gray-500 dark:text-gray-400 block mb-0.5">Date</span>
+                  <span className="text-gray-900 dark:text-white font-medium">
                     {new Date(shipment.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -1038,16 +1037,16 @@ export default function ShipmentsPage() {
               </div>
 
               {/* Actions */}
-              <div className="flex gap-2 pt-3 border-t border-gray-100">
-                <button 
-                  onClick={() => openModal('view', shipment)} 
+              <div className="flex gap-2 pt-3 border-t border-gray-100 dark:border-gray-700">
+                <button
+                  onClick={() => openModal('view', shipment)}
                   className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                 >
-                  <Eye size={14}/>
+                  <Eye size={14} />
                   View
                 </button>
-                <Button 
-                  onClick={() => openModal('update', shipment)} 
+                <Button
+                  onClick={() => openModal('update', shipment)}
                   disabled={!canEditShipment(shipment)}
                   variant={canEditShipment(shipment) ? "default" : "secondary"}
                   className="flex-1 bg-[#1A9D4A] hover:bg-[#158A3F] text-white disabled:opacity-50"
@@ -1055,8 +1054,8 @@ export default function ShipmentsPage() {
                   <Edit size={14} className="mr-1.5" />
                   Update
                 </Button>
-                <Button 
-                  onClick={() => openModal('delete', shipment)} 
+                <Button
+                  onClick={() => openModal('delete', shipment)}
                   disabled={!canEditShipment(shipment)}
                   variant={canEditShipment(shipment) ? "destructive" : "secondary"}
                   className="flex-1 bg-[#DC2626] hover:bg-[#B91C1C] text-white disabled:opacity-50"
@@ -1072,12 +1071,12 @@ export default function ShipmentsPage() {
             <PackageIcon className="h-12 w-12 text-gray-300 dark:text-[#A3A3A3] mb-3" />
             <h3 className="text-base font-medium text-gray-900 dark:text-[#E5E5E5] mb-1">No shipments found</h3>
             <p className="text-sm text-gray-500 dark:text-[#A3A3A3] text-center px-4">
-              {shipments.length > 0 
-                ? "No shipments match your filters." 
+              {shipments.length > 0
+                ? "No shipments match your filters."
                 : "No shipments have been created yet."}
             </p>
             {shipments.length === 0 && (
-              <Button 
+              <Button
                 onClick={() => openModal('create')}
               >
                 Create your first shipment
@@ -1089,42 +1088,43 @@ export default function ShipmentsPage() {
 
       {/* Pagination Controls */}
       {filteredShipments.length > 0 && (
-        <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white dark:bg-[#222222] border border-gray-200 dark:border-[#333333] rounded-lg">
-          <div className="text-base text-gray-600 dark:text-white">
+        <div className="flex flex-col sm:flex-row items-center justify-between mt-6 px-4 sm:px-6 py-4 bg-white dark:bg-[#222222] border border-gray-200 dark:border-[#333333] rounded-lg gap-4 sm:gap-0">
+          <div className="text-sm sm:text-base text-gray-600 dark:text-white text-center sm:text-left">
             Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredShipments.length)}</span> of <span className="font-medium">{filteredShipments.length}</span> shipments
           </div>
-          
-          <div className="flex items-center gap-2">
+
+          <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="text-sm px-4 dark:text-white"
+              className="text-sm px-4 dark:text-white flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Previous
             </Button>
-            
-            <div className="flex items-center gap-1">
-              {Array.from({ length: totalPages }, (_, i) => i + 1).map(page => (
+
+            <div className="hidden sm:flex items-center gap-1">
+              {Array.from({ length: totalPages }, (_, i) => i + 1).slice(0, 5).map(page => (
                 <Button
                   key={page}
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className={`text-sm w-10 h-10 p-0 ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
+                  className={`text-sm w-8 h-8 p-0 ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                 >
                   {page}
                 </Button>
               ))}
+              {totalPages > 5 && <span className="text-gray-400 px-1">...</span>}
             </div>
-            
+
             <Button
               variant="outline"
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="text-sm px-4 dark:text-white"
+              className="text-sm px-4 dark:text-white flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800"
             >
               Next
             </Button>
@@ -1148,79 +1148,79 @@ export default function ShipmentsPage() {
                 <h3 className="text-sm font-semibold">Sender Details</h3>
                 <div>
                   <Label htmlFor="sender-name" className="text-xs">Full Name</Label>
-                  <Input 
+                  <Input
                     id="sender-name"
-                    type="text" 
-                    placeholder="Sender's full name" 
-                    value={senderName} 
-                    onChange={(e) => setSenderName(e.target.value)} 
+                    type="text"
+                    placeholder="Sender's full name"
+                    value={senderName}
+                    onChange={(e) => setSenderName(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="sender-address" className="text-xs">Full Address</Label>
-                  <Input 
+                  <Input
                     id="sender-address"
-                    type="text" 
-                    placeholder="Sender's full address" 
-                    value={senderAddress} 
-                    onChange={(e) => setSenderAddress(e.target.value)} 
+                    type="text"
+                    placeholder="Sender's full address"
+                    value={senderAddress}
+                    onChange={(e) => setSenderAddress(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="sender-phone" className="text-xs">Phone Number</Label>
-                  <Input 
+                  <Input
                     id="sender-phone"
-                    type="tel" 
-                    placeholder="Sender's phone number" 
-                    value={senderPhone} 
-                    onChange={(e) => setSenderPhone(e.target.value)} 
+                    type="tel"
+                    placeholder="Sender's phone number"
+                    value={senderPhone}
+                    onChange={(e) => setSenderPhone(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
               </div>
-              
+
               {/* Recipient Details */}
               <div className="space-y-3">
                 <h3 className="text-sm font-semibold">Recipient Details</h3>
                 <div>
                   <Label htmlFor="recipient-name" className="text-xs">Full Name</Label>
-                  <Input 
+                  <Input
                     id="recipient-name"
-                    type="text" 
-                    placeholder="Recipient's full name" 
-                    value={recipientName} 
-                    onChange={(e) => setRecipientName(e.target.value)} 
+                    type="text"
+                    placeholder="Recipient's full name"
+                    value={recipientName}
+                    onChange={(e) => setRecipientName(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="recipient-address" className="text-xs">Full Address</Label>
-                  <Input 
+                  <Input
                     id="recipient-address"
-                    type="text" 
-                    placeholder="Recipient's full address" 
-                    value={recipientAddress} 
-                    onChange={(e) => setRecipientAddress(e.target.value)} 
+                    type="text"
+                    placeholder="Recipient's full address"
+                    value={recipientAddress}
+                    onChange={(e) => setRecipientAddress(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
                 <div>
                   <Label htmlFor="recipient-phone" className="text-xs">Phone Number</Label>
-                  <Input 
+                  <Input
                     id="recipient-phone"
-                    type="tel" 
-                    placeholder="Recipient's phone number" 
-                    value={recipientPhone} 
-                    onChange={(e) => setRecipientPhone(e.target.value)} 
+                    type="tel"
+                    placeholder="Recipient's phone number"
+                    value={recipientPhone}
+                    onChange={(e) => setRecipientPhone(e.target.value)}
                     autoComplete="off"
-                    required 
+                    required
                   />
                 </div>
               </div>
@@ -1232,10 +1232,10 @@ export default function ShipmentsPage() {
               <div className="grid grid-cols-2 gap-3">
                 <div>
                   <Label htmlFor="origin-branch" className="text-xs">Origin Branch (Current)</Label>
-                  <Input 
+                  <Input
                     id="origin-branch"
-                    type="text" 
-                    value={branches.find(b => b._id === originBranchId)?.name || user?.tenantName || 'Your Branch'} 
+                    type="text"
+                    value={branches.find(b => b._id === originBranchId)?.name || user?.tenantName || 'Your Branch'}
                     disabled
                     className="bg-gray-50"
                   />
@@ -1257,12 +1257,11 @@ export default function ShipmentsPage() {
                 </div>
               </div>
               {destinationBranchId && (
-                <div className={`p-3 rounded-lg border text-xs font-semibold ${
-                  isLocalDelivery 
-                    ? 'bg-green-50 border-green-200 text-green-900' 
-                    : 'bg-blue-50 border-blue-200 text-blue-900'
-                }`}>
-                  {isLocalDelivery 
+                <div className={`p-3 rounded-lg border text-xs font-semibold ${isLocalDelivery
+                  ? 'bg-green-50 border-green-200 text-green-900'
+                  : 'bg-blue-50 border-blue-200 text-blue-900'
+                  }`}>
+                  {isLocalDelivery
                     ? '📍 Local Delivery: This package stays in ' + (branches.find(b => b._id === destinationBranchId)?.name || 'this branch') + '. It can be immediately assigned to a delivery staff member.'
                     : 'Inter-Branch Transfer: This package will be sent to ' + (branches.find(b => b._id === destinationBranchId)?.name || 'the destination') + '. It will require a manifest dispatch.'
                   }
@@ -1276,15 +1275,15 @@ export default function ShipmentsPage() {
               <div className="grid grid-cols-3 gap-3">
                 <div>
                   <Label htmlFor="weight" className="text-xs">Weight (kg)</Label>
-                  <Input 
+                  <Input
                     id="weight"
-                    type="number" 
-                    placeholder="Weight" 
-                    value={packageWeight} 
-                    onChange={(e) => setPackageWeight(parseFloat(e.target.value))} 
-                    required 
-                    min="0.1" 
-                    step="0.1" 
+                    type="number"
+                    placeholder="Weight"
+                    value={packageWeight}
+                    onChange={(e) => setPackageWeight(parseFloat(e.target.value))}
+                    required
+                    min="0.1"
+                    step="0.1"
                   />
                 </div>
                 <div>
@@ -1430,7 +1429,7 @@ export default function ShipmentsPage() {
                 <div className="flex-1">
                   <DialogTitle className="dark:text-white">Cancel Shipment</DialogTitle>
                   <DialogDescription className="mt-1 dark:text-[#A3A3A3]">
-                    Are you sure you want to cancel shipment <span className="font-semibold text-gray-900 dark:text-white">{selectedShipment.trackingId}</span>? 
+                    Are you sure you want to cancel shipment <span className="font-semibold text-gray-900 dark:text-white">{selectedShipment.trackingId}</span>?
                     This action cannot be undone.
                   </DialogDescription>
                 </div>
@@ -1468,11 +1467,11 @@ export default function ShipmentsPage() {
         <SheetContent style={{ width: '90vw', maxWidth: '600px' }} className="overflow-y-auto p-0 dark:bg-[#222222]">
           <SheetHeader className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-[#333333] sticky top-0 bg-white dark:bg-[#222222] z-10">
             <div className="flex items-start justify-between">
-            <div>
-              <SheetTitle className="text-2xl font-bold dark:text-white">Shipment Details</SheetTitle>
-              <SheetDescription className="text-sm text-gray-600 dark:text-[#A3A3A3] mt-1">
-                Tracking ID: <span className="font-mono font-semibold text-gray-900 dark:text-white">{selectedShipment?.trackingId}</span>
-              </SheetDescription>
+              <div>
+                <SheetTitle className="text-2xl font-bold dark:text-white">Shipment Details</SheetTitle>
+                <SheetDescription className="text-sm text-gray-600 dark:text-[#A3A3A3] mt-1">
+                  Tracking ID: <span className="font-mono font-semibold text-gray-900 dark:text-white">{selectedShipment?.trackingId}</span>
+                </SheetDescription>
               </div>
               <Button
                 variant="ghost"
@@ -1588,7 +1587,7 @@ export default function ShipmentsPage() {
                   <div className="text-sm text-gray-500 dark:text-[#A3A3A3] bg-gray-50 dark:bg-[#2A2A2A] p-3 rounded">No history available.</div>
                 )}
               </div>
-              
+
               {/* Delivery Proof Section */}
               {(selectedShipment.status === 'Delivered' || selectedShipment.status === 'Failed') && (
                 <>
@@ -1608,7 +1607,7 @@ export default function ShipmentsPage() {
                         </div>
                       </div>
                     )}
-              
+
                     {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
                       <div className="border border-gray-200 dark:border-[#333333] rounded-lg p-3 bg-white dark:bg-[#222222]">
                         <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Delivery Failed</h3>
@@ -1651,7 +1650,7 @@ export default function ShipmentsPage() {
                 Assign {selectedShipmentIds.size} shipment{selectedShipmentIds.size > 1 ? 's' : ''} to a driver
               </p>
             </div>
-            
+
             <div className="px-4 sm:px-6 py-4 sm:py-5">
               <Label htmlFor="bulk-driver" className="text-sm dark:text-white">Select Driver</Label>
               <Select value={bulkAssignDriver || ''} onValueChange={setBulkAssignDriver}>
@@ -1667,7 +1666,7 @@ export default function ShipmentsPage() {
                 </SelectContent>
               </Select>
             </div>
-            
+
             <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[#222222] rounded-b-lg border-t border-gray-200 dark:border-[#333333]">
               <Button
                 variant="outline"

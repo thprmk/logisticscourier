@@ -630,34 +630,35 @@ export default function SuperAdminDashboardPage() {
 
         {/* Pagination Controls */}
         {filteredTenants.length > 0 && (
-          <div className="flex items-center justify-between mt-6 px-6 py-4">
-            <div className="text-base text-gray-600 dark:text-gray-400">
+          <div className="flex flex-col sm:flex-row items-center justify-between mt-6 px-4 sm:px-6 py-4 gap-4 sm:gap-0">
+            <div className="text-sm sm:text-base text-gray-600 dark:text-gray-400 text-center sm:text-left">
               Showing <span className="font-medium">{filteredStartIndex + 1}</span> to <span className="font-medium">{Math.min(filteredEndIndex, filteredTenants.length)}</span> of <span className="font-medium">{filteredTenants.length}</span> branches
             </div>
 
-            <div className="flex items-center gap-2">
+            <div className="flex items-center justify-between sm:justify-end gap-2 w-full sm:w-auto">
               <Button
                 variant="outline"
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
                 disabled={currentPage === 1}
-                className="text-sm px-4"
+                className="text-sm px-4 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Previous
               </Button>
 
-              <div className="flex items-center gap-1">
-                {Array.from({ length: filteredTotalPages }, (_, i) => i + 1).map(page => (
+              <div className="hidden sm:flex items-center gap-1">
+                {Array.from({ length: filteredTotalPages }, (_, i) => i + 1).slice(0, 5).map(page => (
                   <Button
                     key={page}
                     variant={currentPage === page ? "default" : "outline"}
                     size="sm"
                     onClick={() => setCurrentPage(page)}
-                    className="text-sm w-10 h-10 p-0"
+                    className={`text-sm w-8 h-8 p-0 ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-gray-200 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800'}`}
                   >
                     {page}
                   </Button>
                 ))}
+                {filteredTotalPages > 5 && <span className="text-gray-400 px-1">...</span>}
               </div>
 
               <Button
@@ -665,7 +666,7 @@ export default function SuperAdminDashboardPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(filteredTotalPages, prev + 1))}
                 disabled={currentPage === filteredTotalPages}
-                className="text-sm px-4"
+                className="text-sm px-4 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 dark:text-gray-200 hover:bg-gray-100 dark:hover:bg-gray-800"
               >
                 Next
               </Button>

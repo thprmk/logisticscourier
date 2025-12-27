@@ -141,13 +141,13 @@ export default function DeliveryStaffLayout({ children }: DeliveryStaffLayoutPro
 
   if (!user) {
     return (
-      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100">
-        <div className="flex flex-col items-center gap-4">
-          <div className="relative h-12 w-12">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+      <div className="flex h-screen items-center justify-center bg-gradient-to-br from-gray-50 to-gray-100 dark:from-black dark:to-black">
+        <div className="flex flex-col items-center justify-center gap-4">
+          <div className="relative w-16 h-16">
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-green-600 dark:border-t-green-500 border-r-green-600 dark:border-r-green-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
           </div>
-          <p className="text-sm font-semibold text-gray-700">Loading...</p>
+          <p className="text-sm font-medium text-gray-600 dark:text-gray-400">Loading...</p>
         </div>
       </div>
     );

@@ -641,34 +641,34 @@ export default function DeliveryStaffPage() {
               const isAssigned = shipment.status === 'Assigned';
 
               return (
-                <Card key={shipment._id} className="border-gray-200">
+                <Card key={shipment._id} className="border-gray-200 dark:border-transparent bg-white dark:bg-[#222222] shadow-sm">
                   <CardHeader className="pb-3">
                     <div className="flex items-start justify-between">
                       <div className="space-y-1">
                         <div className="flex items-center gap-2">
-                          <span className="text-xs font-bold text-gray-500 bg-gray-100 px-2 py-1 rounded">#{startIndex + index + 1}</span>
-                          <span className="text-xs font-mono font-semibold text-gray-700">{shipment.trackingId}</span>
+                          <span className="text-xs font-bold text-gray-500 dark:text-gray-400 bg-gray-100 dark:bg-gray-800 px-2 py-1 rounded">#{startIndex + index + 1}</span>
+                          <span className="text-xs font-mono font-semibold text-gray-700 dark:text-gray-300">{shipment.trackingId}</span>
                         </div>
-                        <CardTitle className="text-base">{shipment.recipient.name}</CardTitle>
+                        <CardTitle className="text-base text-gray-900 dark:text-white">{shipment.recipient.name}</CardTitle>
                       </div>
                     </div>
                   </CardHeader>
                   <CardContent className="space-y-3">
                     {/* Address */}
                     <div>
-                      <p className="text-xs text-gray-500 font-semibold mb-1">ADDRESS</p>
-                      <p className="text-sm text-gray-700">{shipment.recipient.address}</p>
+                      <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">ADDRESS</p>
+                      <p className="text-sm text-gray-700 dark:text-gray-300">{shipment.recipient.address}</p>
                     </div>
 
                     {/* Status and Date Row */}
                     <div className="grid grid-cols-2 gap-3">
                       <div>
-                        <p className="text-xs text-gray-500 font-semibold mb-1">STATUS</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">STATUS</p>
                         {getStatusBadge(shipment.status)}
                       </div>
                       <div>
-                        <p className="text-xs text-gray-500 font-semibold mb-1">DATE</p>
-                        <p className="text-sm text-gray-700">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">DATE</p>
+                        <p className="text-sm text-gray-700 dark:text-gray-300">
                           {new Date(shipment.createdAt).toLocaleDateString('en-US', {
                             month: 'short',
                             day: 'numeric',
@@ -681,12 +681,12 @@ export default function DeliveryStaffPage() {
                     {/* Contact Info */}
                     {(isAssigned || isOutForDelivery) && (
                       <div>
-                        <p className="text-xs text-gray-500 font-semibold mb-2">CONTACT</p>
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-2">CONTACT</p>
                         <div className="flex gap-2">
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 gap-1"
+                            className="flex-1 gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
                             onClick={() => handleGetDirections(shipment.recipient.address)}
                           >
                             <MapPin className="h-4 w-4" />
@@ -695,7 +695,7 @@ export default function DeliveryStaffPage() {
                           <Button
                             size="sm"
                             variant="outline"
-                            className="flex-1 gap-1"
+                            className="flex-1 gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
                             onClick={() => handleCallCustomer(shipment.recipient.phone)}
                           >
                             <Phone className="h-4 w-4" />
@@ -706,11 +706,11 @@ export default function DeliveryStaffPage() {
                     )}
 
                     {/* Action Buttons */}
-                    <div className="border-t pt-3">
+                    <div className="border-t border-gray-100 dark:border-gray-700 pt-3">
                       <div className="space-y-2">
                         {isAssigned && (
                           <Button
-                            className="w-full bg-blue-600 hover:bg-blue-700 touch-manipulation"
+                            className="w-full bg-blue-600 hover:bg-blue-700 touch-manipulation text-white"
                             disabled={updatingShipment === shipment._id}
                             onClick={() => handleStatusUpdate(shipment._id, 'Out for Delivery')}
                           >
@@ -720,7 +720,7 @@ export default function DeliveryStaffPage() {
                         {isOutForDelivery && (
                           <div className="grid grid-cols-2 gap-2">
                             <Button
-                              className="bg-green-600 hover:bg-green-700"
+                              className="bg-green-600 hover:bg-green-700 text-white"
                               disabled={updatingShipment === shipment._id}
                               onClick={() => setShowProofModal(shipment._id)}
                             >
@@ -738,7 +738,7 @@ export default function DeliveryStaffPage() {
                         {isDelivered && shipment.deliveryProof && (
                           <Button
                             variant="outline"
-                            className="w-full gap-1"
+                            className="w-full gap-1 border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
                             onClick={() => setProofImageViewer(shipment.deliveryProof!.url)}
                           >
                             <Eye className="h-4 w-4" />
@@ -764,7 +764,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.max(prev - 1, 1))}
                 disabled={currentPage === 1}
-                className="gap-1 flex-1 sm:flex-none"
+                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
               >
                 <ChevronLeft className="h-4 w-4" />
                 Previous
@@ -774,7 +774,7 @@ export default function DeliveryStaffPage() {
                 size="sm"
                 onClick={() => setCurrentPage(prev => Math.min(prev + 1, totalPages))}
                 disabled={currentPage === totalPages}
-                className="gap-1 flex-1 sm:flex-none"
+                className="gap-1 flex-1 sm:flex-none border-gray-200 dark:border-gray-700 hover:bg-gray-100 dark:hover:bg-gray-800 text-gray-700 dark:text-gray-200"
               >
                 Next
                 <ChevronRight className="h-4 w-4" />

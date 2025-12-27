@@ -465,16 +465,16 @@ export default function ShipmentsPage() {
   // Helper to render status badges
   const StatusBadge = ({ status }: { status: string }) => {
     const styles: { [key: string]: string } = {
-        'At Origin Branch': 'bg-purple-100 text-purple-800',
-        'In Transit to Destination': 'bg-indigo-100 text-indigo-800',
-        'At Destination Branch': 'bg-blue-100 text-blue-800',
-        'Assigned': 'bg-cyan-100 text-cyan-800',
-        'Out for Delivery': 'bg-orange-100 text-orange-800',
-        'Delivered': 'bg-green-100 text-green-800',
-        'Failed': 'bg-red-100 text-red-800',
+        'At Origin Branch': 'bg-[#8B5CF6] text-white', // Purple - starting point
+        'In Transit to Destination': 'bg-[#3B82F6] text-white', // Blue - in movement
+        'At Destination Branch': 'bg-[#2563EB] text-white', // Darker blue - arrived at destination
+        'Assigned': 'bg-[#06B6D4] text-white', // Cyan - assigned to staff
+        'Out for Delivery': 'bg-[#F97316] text-white', // Orange - active delivery
+        'Delivered': 'bg-[#16A34A] text-white', // Solid green - success/completed
+        'Failed': 'bg-[#E11D48] text-white', // Solid red - error/failure
     };
     return (
-        <span className={`px-3 py-1 text-sm font-medium rounded-full ${styles[status] || 'bg-gray-100 text-gray-800'}`}>
+        <span className={`px-3 py-1 text-sm font-medium rounded-full text-white ${styles[status] || 'bg-gray-600 text-white'}`}>
             {status}
         </span>
     );
@@ -596,8 +596,8 @@ export default function ShipmentsPage() {
   return (
     <div className="space-y-4 sm:space-y-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Shipment Management</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Create, track, and manage all shipments for your branch.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Shipment Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-white mt-1 sm:mt-2">Create, track, and manage all shipments for your branch.</p>
       </div>
 
       {/* Action Bar */}
@@ -621,7 +621,7 @@ export default function ShipmentsPage() {
           <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 xl:grid-cols-5 gap-3 sm:gap-3 items-end">
             {/* Status Filter */}
             <div className="w-full">
-              <Label htmlFor="filter-status" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Status</Label>
+              <Label htmlFor="filter-status" className="text-xs sm:text-xs font-medium text-gray-700 dark:text-[#E5E5E5] block mb-1.5 sm:mb-2">Status</Label>
               <Select value={statusFilter || 'all'} onValueChange={(val) => setStatusFilter(val === 'all' ? '' : val)}>
                 <SelectTrigger id="filter-status" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Statuses" />
@@ -641,7 +641,7 @@ export default function ShipmentsPage() {
 
             {/* Assigned To Filter */}
             <div className="w-full">
-              <Label htmlFor="filter-assigned" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Assigned Staff</Label>
+              <Label htmlFor="filter-assigned" className="text-xs sm:text-xs font-medium text-gray-700 dark:text-[#E5E5E5] block mb-1.5 sm:mb-2">Assigned Staff</Label>
               <Select value={assignedToFilter || 'all'} onValueChange={(val) => setAssignedToFilter(val === 'all' ? '' : val)}>
                 <SelectTrigger id="filter-assigned" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Staff" />
@@ -659,7 +659,7 @@ export default function ShipmentsPage() {
 
             {/* Created By Filter */}
             <div className="w-full">
-              <Label htmlFor="filter-created" className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Created By</Label>
+              <Label htmlFor="filter-created" className="text-xs sm:text-xs font-medium text-gray-700 dark:text-[#E5E5E5] block mb-1.5 sm:mb-2">Created By</Label>
               <Select value={createdByFilter || 'all'} onValueChange={(val) => setCreatedByFilter(val === 'all' ? '' : val)}>
                 <SelectTrigger id="filter-created" className="h-10 sm:h-9 text-sm w-full touch-manipulation">
                   <SelectValue placeholder="All Users" />
@@ -677,7 +677,7 @@ export default function ShipmentsPage() {
 
             {/* Date Range */}
             <div className="w-full">
-              <Label className="text-xs sm:text-xs font-medium text-gray-700 block mb-1.5 sm:mb-2">Date Range</Label>
+              <Label className="text-xs sm:text-xs font-medium text-gray-700 dark:text-[#E5E5E5] block mb-1.5 sm:mb-2">Date Range</Label>
               <Popover>
                 <PopoverTrigger asChild>
                   <Button
@@ -694,7 +694,7 @@ export default function ShipmentsPage() {
                 <PopoverContent className="w-auto p-0 max-w-[calc(100vw-2rem)] sm:max-w-none" align="start" side="bottom" sideOffset={4}>
                   <div className="p-2 sm:p-3">
                     {(dateRangeStart || dateRangeEnd) && (
-                      <div className="mb-2 sm:mb-3 text-xs text-gray-600 px-1">
+                      <div className="mb-2 sm:mb-3 text-xs text-gray-600 dark:text-[#A3A3A3] px-1">
                         {dateRangeStart && dateRangeEnd && dateRangeStart.toDateString() === dateRangeEnd.toDateString() && (
                           <span>
                             <span className="font-semibold text-blue-600">Selected:</span> {dateRangeStart.toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })}
@@ -778,10 +778,10 @@ export default function ShipmentsPage() {
               
               <Button 
                 onClick={() => openModal('create')}
-                className="h-10 sm:h-9 gap-2 whitespace-nowrap text-sm bg-blue-600 hover:bg-blue-700 flex-1 sm:flex-none min-w-[100px] touch-manipulation"
+                className="h-10 sm:h-9 gap-2 whitespace-nowrap text-sm bg-[#1A9D4A] hover:bg-[#158A3F] text-white flex-1 sm:flex-none min-w-[100px] touch-manipulation"
               >
                 <Plus size={16} className="flex-shrink-0" /> 
-                <span className="hidden sm:inline">Add New</span>
+                <span className="hidden sm:inline">Add New Shipment</span>
                 <span className="sm:hidden">Add</span>
               </Button>
             </div>
@@ -791,15 +791,15 @@ export default function ShipmentsPage() {
 
       {/* Bulk Actions Toolbar */}
       {selectedShipmentIds.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-blue-50 dark:bg-[#222222] border border-blue-200 dark:border-[#333333] rounded-lg p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
               {selectedShipmentIds.size} shipment{selectedShipmentIds.size > 1 ? 's' : ''} selected
             </span>
             <Button
               size="sm"
               onClick={() => setShowBulkAssignModal(true)}
-              className="gap-2"
+              className="gap-2 bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
             >
               <Users size={16} />
               Assign to Staff
@@ -808,7 +808,7 @@ export default function ShipmentsPage() {
               size="sm"
               variant="destructive"
               onClick={handleBulkDelete}
-              className="gap-2"
+              className="gap-2 bg-[#DC2626] hover:bg-[#B91C1C] text-white"
             >
               <Trash2 size={16} />
               Delete Selected
@@ -825,11 +825,11 @@ export default function ShipmentsPage() {
       )}
 
       {/* Shipments Table - Desktop */}
-      <div className="hidden md:block table-container border border-gray-200 rounded-lg bg-white">
+      <div className="hidden md:block table-container border border-gray-200 dark:border-[#333333] rounded-lg bg-white dark:bg-[#222222]">
         <Table className="text-base w-full table-auto">
           <TableHeader>
-            <TableRow className="bg-gray-50/80 border-b border-gray-200">
-              <TableHead className="w-10 px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">
+            <TableRow className="bg-gray-50/80 dark:bg-[#222222] border-b border-gray-200 dark:border-[#333333] hover:bg-gray-50/80 dark:hover:bg-[#222222]">
+              <TableHead className="w-10 px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">
                 <input
                   type="checkbox"
                   checked={selectedShipmentIds.size === filteredShipments.length && filteredShipments.length > 0}
@@ -838,14 +838,14 @@ export default function ShipmentsPage() {
                   title="Select all"
                 />
               </TableHead>
-              <TableHead className="w-12 px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">S/No</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Tracking ID</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Recipient</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Status</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Created By</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Assigned To</TableHead>
-              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 uppercase tracking-wider">Date</TableHead>
-              <TableHead className="w-24 px-2 py-3 text-right text-xs font-semibold text-gray-700 uppercase tracking-wider">Actions</TableHead>
+              <TableHead className="w-12 px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">S/No</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Tracking ID</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Recipient</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Status</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Created By</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Assigned To</TableHead>
+              <TableHead className="px-2 py-3 text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Date</TableHead>
+              <TableHead className="w-24 px-2 py-3 text-right text-xs font-semibold text-gray-700 dark:text-[#E5E5E5] uppercase tracking-wider">Actions</TableHead>
             </TableRow>
           </TableHeader>
           <TableBody>
@@ -854,13 +854,13 @@ export default function ShipmentsPage() {
                 <TableCell colSpan={9} className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
                     <Loader className="animate-spin h-8 w-8 text-blue-500 mb-3" />
-                    <p className="text-gray-600 text-sm">Loading shipments...</p>
+                    <p className="text-gray-600 dark:text-[#A3A3A3] text-sm">Loading shipments...</p>
                   </div>
                 </TableCell>
               </TableRow>
             ) : paginatedShipments.length > 0 ? (
               paginatedShipments.map((shipment, index) => (
-                <TableRow key={shipment._id} className="border-b border-gray-100 hover:bg-gray-50/50 transition-colors">
+                <TableRow key={shipment._id} className="border-b border-gray-100 dark:border-[#333333]">
                   <TableCell className="px-2 py-2.5">
                     <input
                       type="checkbox"
@@ -869,33 +869,33 @@ export default function ShipmentsPage() {
                       className="w-4 h-4 cursor-pointer"
                     />
                   </TableCell>
-                  <TableCell className="px-2 py-2.5 font-medium text-sm text-gray-900">{startIndex + index + 1}</TableCell>
+                  <TableCell className="px-2 py-2.5 font-medium text-sm text-gray-900 dark:text-[#E5E5E5]">{startIndex + index + 1}</TableCell>
                   <TableCell className="px-2 py-2.5">
-                    <span className="font-mono text-blue-600 font-semibold text-sm hover:text-blue-700 cursor-pointer">{shipment.trackingId}</span>
+                    <span className="font-mono text-blue-600 dark:text-blue-400 font-semibold text-sm hover:text-blue-700 dark:hover:text-blue-300 cursor-pointer">{shipment.trackingId}</span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
-                    <div className="font-semibold text-gray-900 text-sm">{shipment.recipient.name}</div>
-                    <div className="text-gray-500 text-xs mt-0.5 line-clamp-1">{shipment.recipient.address}</div>
+                    <div className="font-semibold text-gray-900 dark:text-[#E5E5E5] text-sm">{shipment.recipient.name}</div>
+                    <div className="text-gray-500 dark:text-[#A3A3A3] text-xs mt-0.5 line-clamp-1">{shipment.recipient.address}</div>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <StatusBadge status={shipment.status} />
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
                     <div className="flex items-center gap-1 flex-wrap">
-                      <span className="text-gray-700 text-sm font-medium">
+                      <span className="text-gray-700 dark:text-[#E5E5E5] text-sm font-medium">
                         {shipment.createdBy ? (
                           user?.id === shipment.createdBy._id ? 'You' : shipment.createdBy.name
                         ) : (
-                          <span className="text-gray-400 italic">System</span>
+                          <span className="text-gray-400 dark:text-[#A3A3A3] italic">System</span>
                         )}
                       </span>
                       {shipment.createdBy && user?.id !== shipment.createdBy._id && (
                         <Badge 
-                          className={`text-xs px-1 py-0.5 ${
-                            shipment.createdBy.role === 'superAdmin' ? 'bg-blue-100 text-blue-800' :
-                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-purple-100 text-purple-800' : 
-                            shipment.createdBy.role === 'admin' ? 'bg-blue-100 text-blue-800' :
-                            'bg-green-100 text-green-800'
+                          className={`text-xs px-1 py-0.5 text-white ${
+                            shipment.createdBy.role === 'superAdmin' ? 'bg-[#3B82F6]' :
+                            shipment.createdBy.role === 'admin' && shipment.createdBy.isManager ? 'bg-[#9333EA]' : 
+                            shipment.createdBy.role === 'admin' ? 'bg-[#06B6D4]' :
+                            'bg-[#10B981]'
                           }`}
                         >
                           {shipment.createdBy.role === 'superAdmin' ? 'Super Admin' :
@@ -904,19 +904,19 @@ export default function ShipmentsPage() {
                         </Badge>
                       )}
                       {user?.id === shipment.createdBy?._id && (
-                        <Badge className="bg-green-100 text-green-800 font-semibold text-xs px-1 py-0.5">You</Badge>
+                        <Badge className="bg-[#10B981] text-white font-semibold text-xs px-1 py-0.5">You</Badge>
                       )}
                     </div>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
-                    <span className="text-gray-700 text-sm">
+                    <span className="text-gray-700 dark:text-[#E5E5E5] text-sm">
                     {shipment.assignedTo?.name || (
-                      <span className="text-gray-400 italic">Unassigned</span>
+                      <span className="text-gray-400 dark:text-[#A3A3A3] italic">Unassigned</span>
                     )}
                     </span>
                   </TableCell>
                   <TableCell className="px-2 py-2.5">
-                    <span className="text-gray-600 text-sm whitespace-nowrap">
+                    <span className="text-gray-600 dark:text-[#A3A3A3] text-sm whitespace-nowrap">
                     {new Date(shipment.createdAt).toLocaleDateString('en-US', {
                       month: 'short',
                       day: 'numeric',
@@ -931,7 +931,7 @@ export default function ShipmentsPage() {
                       size="sm"
                       onClick={() => openModal('view', shipment)}
                       title="View Details"
-                        className="h-7 w-7 p-0 hover:bg-blue-50 hover:text-blue-600"
+                        className="h-7 w-7 p-0 hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
                     >
                         <Eye size={14} />
                     </Button>
@@ -941,7 +941,7 @@ export default function ShipmentsPage() {
                       onClick={() => openModal('update', shipment)}
                       disabled={!canEditShipment(shipment)}
                       title={canEditShipment(shipment) ? "Update Status/Assign" : "Only the creator can edit"}
-                        className="h-7 w-7 p-0 hover:bg-green-50 hover:text-green-600 disabled:opacity-50"
+                        className="h-7 w-7 p-0 hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400 disabled:opacity-50"
                     >
                         <Edit size={14} />
                     </Button>
@@ -951,7 +951,7 @@ export default function ShipmentsPage() {
                       onClick={() => openModal('delete', shipment)}
                       disabled={!canEditShipment(shipment)}
                       title={canEditShipment(shipment) ? "Cancel Shipment" : "Only the creator can delete"}
-                        className="h-7 w-7 p-0 hover:bg-red-50 hover:text-red-600 disabled:opacity-50"
+                        className="h-7 w-7 p-0 hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400 disabled:opacity-50"
                     >
                         <Trash2 size={14} />
                     </Button>
@@ -963,9 +963,9 @@ export default function ShipmentsPage() {
               <TableRow>
                 <TableCell colSpan={9} className="text-center py-16">
                   <div className="flex flex-col items-center justify-center">
-                    <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
-                    <h3 className="text-lg font-medium text-gray-900 mb-1">No shipments found</h3>
-                    <p className="text-gray-500 text-sm">
+                    <PackageIcon className="h-12 w-12 text-gray-300 dark:text-[#A3A3A3] mb-3" />
+                    <h3 className="text-lg font-medium text-gray-900 dark:text-[#E5E5E5] mb-1">No shipments found</h3>
+                    <p className="text-gray-500 dark:text-[#A3A3A3] text-sm">
                       {shipments.length > 0 
                         ? "No shipments match your filters." 
                         : "No shipments have been created yet."}
@@ -1003,8 +1003,8 @@ export default function ShipmentsPage() {
                     <span className="text-xs font-medium text-gray-500">#{startIndex + index + 1}</span>
                     <span className="text-xs font-mono text-blue-600 font-semibold">{shipment.trackingId}</span>
                   </div>
-                  <h3 className="text-sm font-semibold text-gray-900">{shipment.recipient.name}</h3>
-                  <p className="text-xs text-gray-500 mt-0.5 line-clamp-1">{shipment.recipient.address}</p>
+                  <h3 className="text-sm font-semibold text-gray-900 dark:text-[#E5E5E5]">{shipment.recipient.name}</h3>
+                  <p className="text-xs text-gray-500 dark:text-[#A3A3A3] mt-0.5 line-clamp-1">{shipment.recipient.address}</p>
                 </div>
                 <StatusBadge status={shipment.status} />
               </div>
@@ -1041,7 +1041,7 @@ export default function ShipmentsPage() {
               <div className="flex gap-2 pt-3 border-t border-gray-100">
                 <button 
                   onClick={() => openModal('view', shipment)} 
-                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 bg-blue-50 rounded-md hover:bg-blue-100 transition-colors"
+                  className="flex-1 flex items-center justify-center gap-1.5 px-3 py-2 text-xs font-medium text-blue-600 dark:text-blue-400 bg-blue-50 dark:bg-blue-900/20 rounded-md hover:bg-blue-100 dark:hover:bg-blue-900/30 transition-colors"
                 >
                   <Eye size={14}/>
                   View
@@ -1050,7 +1050,7 @@ export default function ShipmentsPage() {
                   onClick={() => openModal('update', shipment)} 
                   disabled={!canEditShipment(shipment)}
                   variant={canEditShipment(shipment) ? "default" : "secondary"}
-                  className="flex-1"
+                  className="flex-1 bg-[#1A9D4A] hover:bg-[#158A3F] text-white disabled:opacity-50"
                 >
                   <Edit size={14} className="mr-1.5" />
                   Update
@@ -1059,7 +1059,7 @@ export default function ShipmentsPage() {
                   onClick={() => openModal('delete', shipment)} 
                   disabled={!canEditShipment(shipment)}
                   variant={canEditShipment(shipment) ? "destructive" : "secondary"}
-                  className="flex-1"
+                  className="flex-1 bg-[#DC2626] hover:bg-[#B91C1C] text-white disabled:opacity-50"
                 >
                   <Trash2 size={14} className="mr-1.5" />
                   Delete
@@ -1068,10 +1068,10 @@ export default function ShipmentsPage() {
             </div>
           ))
         ) : (
-          <div className="flex flex-col items-center justify-center py-12 bg-white rounded-lg border border-gray-200">
-            <PackageIcon className="h-12 w-12 text-gray-300 mb-3" />
-            <h3 className="text-base font-medium text-gray-900 mb-1">No shipments found</h3>
-            <p className="text-sm text-gray-500 text-center px-4">
+          <div className="flex flex-col items-center justify-center py-12 bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-[#333333]">
+            <PackageIcon className="h-12 w-12 text-gray-300 dark:text-[#A3A3A3] mb-3" />
+            <h3 className="text-base font-medium text-gray-900 dark:text-[#E5E5E5] mb-1">No shipments found</h3>
+            <p className="text-sm text-gray-500 dark:text-[#A3A3A3] text-center px-4">
               {shipments.length > 0 
                 ? "No shipments match your filters." 
                 : "No shipments have been created yet."}
@@ -1089,8 +1089,8 @@ export default function ShipmentsPage() {
 
       {/* Pagination Controls */}
       {filteredShipments.length > 0 && (
-        <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white border border-gray-200 rounded-lg">
-          <div className="text-base text-gray-600">
+        <div className="flex items-center justify-between mt-6 px-6 py-4 bg-white dark:bg-[#222222] border border-gray-200 dark:border-[#333333] rounded-lg">
+          <div className="text-base text-gray-600 dark:text-white">
             Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredShipments.length)}</span> of <span className="font-medium">{filteredShipments.length}</span> shipments
           </div>
           
@@ -1100,7 +1100,7 @@ export default function ShipmentsPage() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="text-sm px-4"
+              className="text-sm px-4 dark:text-white"
             >
               Previous
             </Button>
@@ -1112,7 +1112,7 @@ export default function ShipmentsPage() {
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className="text-sm w-10 h-10 p-0"
+                  className={`text-sm w-10 h-10 p-0 ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
                 >
                   {page}
                 </Button>
@@ -1124,7 +1124,7 @@ export default function ShipmentsPage() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="text-sm px-4"
+              className="text-sm px-4 dark:text-white"
             >
               Next
             </Button>
@@ -1323,7 +1323,7 @@ export default function ShipmentsPage() {
               <Button type="button" variant="outline" onClick={closeModal}>
                 Cancel
               </Button>
-              <Button type="submit" disabled={isSubmitting}>
+              <Button type="submit" disabled={isSubmitting} className="bg-[#1A9D4A] hover:bg-[#158A3F] text-white">
                 {isSubmitting ? (
                   <span className="flex items-center">
                     <Loader className="animate-spin -ml-1 mr-2 h-4 w-4" />
@@ -1403,6 +1403,7 @@ export default function ShipmentsPage() {
                 <Button
                   type="submit"
                   disabled={isSubmitting}
+                  className="bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
                 >
                   {isSubmitting ? (
                     <span className="flex items-center gap-2">
@@ -1420,16 +1421,16 @@ export default function ShipmentsPage() {
       {/* DELETE MODAL */}
       {modalType === 'delete' && selectedShipment && (
         <Dialog open={true} onOpenChange={(open) => !open && closeModal()}>
-          <DialogContent className="max-w-md">
+          <DialogContent className="max-w-md dark:bg-[#222222] dark:border-[#333333]">
             <DialogHeader>
               <div className="flex items-start gap-4">
-                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100">
-                  <Trash2 className="h-6 w-6 text-red-600" aria-hidden="true" />
+                <div className="flex-shrink-0 flex items-center justify-center h-12 w-12 rounded-full bg-red-100 dark:bg-red-900/30">
+                  <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" aria-hidden="true" />
                 </div>
                 <div className="flex-1">
-                  <DialogTitle>Cancel Shipment</DialogTitle>
-                  <DialogDescription className="mt-1">
-                    Are you sure you want to cancel shipment <span className="font-semibold text-gray-900">{selectedShipment.trackingId}</span>? 
+                  <DialogTitle className="dark:text-white">Cancel Shipment</DialogTitle>
+                  <DialogDescription className="mt-1 dark:text-[#A3A3A3]">
+                    Are you sure you want to cancel shipment <span className="font-semibold text-gray-900 dark:text-white">{selectedShipment.trackingId}</span>? 
                     This action cannot be undone.
                   </DialogDescription>
                 </div>
@@ -1440,6 +1441,7 @@ export default function ShipmentsPage() {
                 variant="outline"
                 onClick={closeModal}
                 disabled={isSubmitting}
+                className="dark:text-white"
               >
                 No, Keep It
               </Button>
@@ -1447,6 +1449,7 @@ export default function ShipmentsPage() {
                 variant="destructive"
                 onClick={handleDeleteShipment}
                 disabled={isSubmitting}
+                className="bg-[#DC2626] hover:bg-[#B91C1C] text-white"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">
@@ -1462,20 +1465,20 @@ export default function ShipmentsPage() {
 
       {/* VIEW MODAL - SHEET */}
       <Sheet open={modalType === 'view'} onOpenChange={(open) => !open && closeModal()}>
-        <SheetContent style={{ width: '90vw', maxWidth: '600px' }} className="overflow-y-auto p-0">
-          <SheetHeader className="px-6 pt-6 pb-4 border-b border-gray-200 sticky top-0 bg-white z-10">
+        <SheetContent style={{ width: '90vw', maxWidth: '600px' }} className="overflow-y-auto p-0 dark:bg-[#222222]">
+          <SheetHeader className="px-6 pt-6 pb-4 border-b border-gray-200 dark:border-[#333333] sticky top-0 bg-white dark:bg-[#222222] z-10">
             <div className="flex items-start justify-between">
             <div>
-              <SheetTitle className="text-2xl font-bold">Shipment Details</SheetTitle>
-              <SheetDescription className="text-sm text-gray-600 mt-1">
-                Tracking ID: <span className="font-mono font-semibold text-gray-900">{selectedShipment?.trackingId}</span>
+              <SheetTitle className="text-2xl font-bold dark:text-white">Shipment Details</SheetTitle>
+              <SheetDescription className="text-sm text-gray-600 dark:text-[#A3A3A3] mt-1">
+                Tracking ID: <span className="font-mono font-semibold text-gray-900 dark:text-white">{selectedShipment?.trackingId}</span>
               </SheetDescription>
               </div>
               <Button
                 variant="ghost"
                 size="icon"
                 onClick={closeModal}
-                className="h-8 w-8 rounded-full hover:bg-gray-100"
+                className="h-8 w-8 rounded-full hover:bg-gray-100 dark:hover:bg-[#333333] dark:text-white"
                 title="Close"
               >
                 <X className="h-5 w-5" />
@@ -1488,59 +1491,59 @@ export default function ShipmentsPage() {
               {/* Sender & Recipient */}
               <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Sender Details</h3>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Sender Details</h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</p>
-                      <p className="text-sm text-gray-900 font-medium mt-1">{selectedShipment.sender.name}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Name</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium mt-1">{selectedShipment.sender.name}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</p>
-                      <p className="text-sm text-gray-900 mt-1 line-clamp-2">{selectedShipment.sender.address}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Address</p>
+                      <p className="text-sm text-gray-900 dark:text-white mt-1 line-clamp-2">{selectedShipment.sender.address}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
-                      <p className="text-sm text-gray-900 font-medium mt-1">{selectedShipment.sender.phone}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Phone</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium mt-1">{selectedShipment.sender.phone}</p>
                     </div>
                   </div>
                 </div>
                 <div>
-                  <h3 className="text-base font-semibold text-gray-900 mb-4">Recipient Details</h3>
+                  <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Recipient Details</h3>
                   <div className="space-y-3">
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Name</p>
-                      <p className="text-sm text-gray-900 font-medium mt-1">{selectedShipment.recipient.name}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Name</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium mt-1">{selectedShipment.recipient.name}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Address</p>
-                      <p className="text-sm text-gray-900 mt-1 line-clamp-2">{selectedShipment.recipient.address}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Address</p>
+                      <p className="text-sm text-gray-900 dark:text-white mt-1 line-clamp-2">{selectedShipment.recipient.address}</p>
                     </div>
                     <div>
-                      <p className="text-xs font-medium text-gray-500 uppercase tracking-wide">Phone</p>
-                      <p className="text-sm text-gray-900 font-medium mt-1">{selectedShipment.recipient.phone}</p>
+                      <p className="text-xs font-medium text-gray-500 dark:text-[#A3A3A3] uppercase tracking-wide">Phone</p>
+                      <p className="text-sm text-gray-900 dark:text-white font-medium mt-1">{selectedShipment.recipient.phone}</p>
                     </div>
                   </div>
                 </div>
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gray-200"></div>
+              <div className="h-px bg-gray-200 dark:bg-[#333333]"></div>
 
               {/* Package Information */}
               <div>
-                <h3 className="text-base font-semibold text-gray-900 mb-4">Package Information</h3>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-4">Package Information</h3>
                 <div className="grid grid-cols-3 gap-4">
-                  <div className="bg-blue-50 p-4 rounded-lg border border-blue-100">
-                    <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Weight</p>
-                    <p className="text-lg font-bold text-blue-900 mt-2">{selectedShipment.packageInfo.weight} kg</p>
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg border border-blue-100 dark:border-blue-800/30 flex flex-col">
+                    <p className="text-xs font-medium text-gray-600 dark:text-[#A3A3A3] uppercase tracking-wide mb-2">Weight</p>
+                    <p className="text-lg font-bold text-blue-900 dark:text-blue-400">{selectedShipment.packageInfo.weight} kg</p>
                   </div>
-                  <div className="bg-purple-50 p-4 rounded-lg border border-purple-100">
-                    <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Type</p>
-                    <p className="text-lg font-bold text-purple-900 mt-2">{selectedShipment.packageInfo.type}</p>
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg border border-purple-100 dark:border-purple-800/30 flex flex-col">
+                    <p className="text-xs font-medium text-gray-600 dark:text-[#A3A3A3] uppercase tracking-wide mb-2">Type</p>
+                    <p className="text-lg font-bold text-purple-900 dark:text-purple-400">{selectedShipment.packageInfo.type}</p>
                   </div>
-                  <div className="bg-green-50 p-4 rounded-lg border border-green-100">
-                    <p className="text-xs font-medium text-gray-600 uppercase tracking-wide">Status</p>
-                    <div className="mt-2">
+                  <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg border border-green-100 dark:border-green-800/30 flex flex-col">
+                    <p className="text-xs font-medium text-gray-600 dark:text-[#A3A3A3] uppercase tracking-wide mb-2">Status</p>
+                    <div className="flex items-center">
                       <StatusBadge status={selectedShipment.status} />
                     </div>
                   </div>
@@ -1548,24 +1551,24 @@ export default function ShipmentsPage() {
               </div>
 
               {/* Divider */}
-              <div className="h-px bg-gray-200"></div>
+              <div className="h-px bg-gray-200 dark:bg-[#333333]"></div>
 
               {/* Status History Timeline */}
               <div>
-                <h3 className="text-base font-semibold text-gray-900 mb-5">Status History</h3>
+                <h3 className="text-base font-semibold text-gray-900 dark:text-white mb-5">Status History</h3>
                 {selectedShipment.statusHistory && selectedShipment.statusHistory.length > 0 ? (
                   <div className="space-y-5">
                     {selectedShipment.statusHistory.map((history, index) => (
                       <div key={index} className="flex gap-4">
                         <div className="flex flex-col items-center">
-                          <div className="w-3 h-3 bg-blue-500 rounded-full mt-1.5"></div>
+                          <div className="w-3 h-3 bg-blue-500 dark:bg-blue-400 rounded-full mt-1.5"></div>
                           {index !== selectedShipment.statusHistory.length - 1 && (
-                            <div className="w-0.5 h-16 bg-gray-300 my-2"></div>
+                            <div className="w-0.5 h-16 bg-gray-300 dark:bg-[#333333] my-2"></div>
                           )}
                         </div>
                         <div className="pb-2 flex-1">
-                          <p className="font-semibold text-gray-900">{history.status}</p>
-                          <p className="text-xs text-gray-500 mt-1">
+                          <p className="font-semibold text-gray-900 dark:text-white">{history.status}</p>
+                          <p className="text-xs text-gray-500 dark:text-[#A3A3A3] mt-1">
                             {new Date(history.timestamp).toLocaleString('en-US', {
                               month: 'short',
                               day: 'numeric',
@@ -1575,41 +1578,41 @@ export default function ShipmentsPage() {
                             })}
                           </p>
                           {history.notes && (
-                            <p className="text-sm text-gray-800 font-medium mt-2 border-l-2 border-gray-400 pl-3">{history.notes}</p>
+                            <p className="text-sm text-gray-800 dark:text-white font-medium mt-2 border-l-2 border-gray-400 dark:border-[#555555] pl-3">{history.notes}</p>
                           )}
                         </div>
                       </div>
                     ))}
                   </div>
                 ) : (
-                  <div className="text-sm text-gray-500 bg-gray-50 p-3 rounded">No history available.</div>
+                  <div className="text-sm text-gray-500 dark:text-[#A3A3A3] bg-gray-50 dark:bg-[#2A2A2A] p-3 rounded">No history available.</div>
                 )}
               </div>
               
               {/* Delivery Proof Section */}
               {(selectedShipment.status === 'Delivered' || selectedShipment.status === 'Failed') && (
                 <>
-                  <div className="h-px bg-gray-200"></div>
+                  <div className="h-px bg-gray-200 dark:bg-[#333333]"></div>
                   <div>
                     {selectedShipment.status === 'Delivered' && selectedShipment.deliveryProof && (
                       <div className="flex items-center gap-2 sm:gap-3">
                         <button
                           onClick={() => setProofImagePreview(selectedShipment.deliveryProof!.url)}
-                          className="w-12 h-12 sm:w-14 sm:h-14 rounded border-2 border-green-300 hover:border-green-400 overflow-hidden flex-shrink-0 transition-colors"
+                          className="w-12 h-12 sm:w-14 sm:h-14 rounded border-2 border-green-300 dark:border-green-600 hover:border-green-400 dark:hover:border-green-500 overflow-hidden flex-shrink-0 transition-colors"
                         >
                           <img src={selectedShipment.deliveryProof.url} alt="Proof" className="w-full h-full object-cover" />
                         </button>
                         <div>
-                          <p className="text-xs font-semibold text-green-700">Delivery Proof</p>
-                          <p className="text-xs text-gray-500">Click to enlarge</p>
+                          <p className="text-xs font-semibold text-green-700 dark:text-green-400">Delivery Proof</p>
+                          <p className="text-xs text-gray-500 dark:text-[#A3A3A3]">Click to enlarge</p>
                         </div>
                       </div>
                     )}
               
                     {selectedShipment.status === 'Failed' && selectedShipment.failureReason && (
-                      <div className="border border-gray-200 rounded-lg p-3 bg-white">
-                        <h3 className="text-sm font-semibold text-gray-900 mb-2">Delivery Failed</h3>
-                        <p className="text-sm text-gray-700"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
+                      <div className="border border-gray-200 dark:border-[#333333] rounded-lg p-3 bg-white dark:bg-[#222222]">
+                        <h3 className="text-sm font-semibold text-gray-900 dark:text-white mb-2">Delivery Failed</h3>
+                        <p className="text-sm text-gray-700 dark:text-[#E5E5E5]"><strong>Reason:</strong> {selectedShipment.failureReason}</p>
                       </div>
                     )}
                   </div>
@@ -1622,17 +1625,17 @@ export default function ShipmentsPage() {
       {/* Image Preview Modal */}
       {proofImagePreview && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4" onClick={() => setProofImagePreview(null)}>
-          <div className="bg-white rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
-            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200">
-              <h3 className="text-base sm:text-lg font-semibold text-gray-900">Proof View</h3>
+          <div className="bg-white dark:bg-[#222222] rounded-lg shadow-2xl w-full max-w-2xl max-h-[90vh] flex flex-col" onClick={(e) => e.stopPropagation()}>
+            <div className="flex justify-between items-center p-3 sm:p-4 border-b border-gray-200 dark:border-[#333333]">
+              <h3 className="text-base sm:text-lg font-semibold text-gray-900 dark:text-white">Proof View</h3>
               <button
                 onClick={() => setProofImagePreview(null)}
-                className="text-gray-500 hover:text-gray-700 font-semibold text-xl w-8 h-8 flex items-center justify-center"
+                className="text-gray-500 dark:text-white hover:text-gray-700 dark:hover:text-gray-300 font-semibold text-xl w-8 h-8 flex items-center justify-center"
               >
                 ✕
               </button>
             </div>
-            <div className="p-3 sm:p-6 flex justify-center bg-gray-50 overflow-auto">
+            <div className="p-3 sm:p-6 flex justify-center bg-gray-50 dark:bg-[#1C1C1C] overflow-auto">
               <img src={proofImagePreview || ''} alt="Proof" className="max-w-full max-h-[70vh] object-contain rounded" />
             </div>
           </div>
@@ -1641,16 +1644,16 @@ export default function ShipmentsPage() {
       {/* Bulk Assign Modal */}
       {showBulkAssignModal && (
         <div className="fixed inset-0 bg-black/20 backdrop-blur-sm flex items-center justify-center z-50 p-3 sm:p-4">
-          <div className="bg-white rounded-lg shadow-xl w-full max-w-md">
-            <div className="p-4 sm:p-6 border-b border-gray-200">
-              <h2 className="text-lg sm:text-xl font-bold text-gray-900">Assign to Staff</h2>
-              <p className="text-xs sm:text-sm text-gray-600 mt-1">
+          <div className="bg-white dark:bg-[#222222] rounded-lg shadow-xl w-full max-w-md">
+            <div className="p-4 sm:p-6 border-b border-gray-200 dark:border-[#333333]">
+              <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Assign to Staff</h2>
+              <p className="text-xs sm:text-sm text-gray-600 dark:text-[#A3A3A3] mt-1">
                 Assign {selectedShipmentIds.size} shipment{selectedShipmentIds.size > 1 ? 's' : ''} to a driver
               </p>
             </div>
             
             <div className="px-4 sm:px-6 py-4 sm:py-5">
-              <Label htmlFor="bulk-driver" className="text-sm">Select Driver</Label>
+              <Label htmlFor="bulk-driver" className="text-sm dark:text-white">Select Driver</Label>
               <Select value={bulkAssignDriver || ''} onValueChange={setBulkAssignDriver}>
                 <SelectTrigger id="bulk-driver" className="mt-2">
                   <SelectValue placeholder="Select a driver" />
@@ -1665,7 +1668,7 @@ export default function ShipmentsPage() {
               </Select>
             </div>
             
-            <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 rounded-b-lg border-t border-gray-200">
+            <div className="flex justify-end gap-3 px-4 sm:px-6 py-4 bg-gray-50 dark:bg-[#222222] rounded-b-lg border-t border-gray-200 dark:border-[#333333]">
               <Button
                 variant="outline"
                 onClick={() => {
@@ -1680,7 +1683,7 @@ export default function ShipmentsPage() {
               <Button
                 onClick={handleBulkAssign}
                 disabled={isSubmitting || !bulkAssignDriver}
-                className="text-sm"
+                className="text-sm bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
               >
                 {isSubmitting ? (
                   <span className="flex items-center gap-2">

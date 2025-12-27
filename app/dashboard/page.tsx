@@ -302,15 +302,15 @@ export default function BranchDashboardPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gray-50/50">
+    <div className="min-h-screen bg-gray-50/50 dark:bg-[#1C1C1C]">
       {/* Header Section */}
       <div>
         <div className="max-w-7xl mx-auto px-4 sm:px-6 pt-3 pb-4 sm:pt-4 sm:pb-5">
           <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between sm:gap-6">
             {/* Left: Branch Name and Welcome */}
             <div className="flex-1 min-w-0 mb-3 sm:mb-0">
-              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 truncate tracking-tight">{user?.tenantName || 'Your Branch'}</h1>
-              <p className="text-sm sm:text-base text-gray-500 font-medium mt-1.5">Welcome back, <span className="text-gray-900 font-bold">{user?.name || 'Admin'}</span></p>
+              <h1 className="text-xl sm:text-2xl md:text-3xl font-extrabold text-gray-900 dark:text-white truncate tracking-tight">{user?.tenantName || 'Your Branch'}</h1>
+              <p className="text-sm sm:text-base text-gray-500 dark:text-gray-400 font-medium mt-1.5">Welcome back, <span className="text-gray-900 dark:text-white font-bold">{user?.name || 'Admin'}</span></p>
             </div>
 
             {/* Right: Date Range Picker with Buttons */}
@@ -331,7 +331,7 @@ export default function BranchDashboardPage() {
                         : 'Pick date'}</span>
                     </Button>
                   </PopoverTrigger>
-                  <PopoverContent className="w-auto p-0" align="end">
+                  <PopoverContent className="w-auto p-0 bg-white dark:bg-[#222222] border-gray-200 dark:border-transparent" align="end">
                     <div className="p-3">
                       {(customStart || customEnd) && (
                         <div className="mb-3 text-xs sm:text-sm text-gray-600 px-1">
@@ -406,7 +406,7 @@ export default function BranchDashboardPage() {
                               setDropdownOpen(false);
                               handleApplyFilter();
                             }}
-                            className="flex-1 bg-blue-600 hover:bg-blue-700 text-xs sm:text-sm"
+                            className="flex-1 bg-[#25D366] hover:bg-[#22C05A] text-xs sm:text-sm"
                           >
                             Apply
                           </Button>
@@ -421,7 +421,7 @@ export default function BranchDashboardPage() {
               <Button
                 onClick={handleApplyFilter}
                 disabled={!customStart || !customEnd}
-                className="h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold bg-blue-600 hover:bg-blue-700 active:bg-blue-800 text-white whitespace-nowrap rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-blue-600"
+                className="h-10 sm:h-11 px-4 sm:px-5 text-sm font-semibold bg-[#25D366] hover:bg-[#22C05A] active:bg-[#1FAD50] text-white whitespace-nowrap rounded-lg shadow-md hover:shadow-lg transition-all duration-200 disabled:opacity-50 disabled:cursor-not-allowed disabled:hover:bg-[#25D366]"
               >
                 <span className="hidden sm:inline">Apply Filter</span>
                 <span className="sm:hidden">Apply</span>
@@ -535,78 +535,78 @@ export default function BranchDashboardPage() {
 
           {/* Operational Stats - Responsive */}
           <div className="space-y-3">
-            <h3 className="text-sm sm:text-base font-bold text-gray-900 px-2">Operational Status</h3>
+            <h3 className="text-sm sm:text-base font-bold text-gray-900 dark:text-white px-2">Operational Status</h3>
             <div className="grid grid-cols-2 lg:grid-cols-1 gap-2.5 sm:gap-3">
               {/* READY Card */}
               <div 
                 onClick={() => router.push('/dashboard/shipments?status=At Destination Branch')}
-                className="bg-white rounded-xl border-2 border-blue-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-300"
+                className="bg-white dark:bg-[#222222] rounded-xl border-2 border-blue-200 dark:border-transparent p-3 sm:p-4 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 shadow-sm cursor-pointer hover:border-blue-300 dark:hover:border-transparent"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="bg-blue-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
-                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600" strokeWidth={2.5} />
+                    <div className="bg-blue-50 dark:bg-blue-900/30 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-extrabold text-blue-700 uppercase tracking-wide">Ready</p>
-                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Shipments Ready for Delivery</p>
+                      <p className="text-xs sm:text-sm font-extrabold text-blue-700 dark:text-blue-400 uppercase tracking-wide">Ready</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium">Shipments Ready for Delivery</p>
                     </div>
                   </div>
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-700 flex-shrink-0">{readyForAssignment.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-blue-700 dark:text-blue-400 flex-shrink-0">{readyForAssignment.length}</span>
                 </div>
               </div>
               {/* FAILED Card */}
               <div 
                 onClick={() => router.push('/dashboard/shipments?status=Failed')}
-                className="bg-white rounded-xl border-2 border-red-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-red-300"
+                className="bg-white dark:bg-[#222222] rounded-xl border-2 border-red-200 dark:border-transparent p-3 sm:p-4 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 shadow-sm cursor-pointer hover:border-red-300 dark:hover:border-transparent"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="bg-red-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
-                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600" strokeWidth={2.5} />
+                    <div className="bg-red-50 dark:bg-red-900/30 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <AlertCircle className="h-5 w-5 sm:h-6 sm:w-6 text-red-600 dark:text-red-400" strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-extrabold text-red-700 uppercase tracking-wide">Failed</p>
-                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Local Delivery Failed</p>
+                      <p className="text-xs sm:text-sm font-extrabold text-red-700 dark:text-red-400 uppercase tracking-wide">Failed</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium">Local Delivery Failed</p>
                     </div>
                   </div>
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-red-700 flex-shrink-0">{failedDeliveries.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-red-700 dark:text-red-400 flex-shrink-0">{failedDeliveries.length}</span>
                 </div>
               </div>
               {/* INCOMING Card */}
               <div 
                 onClick={() => router.push('/dashboard/dispatch?tab=incoming')}
-                className="bg-white rounded-xl border-2 border-purple-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-purple-300"
+                className="bg-white dark:bg-[#222222] rounded-xl border-2 border-purple-200 dark:border-transparent p-3 sm:p-4 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 shadow-sm cursor-pointer hover:border-purple-300 dark:hover:border-transparent"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="bg-purple-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
-                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600" strokeWidth={2.5} />
+                    <div className="bg-purple-50 dark:bg-purple-900/30 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Package className="h-5 w-5 sm:h-6 sm:w-6 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-extrabold text-purple-700 uppercase tracking-wide">Incoming</p>
-                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Manifests from Other Branches</p>
+                      <p className="text-xs sm:text-sm font-extrabold text-purple-700 dark:text-purple-400 uppercase tracking-wide">Incoming</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium">Manifests from Other Branches</p>
                     </div>
                   </div>
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-purple-700 flex-shrink-0">{incomingManifests.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-purple-700 dark:text-purple-400 flex-shrink-0">{incomingManifests.length}</span>
                 </div>
               </div>
               {/* OUTGOING Card */}
               <div 
                 onClick={() => router.push('/dashboard/dispatch?tab=outgoing&status=In Transit')}
-                className="bg-white rounded-xl border-2 border-teal-200 p-3 sm:p-4 hover:shadow-lg transition-all duration-200 shadow-sm cursor-pointer hover:border-teal-300"
+                className="bg-white dark:bg-[#222222] rounded-xl border-2 border-teal-200 dark:border-transparent p-3 sm:p-4 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 shadow-sm cursor-pointer hover:border-teal-300 dark:hover:border-transparent"
               >
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0 flex-1">
-                    <div className="bg-teal-50 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
-                      <Send className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600" strokeWidth={2.5} />
+                    <div className="bg-teal-50 dark:bg-teal-900/30 rounded-lg p-2 sm:p-2.5 flex-shrink-0">
+                      <Send className="h-5 w-5 sm:h-6 sm:w-6 text-teal-600 dark:text-teal-400" strokeWidth={2.5} />
                     </div>
                     <div className="min-w-0 flex-1">
-                      <p className="text-xs sm:text-sm font-extrabold text-teal-700 uppercase tracking-wide">Outgoing</p>
-                      <p className="text-xs text-gray-600 mt-0.5 font-medium">Manifests to Other Branches</p>
+                      <p className="text-xs sm:text-sm font-extrabold text-teal-700 dark:text-teal-400 uppercase tracking-wide">Outgoing</p>
+                      <p className="text-xs text-gray-600 dark:text-gray-400 mt-0.5 font-medium">Manifests to Other Branches</p>
                     </div>
                   </div>
-                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-teal-700 flex-shrink-0">{outgoingManifests.length}</span>
+                  <span className="text-2xl sm:text-3xl md:text-4xl font-extrabold text-teal-700 dark:text-teal-400 flex-shrink-0">{outgoingManifests.length}</span>
                 </div>
               </div>
             </div>
@@ -616,7 +616,7 @@ export default function BranchDashboardPage() {
         {/* Recent Shipments Table */}
         <div className="overflow-hidden">
           <div className="flex items-center justify-between mb-3 sm:mb-6">
-            <h2 className="text-lg sm:text-xl font-bold text-gray-900">Recent Activity</h2>
+            <h2 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Recent Activity</h2>
           </div>
 
           <div className="overflow-x-auto">
@@ -626,29 +626,29 @@ export default function BranchDashboardPage() {
               isLoading={operationalLoading}
               emptyMessage="No recent shipments found"
               renderRow={(shipment, i) => (
-                <tr key={shipment._id} className="hover:bg-gray-50/50 transition-colors group border-b border-gray-100/50">
+                <tr key={shipment._id} className="hover:bg-gray-50/50 dark:hover:bg-[#0F0F0F]/50 transition-colors group border-b border-gray-100/50 dark:border-gray-700/50">
                   <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
-                    <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 font-mono group-hover:text-blue-600 transition-colors break-all">
+                    <span className="text-xs sm:text-sm md:text-base font-medium text-gray-900 dark:text-white font-mono group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors break-all">
                       {shipment.trackingId}
                     </span>
                   </td>
                   <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
                     <div className="flex flex-col min-w-0">
-                      <span className="text-xs sm:text-sm md:text-base text-gray-900 font-medium truncate">{shipment.recipient.name}</span>
-                      <span className="text-xs text-gray-500 truncate">{shipment.recipient.address}</span>
+                      <span className="text-xs sm:text-sm md:text-base text-gray-900 dark:text-white font-medium truncate">{shipment.recipient.name}</span>
+                      <span className="text-xs text-gray-500 dark:text-gray-400 truncate">{shipment.recipient.address}</span>
                     </div>
                   </td>
                   <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5">
                     <span className={`inline-flex items-center px-2 sm:px-3 py-0.5 sm:py-1 rounded-full text-xs font-bold uppercase tracking-wide whitespace-nowrap ${shipment.status === "Failed"
-                      ? "bg-red-100 text-red-700"
+                      ? "bg-red-100 dark:bg-red-900/30 text-red-700 dark:text-red-400"
                       : shipment.status === "At Destination Branch"
-                        ? "bg-blue-100 text-blue-700"
-                        : "bg-yellow-100 text-yellow-700"
+                        ? "bg-blue-100 dark:bg-blue-900/30 text-blue-700 dark:text-blue-400"
+                        : "bg-yellow-100 dark:bg-yellow-900/30 text-yellow-700 dark:text-yellow-400"
                       }`}>
                       {shipment.status}
                     </span>
                   </td>
-                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5 text-xs sm:text-sm text-gray-500 font-medium whitespace-nowrap">
+                  <td className="px-2 sm:px-4 md:px-8 py-3 sm:py-5 text-xs sm:text-sm text-gray-500 dark:text-gray-400 font-medium whitespace-nowrap">
                     {new Date(shipment.createdAt).toLocaleDateString(undefined, {
                       month: 'short',
                       day: 'numeric',

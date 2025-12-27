@@ -247,8 +247,8 @@ export default function DispatchPage() {
     <div className="space-y-4 sm:space-y-6 pb-8">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">Dispatch Management</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">Dispatch Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-white mt-1 sm:mt-2">
           Create manifests, track incoming deliveries, and manage outgoing shipments
         </p>
       </div>
@@ -267,8 +267,8 @@ export default function DispatchPage() {
               onClick={() => setActiveTab(tab.value as TabType)}
               className={`flex-1 sm:flex-none px-4 sm:px-6 py-2.5 sm:py-3 font-semibold text-sm rounded-lg transition-all flex items-center justify-center gap-2 ${
                 activeTab === tab.value
-                  ? 'bg-blue-600 text-white shadow-md'
-                  : 'text-gray-600 hover:text-gray-900 hover:bg-gray-50'
+                  ? 'bg-[#1A9D4A] text-white shadow-md dark:bg-[#1A9D4A]'
+                  : 'text-gray-600 dark:text-white hover:text-gray-900 dark:hover:text-white hover:bg-gray-50 dark:hover:bg-[#333333]'
               }`}
             >
               <TabIcon className="h-4 w-4 sm:h-5 sm:w-5" strokeWidth={2.5} />
@@ -340,20 +340,20 @@ function CreateDispatchTab({
   return (
     <div className="grid grid-cols-1 lg:grid-cols-2 gap-4 sm:gap-6">
       {/* Left: Form Section */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-5 sm:p-6">
+      <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-5 sm:p-6">
         <div className="flex items-center gap-3 mb-6">
-          <div className="flex items-center justify-center w-10 h-10 bg-blue-100 rounded-lg">
-            <Rocket className="h-5 w-5 text-blue-600" strokeWidth={2.5} />
+          <div className="flex items-center justify-center w-10 h-10 bg-blue-100 dark:bg-blue-900/20 rounded-lg">
+            <Rocket className="h-5 w-5 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
           </div>
-          <h3 className="text-lg sm:text-xl font-bold text-gray-900">Dispatch Details</h3>
+          <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">Dispatch Details</h3>
         </div>
         
         <div className="space-y-5">
           {/* Destination Branch */}
           <div>
-            <Label htmlFor="dest-branch" className="text-sm font-semibold text-gray-700 mb-2 block">Destination Branch <span className="text-red-500">*</span></Label>
+            <Label htmlFor="dest-branch" className="text-sm font-semibold text-gray-700 dark:text-white mb-2 block">Destination Branch <span className="text-red-500">*</span></Label>
             <Select value={selectedDestBranch} onValueChange={setSelectedDestBranch}>
-              <SelectTrigger id="dest-branch" className="h-11 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+              <SelectTrigger id="dest-branch" className="h-11 bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg">
                 <SelectValue placeholder="Select a branch..." />
               </SelectTrigger>
               <SelectContent>
@@ -368,63 +368,63 @@ function CreateDispatchTab({
 
           {/* Vehicle Number */}
           <div>
-            <Label htmlFor="vehicle" className="text-sm font-semibold text-gray-700 mb-2 block">Vehicle Number</Label>
+            <Label htmlFor="vehicle" className="text-sm font-semibold text-gray-700 dark:text-white mb-2 block">Vehicle Number</Label>
             <Input
               id="vehicle"
               type="text"
               value={vehicleNumber}
               onChange={(e) => setVehicleNumber(e.target.value)}
               placeholder="e.g., KA01AB1234"
-              className="h-11 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg"
             />
           </div>
 
           {/* Driver Name */}
           <div>
-            <Label htmlFor="driver" className="text-sm font-semibold text-gray-700 mb-2 block">Driver Name</Label>
+            <Label htmlFor="driver" className="text-sm font-semibold text-gray-700 dark:text-white mb-2 block">Driver Name</Label>
             <Input
               id="driver"
               type="text"
               value={driverName}
               onChange={(e) => setDriverName(e.target.value)}
               placeholder="e.g., Ramesh Kumar"
-              className="h-11 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="h-11 bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg"
             />
           </div>
 
           {/* Notes */}
           <div>
-            <Label htmlFor="notes" className="text-sm font-semibold text-gray-700 mb-2 block">Notes</Label>
+            <Label htmlFor="notes" className="text-sm font-semibold text-gray-700 dark:text-white mb-2 block">Notes</Label>
             <Textarea
               id="notes"
               value={notes}
               onChange={(e) => setNotes(e.target.value)}
               placeholder="Add any additional notes..."
               rows={3}
-              className="bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100 resize-none"
+              className="bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg resize-none"
             />
           </div>
 
           {/* Summary */}
-          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 border-2 border-blue-200 rounded-xl p-5 space-y-4 shadow-sm">
+          <div className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20 border-2 border-blue-200 dark:border-blue-800/30 rounded-xl p-5 space-y-4 shadow-sm">
             <div className="flex items-center gap-2">
-              <PackageIcon className="h-5 w-5 text-blue-600" strokeWidth={2.5} />
-              <p className="text-xs font-bold text-blue-900 uppercase tracking-wide">Dispatch Summary</p>
+              <PackageIcon className="h-5 w-5 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
+              <p className="text-xs font-bold text-blue-900 dark:text-blue-300 uppercase tracking-wide">Dispatch Summary</p>
               </div>
             <div className="space-y-2.5 text-sm">
-              <div className="flex justify-between items-center py-1.5 px-2 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium">Destination:</span>
-                <span className="font-bold text-gray-900">{destBranchName || '—'}</span>
+              <div className="flex justify-between items-center py-1.5 px-2 bg-white/60 dark:bg-[#222222]/60 rounded-lg">
+                <span className="text-gray-700 dark:text-[#A3A3A3] font-medium">Destination:</span>
+                <span className="font-bold text-gray-900 dark:text-white">{destBranchName || '—'}</span>
               </div>
-              <div className="flex justify-between items-center py-1.5 px-2 bg-white/60 rounded-lg">
-                <span className="text-gray-700 font-medium">Selected Shipments:</span>
-                <span className="font-bold text-blue-600 text-lg">{selectedShipments.size}</span>
+              <div className="flex justify-between items-center py-1.5 px-2 bg-white/60 dark:bg-[#222222]/60 rounded-lg">
+                <span className="text-gray-700 dark:text-[#A3A3A3] font-medium">Selected Shipments:</span>
+                <span className="font-bold text-blue-600 dark:text-blue-400 text-lg">{selectedShipments.size}</span>
               </div>
             </div>
             <Button
               onClick={handleDispatch}
               disabled={!selectedDestBranch || selectedShipments.size === 0 || isSubmitting}
-              className="w-full h-11 gap-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
+              className="w-full h-11 gap-2 bg-[#1A9D4A] hover:bg-[#158A3F] text-white font-semibold rounded-lg shadow-md hover:shadow-lg transition-all disabled:opacity-50 disabled:cursor-not-allowed"
             >
               {isSubmitting ? (
                 <>
@@ -443,17 +443,17 @@ function CreateDispatchTab({
       </div>
 
       {/* Right: Shipment Selection */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-5 sm:p-6">
+      <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-5 sm:p-6">
         <div className="flex items-center justify-between mb-5">
           <div className="flex items-center gap-3">
-            <div className="flex items-center justify-center w-10 h-10 bg-purple-100 rounded-lg">
-              <PackageIcon className="h-5 w-5 text-purple-600" strokeWidth={2.5} />
+            <div className="flex items-center justify-center w-10 h-10 bg-purple-100 dark:bg-purple-900/20 rounded-lg">
+              <PackageIcon className="h-5 w-5 text-purple-600 dark:text-purple-400" strokeWidth={2.5} />
             </div>
             <div>
-              <h3 className="text-lg sm:text-xl font-bold text-gray-900">
+              <h3 className="text-lg sm:text-xl font-bold text-gray-900 dark:text-white">
                 Available Shipments
           </h3>
-              <p className="text-xs text-gray-500 mt-0.5">
+              <p className="text-xs text-gray-500 dark:text-[#A3A3A3] mt-0.5">
                 {availableShipments.length} shipment{availableShipments.length !== 1 ? 's' : ''} available
               </p>
             </div>
@@ -463,7 +463,7 @@ function CreateDispatchTab({
               size="sm"
               variant="outline"
               onClick={handleSelectAll}
-              className="text-xs h-9 px-3 border-gray-300 hover:bg-gray-50"
+              className="text-xs h-9 px-3 border-gray-300 dark:border-[#333333] hover:bg-gray-50 dark:hover:bg-[#333333] dark:text-white"
             >
               {selectedShipments.size === availableShipments.length
                 ? 'Deselect All'
@@ -473,21 +473,21 @@ function CreateDispatchTab({
         </div>
 
         {!selectedDestBranch ? (
-          <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-            <PackageIcon className="h-14 w-14 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
-            <p className="text-gray-600 font-semibold text-sm sm:text-base">Select a destination branch</p>
-            <p className="text-gray-500 text-xs sm:text-sm mt-1">to view available shipments</p>
+          <div className="text-center py-16 bg-gray-50 dark:bg-[#2A2A2A] rounded-xl border-2 border-dashed border-gray-200 dark:border-[#333333]">
+            <PackageIcon className="h-14 w-14 text-gray-300 dark:text-[#A3A3A3] mx-auto mb-4" strokeWidth={1.5} />
+            <p className="text-gray-600 dark:text-white font-semibold text-sm sm:text-base">Select a destination branch</p>
+            <p className="text-gray-500 dark:text-[#A3A3A3] text-xs sm:text-sm mt-1">to view available shipments</p>
           </div>
         ) : isLoading ? (
-          <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-            <Loader className="h-10 w-10 text-blue-500 mx-auto mb-4 animate-spin" strokeWidth={2} />
-            <p className="text-gray-600 font-semibold text-sm sm:text-base">Loading shipments...</p>
+          <div className="text-center py-16 bg-gray-50 dark:bg-[#2A2A2A] rounded-xl border-2 border-dashed border-gray-200 dark:border-[#333333]">
+            <Loader className="h-10 w-10 text-blue-500 dark:text-blue-400 mx-auto mb-4 animate-spin" strokeWidth={2} />
+            <p className="text-gray-600 dark:text-white font-semibold text-sm sm:text-base">Loading shipments...</p>
           </div>
         ) : availableShipments.length === 0 ? (
-          <div className="text-center py-16 bg-gray-50 rounded-xl border-2 border-dashed border-gray-200">
-            <PackageIcon className="h-14 w-14 text-gray-300 mx-auto mb-4" strokeWidth={1.5} />
-            <p className="text-gray-600 font-semibold text-sm sm:text-base">No shipments available</p>
-            <p className="text-gray-500 text-xs sm:text-sm mt-1">for dispatch to this branch</p>
+          <div className="text-center py-16 bg-gray-50 dark:bg-[#2A2A2A] rounded-xl border-2 border-dashed border-gray-200 dark:border-[#333333]">
+            <PackageIcon className="h-14 w-14 text-gray-300 dark:text-[#A3A3A3] mx-auto mb-4" strokeWidth={1.5} />
+            <p className="text-gray-600 dark:text-white font-semibold text-sm sm:text-base">No shipments available</p>
+            <p className="text-gray-500 dark:text-[#A3A3A3] text-xs sm:text-sm mt-1">for dispatch to this branch</p>
           </div>
         ) : (
           <div className="space-y-3 max-h-[500px] overflow-y-auto pr-1">
@@ -511,30 +511,30 @@ function ShipmentCheckItem({ shipment, isSelected, onToggle }: any) {
   return (
     <label className={`flex items-start gap-3 p-4 border-2 rounded-xl cursor-pointer transition-all ${
       isSelected 
-        ? 'border-blue-500 bg-blue-50 shadow-md' 
-        : 'border-gray-200 hover:border-blue-300 hover:bg-blue-50/50'
+        ? 'border-blue-500 dark:border-blue-400 bg-blue-50 dark:bg-blue-900/20 shadow-md' 
+        : 'border-gray-200 dark:border-[#333333] hover:border-blue-300 dark:hover:border-blue-600 hover:bg-blue-50/50 dark:hover:bg-blue-900/10'
     }`}>
       <input
         type="checkbox"
         checked={isSelected}
         onChange={onToggle}
-        className="mt-1 w-5 h-5 rounded border-2 border-gray-300 text-blue-600 focus:ring-2 focus:ring-blue-500 focus:ring-offset-1 cursor-pointer"
+        className="mt-1 w-5 h-5 rounded border-2 border-gray-300 dark:border-[#555555] text-blue-600 dark:text-blue-400 cursor-pointer"
       />
       <div className="flex-1 min-w-0">
         <div className="flex items-start justify-between gap-2 mb-2">
-          <p className="font-bold text-gray-900 text-sm font-mono">{shipment.trackingId}</p>
+          <p className="font-bold text-gray-900 dark:text-white text-sm font-mono">{shipment.trackingId}</p>
           {isSelected && (
-            <div className="flex items-center justify-center w-6 h-6 bg-blue-600 rounded-full flex-shrink-0">
+            <div className="flex items-center justify-center w-6 h-6 bg-blue-600 dark:bg-blue-500 rounded-full flex-shrink-0">
               <Check className="h-4 w-4 text-white" strokeWidth={3} />
         </div>
           )}
         </div>
         <div className="space-y-1.5">
-          <p className="text-xs sm:text-sm text-gray-600">
-            <span className="font-semibold text-gray-700">From:</span> <span className="font-medium text-gray-900">{shipment.sender.name}</span>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-[#A3A3A3]">
+            <span className="font-semibold text-gray-700 dark:text-white">From:</span> <span className="font-medium text-gray-900 dark:text-white">{shipment.sender.name}</span>
         </p>
-          <p className="text-xs sm:text-sm text-gray-600">
-            <span className="font-semibold text-gray-700">To:</span> <span className="font-medium text-gray-900">{shipment.recipient.name}</span>
+          <p className="text-xs sm:text-sm text-gray-600 dark:text-[#A3A3A3]">
+            <span className="font-semibold text-gray-700 dark:text-white">To:</span> <span className="font-medium text-gray-900 dark:text-white">{shipment.recipient.name}</span>
         </p>
         </div>
       </div>
@@ -595,14 +595,14 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
 
   if (manifests.length === 0) {
     return (
-      <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-12 sm:p-16 text-center">
-        <div className="flex items-center justify-center w-16 h-16 bg-gray-100 rounded-full mx-auto mb-4">
-          <Box className="h-8 w-8 text-gray-400" strokeWidth={1.5} />
+      <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-12 sm:p-16 text-center">
+        <div className="flex items-center justify-center w-16 h-16 bg-gray-100 dark:bg-[#333333] rounded-full mx-auto mb-4">
+          <Box className="h-8 w-8 text-gray-400 dark:text-[#A3A3A3]" strokeWidth={1.5} />
         </div>
-        <p className="text-gray-700 font-bold text-lg sm:text-xl mb-2">
+        <p className="text-gray-700 dark:text-white font-bold text-lg sm:text-xl mb-2">
           {isIncoming ? 'No incoming manifests yet' : 'No outgoing manifests yet'}
         </p>
-        <p className="text-sm sm:text-base text-gray-500">
+        <p className="text-sm sm:text-base text-gray-500 dark:text-[#A3A3A3]">
           {isIncoming
             ? 'Manifests from other branches will appear here'
             : 'Manifests you create will appear here'}
@@ -614,23 +614,23 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
   return (
     <div className="space-y-4 sm:space-y-6">
       {/* Search and Filter Bar */}
-      <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-4 sm:p-5">
+      <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-4 sm:p-5">
         <div className="flex flex-col sm:flex-row gap-3">
           <div className="flex-1 relative">
             <div className="absolute inset-y-0 left-0 pl-3 flex items-center pointer-events-none">
-              <Search className="h-4 w-4 text-gray-400" strokeWidth={2} />
+              <Search className="h-4 w-4 text-gray-400 dark:text-[#A3A3A3]" strokeWidth={2} />
             </div>
             <Input
               type="text"
               placeholder="Search by manifest ID or branch..."
               value={searchQuery}
               onChange={(e) => handleSearch(e.target.value)}
-              className="pl-10 h-10 sm:h-11 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100"
+              className="pl-10 h-10 sm:h-11 bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg"
             />
           </div>
           <div className="w-full sm:w-48">
             <Select value={statusFilter || 'all'} onValueChange={handleStatusChange}>
-              <SelectTrigger className="h-10 sm:h-11 bg-white border-gray-300 rounded-lg focus:border-blue-500 focus:ring-2 focus:ring-blue-100">
+              <SelectTrigger className="h-10 sm:h-11 bg-white dark:bg-[#222222] border-gray-300 dark:border-[#333333] rounded-lg">
                 <SelectValue placeholder="All Status" />
               </SelectTrigger>
               <SelectContent>
@@ -645,7 +645,7 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
               size="sm"
               variant="outline"
               onClick={handleClearFilters}
-              className="h-10 sm:h-11 border-gray-300 hover:bg-gray-50"
+              className="h-10 sm:h-11 border-gray-300 dark:border-[#333333] hover:bg-gray-50 dark:hover:bg-[#333333] dark:text-white"
             >
               Clear
             </Button>
@@ -655,26 +655,26 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
 
       {/* Manifests Table */}
       {filteredManifests.length === 0 ? (
-        <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-8 sm:p-12 text-center">
-          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 rounded-full mx-auto mb-3">
-            <Box className="h-6 w-6 text-gray-400" strokeWidth={1.5} />
+        <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-8 sm:p-12 text-center">
+          <div className="flex items-center justify-center w-12 h-12 bg-gray-100 dark:bg-[#333333] rounded-full mx-auto mb-3">
+            <Box className="h-6 w-6 text-gray-400 dark:text-[#A3A3A3]" strokeWidth={1.5} />
           </div>
-          <p className="text-gray-600 font-semibold text-sm sm:text-base">No manifests match your search</p>
+          <p className="text-gray-600 dark:text-white font-semibold text-sm sm:text-base">No manifests match your search</p>
         </div>
       ) : (
         <>
-          <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm overflow-hidden">
+          <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm overflow-hidden">
             <Table>
               <TableHeader>
-                <TableRow className="bg-gray-50 border-b-2 border-gray-200">
-                  <TableHead className="w-12 h-14 px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">No.</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">Manifest ID</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">{isIncoming ? 'From' : 'To'}</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">Shipments</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">Vehicle</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">Driver</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider">Status</TableHead>
-                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 text-xs uppercase tracking-wider text-right">Action</TableHead>
+                <TableRow className="bg-gray-50/80 dark:bg-[#222222] border-b-2 border-gray-200 dark:border-[#333333] hover:bg-gray-50/80 dark:hover:bg-[#222222]">
+                  <TableHead className="w-12 h-14 px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">No.</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">Manifest ID</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">{isIncoming ? 'From' : 'To'}</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">Shipments</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">Vehicle</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">Driver</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider">Status</TableHead>
+                  <TableHead className="px-3 sm:px-4 font-bold text-gray-700 dark:text-white text-xs uppercase tracking-wider text-right">Action</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -693,10 +693,10 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
 
           {/* Pagination */}
           {totalPages > 1 && (
-            <div className="bg-white rounded-xl border-2 border-gray-200 shadow-sm p-4 sm:p-5">
+            <div className="bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-[#333333] shadow-sm p-4 sm:p-5">
               <div className="flex flex-col sm:flex-row items-center justify-between gap-4">
-                <div className="text-sm sm:text-base text-gray-600 font-semibold">
-                  Showing <span className="font-bold text-gray-900">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-900">{Math.min(currentPage * itemsPerPage, filteredManifests.length)}</span> of <span className="font-bold text-gray-900">{filteredManifests.length}</span> manifests
+                <div className="text-sm sm:text-base text-gray-600 dark:text-white font-semibold">
+                  Showing <span className="font-bold text-gray-900 dark:text-white">{(currentPage - 1) * itemsPerPage + 1}</span> to <span className="font-bold text-gray-900 dark:text-white">{Math.min(currentPage * itemsPerPage, filteredManifests.length)}</span> of <span className="font-bold text-gray-900 dark:text-white">{filteredManifests.length}</span> manifests
                 </div>
                 <div className="flex items-center gap-2 flex-wrap justify-center">
                   <Button
@@ -704,7 +704,7 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
                     size="sm"
                     onClick={() => setCurrentPage(Math.max(1, currentPage - 1))}
                     disabled={currentPage === 1}
-                    className="h-9 px-3"
+                    className="h-9 px-3 dark:text-white"
                   >
                     ← Previous
                   </Button>
@@ -716,7 +716,7 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
                           variant={currentPage === page ? 'default' : 'outline'}
                           size="sm"
                           onClick={() => setCurrentPage(page)}
-                          className="h-9 min-w-[36px]"
+                          className={`h-9 min-w-[36px] ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
                         >
                           {page}
                         </Button>
@@ -729,20 +729,20 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
                             variant={currentPage === page ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setCurrentPage(page)}
-                            className="h-9 min-w-[36px]"
+                            className={`h-9 min-w-[36px] ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
                           >
                             {page}
                           </Button>
                         ))}
                         {totalPages > 4 && (
-                          <span className="px-2 text-gray-500 font-medium">...</span>
+                          <span className="px-2 text-gray-500 dark:text-[#A3A3A3] font-medium">...</span>
                         )}
                         {totalPages > 2 && (
                           <Button
                             variant={currentPage === totalPages ? 'default' : 'outline'}
                             size="sm"
                             onClick={() => setCurrentPage(totalPages)}
-                            className="h-9 min-w-[36px]"
+                            className={`h-9 min-w-[36px] ${currentPage === totalPages ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
                           >
                             {totalPages}
                           </Button>
@@ -755,7 +755,7 @@ function ManifestListTab({ manifests, type, searchParams }: any) {
                     size="sm"
                     onClick={() => setCurrentPage(Math.min(totalPages, currentPage + 1))}
                     disabled={currentPage === totalPages}
-                    className="h-9 px-3"
+                    className="h-9 px-3 dark:text-white"
                   >
                     Next →
                   </Button>
@@ -801,22 +801,22 @@ function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
   };
 
   return (
-    <TableRow className="border-b border-gray-100 hover:bg-blue-50/30 transition-colors">
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-bold text-gray-700">{siNo}</TableCell>
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-mono font-bold text-blue-600">{manifest._id}</TableCell>
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold text-gray-700">
+    <TableRow className="border-b border-gray-100 dark:border-[#333333] hover:bg-blue-50/30 dark:hover:bg-[#1A3D2A] transition-colors">
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-bold text-gray-700 dark:text-[#E5E5E5]">{siNo}</TableCell>
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-mono font-bold text-blue-600 dark:text-blue-400">{manifest._id}</TableCell>
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-semibold text-gray-700 dark:text-[#E5E5E5]">
         {isIncoming ? manifest.fromBranchId?.name : manifest.toBranchId?.name || 'Unknown'}
       </TableCell>
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-bold text-gray-900">{manifest.shipmentIds?.length || 0}</TableCell>
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm text-gray-700">{manifest.vehicleNumber || '—'}</TableCell>
-      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm text-gray-700">{manifest.driverName || '—'}</TableCell>
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm font-bold text-gray-900 dark:text-white">{manifest.shipmentIds?.length || 0}</TableCell>
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm text-gray-700 dark:text-[#A3A3A3]">{manifest.vehicleNumber || '—'}</TableCell>
+      <TableCell className="px-3 sm:px-4 py-3.5 text-xs sm:text-sm text-gray-700 dark:text-[#A3A3A3]">{manifest.driverName || '—'}</TableCell>
       <TableCell className="px-3 sm:px-4 py-3.5">
         <Badge
           variant={manifest.status === 'In Transit' ? 'default' : 'secondary'}
-          className={`text-xs font-semibold px-2.5 py-1 ${
+          className={`text-xs font-semibold px-2.5 py-1 text-white ${
             manifest.status === 'In Transit'
-              ? 'bg-blue-100 text-blue-700 border-2 border-blue-300'
-              : 'bg-green-100 text-green-700 border-2 border-green-300'
+              ? 'bg-[#3B82F6]'
+              : 'bg-[#16A34A]'
           }`}
         >
           {manifest.status}
@@ -830,7 +830,7 @@ function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
               disabled={isReceiving}
               size="sm"
               variant="default"
-              className="h-8 sm:h-9 text-xs bg-green-600 hover:bg-green-700 text-white font-semibold gap-1.5"
+              className="h-8 sm:h-9 text-xs bg-[#16A34A] hover:bg-[#15803D] text-white font-semibold gap-1.5"
             >
               {isReceiving ? (
                 <Loader className="h-3.5 w-3.5 animate-spin" />
@@ -844,7 +844,7 @@ function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
             variant="ghost"
             size="sm"
             asChild
-            className="h-8 sm:h-9 text-xs hover:bg-blue-50 hover:text-blue-600"
+            className="h-8 sm:h-9 text-xs hover:bg-blue-50 dark:hover:bg-blue-900/20 hover:text-blue-600 dark:hover:text-blue-400"
           >
             <Link href={`/dashboard/dispatch/${manifest._id}`}>
               <Eye className="h-3.5 w-3.5" strokeWidth={2} />
@@ -857,18 +857,18 @@ function ManifestTableRow({ manifest, type, siNo, isIncoming }: any) {
       {/* Confirm Receipt Dialog */}
       {showConfirmDialog && (
         <Dialog open={showConfirmDialog} onOpenChange={setShowConfirmDialog}>
-          <DialogContent>
+          <DialogContent className="dark:bg-[#222222] dark:border-[#333333]">
             <DialogHeader>
-              <DialogTitle>Confirm Manifest Receipt</DialogTitle>
-              <DialogDescription>
+              <DialogTitle className="dark:text-white">Confirm Manifest Receipt</DialogTitle>
+              <DialogDescription className="dark:text-[#A3A3A3]">
                 Are you sure you want to mark this manifest as received?
               </DialogDescription>
             </DialogHeader>
             <DialogFooter>
-              <Button variant="outline" onClick={() => setShowConfirmDialog(false)}>
+              <Button variant="outline" onClick={() => setShowConfirmDialog(false)} className="dark:text-white">
                 Cancel
               </Button>
-              <Button onClick={handleConfirmReceive} disabled={isReceiving}>
+              <Button onClick={handleConfirmReceive} disabled={isReceiving} className="bg-[#16A34A] hover:bg-[#15803D] text-white">
                 {isReceiving ? 'Confirming...' : 'Confirm Receipt'}
               </Button>
             </DialogFooter>

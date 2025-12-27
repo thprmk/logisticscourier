@@ -36,27 +36,27 @@ const CustomTooltip = ({ active, payload, label }: any) => {
   if (active && payload && payload.length) {
     const total = payload.reduce((sum: number, entry: any) => sum + (entry.value || 0), 0);
     return (
-      <div className="bg-white p-4 rounded-xl shadow-xl border-2 border-gray-200">
-        <p className="text-sm font-bold text-gray-900 mb-3 pb-2 border-b border-gray-200">{label}</p>
+      <div className="bg-white dark:bg-[#222222] p-4 rounded-xl shadow-xl border-2 border-gray-200 dark:border-transparent">
+        <p className="text-sm font-bold text-gray-900 dark:text-[#E5E5E5] mb-3 pb-2 border-b border-gray-200 dark:border-[#333333]">{label}</p>
         <div className="space-y-2">
-        {payload.map((entry: any, index: number) => (
+          {payload.map((entry: any, index: number) => (
             <div key={index} className="flex items-center justify-between gap-4 min-w-[140px]">
               <div className="flex items-center gap-2">
-                <div 
-                  className="w-3 h-3 rounded-full" 
+                <div
+                  className="w-3 h-3 rounded-full"
                   style={{ backgroundColor: entry.color }}
                 />
-                <span className="text-sm font-semibold text-gray-700">{entry.name}:</span>
+                <span className="text-sm font-semibold text-gray-700 dark:text-[#A3A3A3]">{entry.name}:</span>
               </div>
               <span className="text-sm font-bold" style={{ color: entry.color }}>
                 {entry.value || 0}
               </span>
             </div>
-        ))}
-          <div className="pt-2 mt-2 border-t border-gray-200">
+          ))}
+          <div className="pt-2 mt-2 border-t border-gray-200 dark:border-[#333333]">
             <div className="flex items-center justify-between">
-              <span className="text-sm font-bold text-gray-900">Total:</span>
-              <span className="text-sm font-extrabold text-gray-900">{total}</span>
+              <span className="text-sm font-bold text-gray-900 dark:text-[#E5E5E5]">Total:</span>
+              <span className="text-sm font-extrabold text-gray-900 dark:text-[#E5E5E5]">{total}</span>
             </div>
           </div>
         </div>
@@ -104,10 +104,10 @@ function AnimatedNumber({ value, duration = 2000 }: { value: number; duration?: 
 
       // Smooth step function - even smoother than cubic
       // Using smoothstep for ultra-fluid motion
-      const smoothProgress = progress < 0.5 
-        ? 2 * progress * progress 
+      const smoothProgress = progress < 0.5
+        ? 2 * progress * progress
         : -1 + (4 - 2 * progress) * progress;
-      
+
       const currentValue = Math.floor(startValue + difference * smoothProgress);
       setDisplayValue(currentValue);
 
@@ -146,41 +146,41 @@ export function KPICard({
   // Handle percentage values (e.g., "33%")
   const isPercentage = value.includes('%');
   const numValue = isPercentage ? parseInt(value.replace('%', ''), 10) : parseInt(value, 10);
-  
+
   const colorStyles = {
-    blue: { 
-      text: 'text-blue-700', 
-      label: 'text-blue-600', 
-      bgIcon: 'bg-blue-100', 
-      icon: 'text-blue-600',
+    blue: {
+      text: 'text-blue-700 dark:text-blue-400',
+      label: 'text-blue-600 dark:text-blue-400',
+      bgIcon: 'bg-blue-100 dark:bg-blue-900/30',
+      icon: 'text-blue-600 dark:text-blue-400',
       shadow: 'shadow-md'
     },
-    green: { 
-      text: 'text-green-700', 
-      label: 'text-green-600', 
-      bgIcon: 'bg-green-100', 
-      icon: 'text-green-600',
+    green: {
+      text: 'text-green-700 dark:text-green-400',
+      label: 'text-green-600 dark:text-green-400',
+      bgIcon: 'bg-green-100 dark:bg-green-900/30',
+      icon: 'text-green-600 dark:text-green-400',
       shadow: 'shadow-md'
     },
-    red: { 
-      text: 'text-red-700', 
-      label: 'text-red-600', 
-      bgIcon: 'bg-red-100', 
-      icon: 'text-red-600',
+    red: {
+      text: 'text-red-700 dark:text-red-400',
+      label: 'text-red-600 dark:text-red-400',
+      bgIcon: 'bg-red-100 dark:bg-red-900/30',
+      icon: 'text-red-600 dark:text-red-400',
       shadow: 'shadow-md'
     },
-    purple: { 
-      text: 'text-purple-700', 
-      label: 'text-purple-600', 
-      bgIcon: 'bg-purple-100', 
-      icon: 'text-purple-600',
+    purple: {
+      text: 'text-purple-700 dark:text-purple-400',
+      label: 'text-purple-600 dark:text-purple-400',
+      bgIcon: 'bg-purple-100 dark:bg-purple-900/30',
+      icon: 'text-purple-600 dark:text-purple-400',
       shadow: 'shadow-md'
     },
-    orange: { 
-      text: 'text-orange-700', 
-      label: 'text-orange-600', 
-      bgIcon: 'bg-orange-100', 
-      icon: 'text-orange-600',
+    orange: {
+      text: 'text-orange-700 dark:text-orange-400',
+      label: 'text-orange-600 dark:text-orange-400',
+      bgIcon: 'bg-orange-100 dark:bg-orange-900/30',
+      icon: 'text-orange-600 dark:text-orange-400',
       shadow: 'shadow-md'
     },
   };
@@ -188,21 +188,21 @@ export function KPICard({
   const style = colorStyles[color];
 
   return (
-    <div className={`bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6 flex items-center justify-between hover:shadow-lg transition-all duration-200 ${style.shadow}`}>
+    <div className={`bg-white dark:bg-[#222222] rounded-2xl border-2 border-gray-200 dark:border-transparent p-5 sm:p-6 flex items-center justify-between hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 ${style.shadow}`}>
       <div className="flex-1 min-w-0">
         <p className={`text-xs sm:text-sm font-bold ${style.label} uppercase tracking-wide mb-2 sm:mb-3`}>{label}</p>
-        <p className={`text-3xl sm:text-4xl md:text-5xl font-extrabold ${style.text} leading-tight`}>
+        <p className={`text-3xl sm:text-4xl md:text-5xl font-extrabold leading-tight ${style.text}`}>
           {isPercentage ? (
             <>
               <AnimatedNumber value={numValue} duration={1200} />%
             </>
           ) : (
-          <AnimatedNumber value={numValue} duration={1200} />
+            <AnimatedNumber value={numValue} duration={1200} />
           )}
         </p>
       </div>
-      <div className={`${style.bgIcon} rounded-xl sm:rounded-2xl p-3 sm:p-4 flex-shrink-0 ml-3 sm:ml-4 border border-transparent`}>
-        <Icon className={`h-8 w-8 sm:h-10 sm:w-10 ${style.icon}`} strokeWidth={2.5} />
+      <div className={`${style.bgIcon} dark:bg-transparent rounded-xl sm:rounded-2xl p-3 sm:p-4 flex-shrink-0 ml-3 sm:ml-4 border border-transparent`}>
+        <Icon className={`h-8 w-8 sm:h-10 sm:w-10 ${style.icon} dark:stroke-2`} strokeWidth={2.5} />
       </div>
     </div>
   );
@@ -224,32 +224,32 @@ export function ModernTable({
   isLoading: boolean;
 }) {
   return (
-    <div className="bg-white/80 backdrop-blur rounded-2xl border border-gray-200/50 shadow-lg overflow-hidden">
+    <div className="bg-white/80 dark:bg-[#222222]/80 backdrop-blur rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg dark:shadow-gray-900/20 overflow-hidden">
       <div className="overflow-x-auto overflow-y-auto max-h-80">
         <table className="w-full">
           <thead>
-            <tr className="border-b border-gray-200/50 bg-gray-50/50">
+            <tr className="border-b border-gray-200/50 dark:border-gray-700/50 bg-gray-50/50 dark:bg-[#222222]/50">
               {headers.map((header, i) => (
-                <th key={i} className="px-8 py-5 text-left text-sm font-bold text-gray-600 uppercase tracking-wider">
+                <th key={i} className="px-8 py-5 text-left text-sm font-bold text-gray-600 dark:text-gray-400 uppercase tracking-wider">
                   {header}
                 </th>
               ))}
             </tr>
           </thead>
-          <tbody className="divide-y divide-gray-100">
+          <tbody className="divide-y divide-gray-100 dark:divide-gray-900">
             {isLoading ? (
               [...Array(5)].map((_, i) => (
                 <tr key={i} className="animate-pulse">
                   {headers.map((_, j) => (
                     <td key={j} className="px-8 py-5">
-                      <div className="h-5 bg-gray-200 rounded w-3/4"></div>
+                      <div className="h-5 bg-gray-200 dark:bg-[#222222] rounded w-3/4"></div>
                     </td>
                   ))}
                 </tr>
               ))
             ) : data.length === 0 ? (
               <tr>
-                <td colSpan={headers.length} className="px-8 py-10 text-center text-base text-gray-500">
+                <td colSpan={headers.length} className="px-8 py-10 text-center text-base text-gray-500 dark:text-gray-400">
                   {emptyMessage}
                 </td>
               </tr>
@@ -278,53 +278,53 @@ export function StatCard({
   trend?: string;
 }) {
   const colorStyles = {
-    blue: { 
-      text: 'text-blue-700', 
-      label: 'text-blue-600', 
-      bgIcon: 'bg-blue-100', 
-      icon: 'text-blue-600',
+    blue: {
+      text: 'text-blue-700 dark:text-blue-400',
+      label: 'text-blue-600 dark:text-blue-400',
+      bgIcon: 'bg-blue-100 dark:bg-blue-900/30',
+      icon: 'text-blue-600 dark:text-blue-400',
       shadow: 'shadow-md'
     },
-    green: { 
-      text: 'text-green-700', 
-      label: 'text-green-600', 
-      bgIcon: 'bg-green-100', 
-      icon: 'text-green-600',
+    green: {
+      text: 'text-green-700 dark:text-green-400',
+      label: 'text-green-600 dark:text-green-400',
+      bgIcon: 'bg-green-100 dark:bg-green-900/30',
+      icon: 'text-green-600 dark:text-green-400',
       shadow: 'shadow-md'
     },
-    red: { 
-      text: 'text-red-700', 
-      label: 'text-red-600', 
-      bgIcon: 'bg-red-100', 
-      icon: 'text-red-600',
+    red: {
+      text: 'text-red-700 dark:text-red-400',
+      label: 'text-red-600 dark:text-red-400',
+      bgIcon: 'bg-red-100 dark:bg-red-900/30',
+      icon: 'text-red-600 dark:text-red-400',
       shadow: 'shadow-md'
     },
-    purple: { 
-      text: 'text-purple-700', 
-      label: 'text-purple-600', 
-      bgIcon: 'bg-purple-100', 
-      icon: 'text-purple-600',
+    purple: {
+      text: 'text-purple-700 dark:text-purple-400',
+      label: 'text-purple-600 dark:text-purple-400',
+      bgIcon: 'bg-purple-100 dark:bg-purple-900/30',
+      icon: 'text-purple-600 dark:text-purple-400',
       shadow: 'shadow-md'
     },
-    orange: { 
-      text: 'text-orange-700', 
-      label: 'text-orange-600', 
-      bgIcon: 'bg-orange-100', 
-      icon: 'text-orange-600',
+    orange: {
+      text: 'text-orange-700 dark:text-orange-400',
+      label: 'text-orange-600 dark:text-orange-400',
+      bgIcon: 'bg-orange-100 dark:bg-orange-900/30',
+      icon: 'text-orange-600 dark:text-orange-400',
       shadow: 'shadow-md'
     },
-    teal: { 
-      text: 'text-teal-700', 
-      label: 'text-teal-600', 
-      bgIcon: 'bg-teal-100', 
-      icon: 'text-teal-600',
+    teal: {
+      text: 'text-teal-700 dark:text-teal-400',
+      label: 'text-teal-600 dark:text-teal-400',
+      bgIcon: 'bg-teal-100 dark:bg-teal-900/30',
+      icon: 'text-teal-600 dark:text-teal-400',
       shadow: 'shadow-md'
     },
-    cyan: { 
-      text: 'text-cyan-700', 
-      label: 'text-cyan-600', 
-      bgIcon: 'bg-cyan-100', 
-      icon: 'text-cyan-600',
+    cyan: {
+      text: 'text-cyan-700 dark:text-cyan-400',
+      label: 'text-cyan-600 dark:text-cyan-400',
+      bgIcon: 'bg-cyan-100 dark:bg-cyan-900/30',
+      icon: 'text-cyan-600 dark:text-cyan-400',
       shadow: 'shadow-md'
     },
   };
@@ -332,14 +332,14 @@ export function StatCard({
   const style = colorStyles[color];
 
   return (
-    <div className={`bg-white rounded-xl border-2 border-gray-200 p-4 sm:p-5 flex items-center justify-between hover:shadow-lg transition-all duration-200 ${style.shadow}`}>
+    <div className={`bg-white dark:bg-[#222222] rounded-xl border-2 border-gray-200 dark:border-transparent p-4 sm:p-5 flex items-center justify-between hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 ${style.shadow}`}>
       <div className="flex-1 min-w-0">
-        <p className={`text-xs font-bold ${style.label} uppercase tracking-wide mb-1.5 sm:mb-2`}>{label}</p>
-        <p className={`text-2xl sm:text-3xl md:text-4xl font-extrabold ${style.text} leading-tight`}>{value}</p>
-        {trend && <p className="text-xs text-gray-600 mt-1.5 sm:mt-2 font-semibold">{trend}</p>}
+        <p className={`text-xs font-bold dark:text-gray-100 uppercase tracking-wide mb-1.5 sm:mb-2`}>{label}</p>
+        <p className={`text-2xl sm:text-3xl md:text-4xl font-extrabold leading-tight ${style.text}`}>{value}</p>
+        {trend && <p className="text-xs text-gray-600 dark:text-gray-400 mt-1.5 sm:mt-2 font-semibold">{trend}</p>}
       </div>
-      <div className={`${style.bgIcon} rounded-lg sm:rounded-xl p-2.5 sm:p-3 flex-shrink-0 ml-2 sm:ml-3 border border-transparent`}>
-        <Icon className={`h-6 w-6 sm:h-7 sm:w-7 ${style.icon}`} strokeWidth={2.5} />
+      <div className={`${style.bgIcon} dark:bg-transparent rounded-lg sm:rounded-xl p-2.5 sm:p-3 flex-shrink-0 ml-2 sm:ml-3 border border-transparent`}>
+        <Icon className={`h-6 w-6 sm:h-7 sm:w-7 dark:stroke-2 ${style.icon}`} strokeWidth={2.5} />
       </div>
     </div>
   );
@@ -438,7 +438,7 @@ export function ShipmentOverviewChart({
 
         try {
           const shipmentDate = new Date(shipment.createdAt);
-          
+
           // Check if date is valid
           if (isNaN(shipmentDate.getTime())) {
             console.warn('Invalid date for shipment:', shipment._id, shipment.createdAt);
@@ -447,32 +447,32 @@ export function ShipmentOverviewChart({
 
           // Use ISO date string for grouping (YYYY-MM-DD)
           const dateKey = shipmentDate.toISOString().split('T')[0];
-          
+
           // Format for display (e.g., "Jan 1")
           const dateDisplay = shipmentDate.toLocaleDateString('en-US', {
-          month: 'short',
-          day: 'numeric',
-        });
+            month: 'short',
+            day: 'numeric',
+          });
 
           // Initialize if doesn't exist
           if (!groupedByDate[dateKey]) {
-            groupedByDate[dateKey] = { 
-              date: dateDisplay, 
-              created: 0, 
-              delivered: 0, 
-              failed: 0 
+            groupedByDate[dateKey] = {
+              date: dateDisplay,
+              created: 0,
+              delivered: 0,
+              failed: 0
             };
-        }
+          }
 
           // Count created
           groupedByDate[dateKey].created++;
 
           // Count by status
-        if (shipment.status === 'Delivered') {
+          if (shipment.status === 'Delivered') {
             groupedByDate[dateKey].delivered++;
-        } else if (shipment.status === 'Failed') {
+          } else if (shipment.status === 'Failed') {
             groupedByDate[dateKey].failed++;
-        }
+          }
         } catch (error) {
           console.error('Error processing shipment:', shipment._id, error);
         }
@@ -499,14 +499,14 @@ export function ShipmentOverviewChart({
 
   if (loading) {
     return (
-      <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6">
+      <div className="bg-white dark:bg-[#222222] rounded-2xl border-2 border-gray-200 dark:border-transparent p-5 sm:p-6">
         <div className="flex items-center justify-center h-80 sm:h-96">
           <div className="flex flex-col items-center gap-4">
             <div className="relative h-12 w-12">
-              <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+              <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-gray-800"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 dark:border-t-blue-400 border-r-blue-600 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
             </div>
-            <p className="text-sm font-semibold text-gray-700">Loading chart data...</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Loading chart data...</p>
           </div>
         </div>
       </div>
@@ -515,14 +515,14 @@ export function ShipmentOverviewChart({
 
   if (chartData.length === 0) {
     return (
-      <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6">
+      <div className="bg-white dark:bg-[#222222] rounded-2xl border-2 border-gray-200 dark:border-transparent p-5 sm:p-6">
         <div className="flex flex-col items-center justify-center h-80 sm:h-96 gap-4">
-          <div className="bg-gray-50 rounded-full p-4">
-            <BarChart3 className="h-10 w-10 text-gray-400" strokeWidth={2} />
+          <div className="bg-gray-50 dark:bg-[#222222] rounded-full p-4">
+            <BarChart3 className="h-10 w-10 text-gray-400 dark:text-gray-500" strokeWidth={2} />
           </div>
           <div className="text-center">
-            <p className="text-gray-700 font-bold text-lg mb-2">No shipment data available</p>
-            <p className="text-gray-500 text-sm font-medium">
+            <p className="text-gray-700 dark:text-gray-300 font-bold text-lg mb-2">No shipment data available</p>
+            <p className="text-gray-500 dark:text-gray-400 text-sm font-medium">
               Try selecting a different date range or create some shipments first.
             </p>
           </div>
@@ -532,27 +532,27 @@ export function ShipmentOverviewChart({
   }
 
   return (
-    <div className="bg-white rounded-2xl border-2 border-gray-200 p-5 sm:p-6 hover:shadow-lg transition-all duration-200 shadow-sm">
+    <div className="bg-white dark:bg-[#222222] rounded-2xl border-2 border-gray-200 dark:border-transparent p-5 sm:p-6 hover:shadow-lg dark:hover:shadow-gray-900/20 transition-all duration-200 shadow-sm">
       {/* Header Section */}
       <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between mb-6 gap-4">
         <div className="flex items-center gap-3">
-          <div className="bg-blue-50 rounded-xl p-2.5">
-            <BarChart3 className="h-6 w-6 text-blue-600" strokeWidth={2.5} />
+          <div className="bg-blue-50 dark:bg-blue-900/30 rounded-xl p-2.5">
+            <BarChart3 className="h-6 w-6 text-blue-600 dark:text-blue-400" strokeWidth={2.5} />
           </div>
-        <div>
-            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900">Shipment Overview</h2>
-            <p className="text-sm text-gray-600 mt-0.5 font-medium">Track shipments created, delivered, and failed</p>
+          <div>
+            <h2 className="text-xl sm:text-2xl font-extrabold text-gray-900 dark:text-gray-100">Shipment Overview</h2>
+            <p className="text-sm text-gray-600 dark:text-gray-400 mt-0.5 font-medium">Track shipments created, delivered, and failed</p>
           </div>
         </div>
         <Select value={dateRange} onValueChange={onDateRangeChange}>
-          <SelectTrigger className="w-full sm:w-48 h-11 text-sm font-semibold border-2 border-gray-200 rounded-lg">
+          <SelectTrigger className="w-full sm:w-48 h-11 text-sm font-semibold border-2 border-gray-200 dark:border-transparent rounded-lg bg-white dark:bg-[#222222] text-gray-900 dark:text-gray-100">
             <SelectValue placeholder="Select date range" />
           </SelectTrigger>
-          <SelectContent>
-            <SelectItem value="week">This Week</SelectItem>
-            <SelectItem value="month">This Month</SelectItem>
-            <SelectItem value="last3months">Last 3 Months</SelectItem>
-            <SelectItem value="year">This Year</SelectItem>
+          <SelectContent className="bg-white dark:bg-[#222222] border-gray-200 dark:border-transparent">
+            <SelectItem value="week" className="text-gray-900 dark:text-gray-100">This Week</SelectItem>
+            <SelectItem value="month" className="text-gray-900 dark:text-gray-100">This Month</SelectItem>
+            <SelectItem value="last3months" className="text-gray-900 dark:text-gray-100">Last 3 Months</SelectItem>
+            <SelectItem value="year" className="text-gray-900 dark:text-gray-100">This Year</SelectItem>
           </SelectContent>
         </Select>
       </div>
@@ -577,24 +577,26 @@ export function ShipmentOverviewChart({
                 <stop offset="95%" stopColor="#ef4444" stopOpacity={0} />
               </linearGradient>
             </defs>
-            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" vertical={false} opacity={0.5} />
+            <CartesianGrid strokeDasharray="3 3" stroke="#e5e7eb" className="dark:stroke-[#333333]" vertical={false} opacity={0.5} />
             <XAxis
               dataKey="date"
               tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 600 }}
               tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
               axisLine={{ stroke: '#e5e7eb', strokeWidth: 2 }}
+              className="dark:[&>text]:fill-[#A3A3A3] dark:[&>line]:stroke-[#333333]"
             />
             <YAxis
               tick={{ fill: '#6b7280', fontSize: 11, fontWeight: 600 }}
               tickLine={{ stroke: '#d1d5db', strokeWidth: 1 }}
               axisLine={{ stroke: '#e5e7eb', strokeWidth: 2 }}
+              className="dark:[&>text]:fill-[#A3A3A3] dark:[&>line]:stroke-[#333333]"
             />
             <Tooltip content={<CustomTooltip />} />
-            <Legend 
-              wrapperStyle={{ paddingTop: '24px', paddingBottom: '8px' }} 
+            <Legend
+              wrapperStyle={{ paddingTop: '24px', paddingBottom: '8px' }}
               iconType="circle"
               iconSize={10}
-              formatter={(value) => <span className="text-sm font-semibold text-gray-700">{value}</span>}
+              formatter={(value) => <span className="text-sm font-semibold text-gray-700 dark:text-gray-300">{value}</span>}
             />
             <Area
               type="monotone"

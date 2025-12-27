@@ -77,7 +77,7 @@ export default function DeliveryStaffPage() {
   const { user, loading: authLoading } = useUser();
   const [shipments, setShipments] = useState<IShipment[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  
+
   // Use debounced search hook
   const { query: searchQuery, setQuery: setSearchQuery, debouncedQuery, isSearching } = useDebouncedSearch({
     delay: 300,
@@ -119,19 +119,19 @@ export default function DeliveryStaffPage() {
           setIsLoading(false);
           return;
         }
-        
+
         console.log('Fetching shipments for user ID:', user.id);
         const res = await fetch(`/api/shipments?assignedTo=${user.id}`, {
           credentials: 'include',
         });
-        
+
         console.log('Shipments fetch response status:', res.status);
-        
+
         if (!res.ok) {
           const errorData = await res.json();
           throw new Error(errorData.message || 'Failed to fetch assigned shipments');
         }
-        
+
         const data = await res.json();
         console.log('Fetched shipments:', data);
         setShipments(data);
@@ -158,31 +158,31 @@ export default function DeliveryStaffPage() {
   const handleStatusUpdate = async (shipmentId: string, newStatus: IShipment['status'], failureReason?: string, deliveryProof?: { type: 'signature' | 'photo'; url: string }) => {
     setUpdatingShipment(shipmentId);
     const toastId = toast.loading('Updating delivery status...');
-    
+
     try {
       const response = await fetch(`/api/shipments/${shipmentId}`, {
         method: 'PATCH',
         headers: { 'Content-Type': 'application/json' },
         credentials: 'include',
-        body: JSON.stringify({ 
+        body: JSON.stringify({
           status: newStatus,
           ...(failureReason && { failureReason }),
           ...(deliveryProof && { deliveryProof })
         }),
       });
-      
+
       if (!response.ok) {
         const data = await response.json();
         throw new Error(data.message || 'Failed to update status');
       }
-      
+
       const updatedShipment = await response.json();
-      
+
       // Update the local state with fresh data
-      setShipments(prev => prev.map(shipment => 
+      setShipments(prev => prev.map(shipment =>
         shipment._id === shipmentId ? updatedShipment : shipment
       ));
-      
+
       // Also fetch fresh data immediately to ensure UI shows proof
       try {
         const freshRes = await fetch(`/api/shipments/${shipmentId}`, { credentials: 'include' });
@@ -193,11 +193,11 @@ export default function DeliveryStaffPage() {
       } catch (error) {
         console.error('Error fetching fresh shipment data:', error);
       }
-      
+
       // Close modals immediately
       setShowProofModal(null);
       setShowFailureModal(null);
-      
+
       toast.success('Delivery status updated successfully!', { id: toastId });
     } catch (error: any) {
       toast.error(error.message, { id: toastId });
@@ -234,7 +234,7 @@ export default function DeliveryStaffPage() {
       const to = new Date(dateRangeEnd);
       to.setDate(to.getDate() + 1);
       const toStr = to.toISOString().split('T')[0];
-      
+
       setCurrentPage(1);
       setDropdownOpen(false);
       console.log(`Filtering deliveries from ${from} to ${toStr}`);
@@ -260,10 +260,10 @@ export default function DeliveryStaffPage() {
       <div className="flex h-screen w-full items-center justify-center bg-gray-50">
         <div className="flex flex-col items-center gap-3">
           <div className="relative h-12 w-12">
-            <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 border-r-orange-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+            <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
+            <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-orange-500 dark:border-t-orange-400 border-r-orange-500 dark:border-r-orange-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
           </div>
-          <p className="text-sm text-gray-600 font-medium">Verifying session...</p>
+          <p className="text-sm text-gray-600 dark:text-gray-400 font-medium">Verifying session...</p>
         </div>
       </div>
     );
@@ -271,11 +271,11 @@ export default function DeliveryStaffPage() {
 
   // Filter shipments based on debounced search, status, and date range
   const filteredShipments = shipments.filter(shipment => {
-    const matchesSearch = debouncedQuery === '' || 
+    const matchesSearch = debouncedQuery === '' ||
       shipment.trackingId.toLowerCase().includes(debouncedQuery.toLowerCase()) ||
       shipment.recipient.name.toLowerCase().includes(debouncedQuery.toLowerCase());
     const matchesStatus = !statusFilter || shipment.status === statusFilter;
-    
+
     let matchesDateRange = true;
     if (dateRangeStart && dateRangeEnd) {
       const shipmentDate = new Date(shipment.createdAt);
@@ -286,7 +286,7 @@ export default function DeliveryStaffPage() {
       filterEnd.setHours(23, 59, 59, 999);
       matchesDateRange = shipmentDate >= filterStart && shipmentDate <= filterEnd;
     }
-    
+
     return matchesSearch && matchesStatus && matchesDateRange;
   });
 
@@ -305,17 +305,17 @@ export default function DeliveryStaffPage() {
 
   const getStatusBadge = (status: string) => {
     const statusStyles: Record<string, string> = {
-      'At Origin Branch': 'bg-purple-50 text-purple-700 ring-1 ring-inset ring-purple-600/20',
-      'In Transit to Destination': 'bg-indigo-50 text-indigo-700 ring-1 ring-inset ring-indigo-600/20',
-      'At Destination Branch': 'bg-blue-50 text-blue-700 ring-1 ring-inset ring-blue-600/20',
-      'Assigned': 'bg-cyan-50 text-cyan-700 ring-1 ring-inset ring-cyan-600/20',
-      'Out for Delivery': 'bg-yellow-50 text-yellow-700 ring-1 ring-inset ring-yellow-600/20',
-      'Delivered': 'bg-green-50 text-green-700 ring-1 ring-inset ring-green-600/20',
-      'Failed': 'bg-red-50 text-red-700 ring-1 ring-inset ring-red-600/20',
+      'At Origin Branch': 'bg-[#8B5CF6] text-white', // Purple
+      'In Transit to Destination': 'bg-[#3B82F6] text-white', // Blue
+      'At Destination Branch': 'bg-[#2563EB] text-white', // Darker Blue
+      'Assigned': 'bg-[#06B6D4] text-white', // Cyan
+      'Out for Delivery': 'bg-[#F97316] text-white', // Orange
+      'Delivered': 'bg-[#16A34A] text-white', // Green
+      'Failed': 'bg-[#E11D48] text-white', // Red
     };
-    
+
     return (
-      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${statusStyles[status] || 'bg-gray-50 text-gray-700 ring-1 ring-inset ring-gray-600/20'}`}>
+      <span className={`inline-flex items-center px-3 py-1 rounded-full text-xs font-medium ${statusStyles[status] || 'bg-gray-600 text-white'}`}>
         {status}
       </span>
     );
@@ -325,8 +325,8 @@ export default function DeliveryStaffPage() {
     <div className="space-y-4 sm:space-y-6 pb-8">
       {/* Header */}
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">My Deliveries</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Track and manage your assigned deliveries</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">My Deliveries</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-gray-400 mt-1 sm:mt-2">Track and manage your assigned deliveries</p>
       </div>
 
       {/* Stats Cards */}
@@ -504,41 +504,41 @@ export default function DeliveryStaffPage() {
 
       {/* Loading State */}
       {isLoading ? (
-        <div className="flex justify-center items-center h-48 bg-white rounded-lg border border-gray-200 shadow-sm">
+        <div className="flex justify-center items-center h-48 bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent shadow-sm">
           <div className="flex flex-col items-center gap-4">
             <div className="relative h-12 w-12">
-              <div className="absolute inset-0 rounded-full border-4 border-gray-200"></div>
-              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 border-r-blue-600 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+              <div className="absolute inset-0 rounded-full border-4 border-gray-200 dark:border-[#333333]"></div>
+              <div className="absolute inset-0 rounded-full border-4 border-transparent border-t-blue-600 dark:border-t-blue-400 border-r-blue-600 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
             </div>
-            <p className="text-sm font-semibold text-gray-700">Loading...</p>
+            <p className="text-sm font-semibold text-gray-700 dark:text-gray-300">Loading...</p>
           </div>
         </div>
       ) : shipments.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-12 text-center">
+        <div className="bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent shadow-sm p-12 text-center">
           <Truck className="mx-auto h-12 w-12 text-gray-300 mb-3" strokeWidth={1.5} />
-          <h3 className="text-base font-semibold text-gray-900">No deliveries assigned</h3>
-          <p className="text-sm text-gray-500 mt-1">You don't have any deliveries to complete right now</p>
+          <h3 className="text-base font-semibold text-gray-900 dark:text-white">No deliveries assigned</h3>
+          <p className="text-sm text-gray-500 dark:text-gray-400 mt-1">You don't have any deliveries to complete right now</p>
         </div>
       ) : paginatedShipments.length === 0 ? (
-        <div className="bg-white rounded-lg border border-gray-200 shadow-sm p-8 text-center">
+        <div className="bg-white dark:bg-[#222222] rounded-lg border border-gray-200 dark:border-transparent shadow-sm p-8 text-center">
           <Package className="mx-auto h-8 w-8 text-gray-300 mb-2" />
-          <h3 className="text-sm font-semibold text-gray-900">No deliveries found</h3>
-          <p className="text-xs text-gray-500 mt-1">Try adjusting your filters</p>
+          <h3 className="text-sm font-semibold text-gray-900 dark:text-white">No deliveries found</h3>
+          <p className="text-xs text-gray-500 dark:text-gray-400 mt-1">Try adjusting your filters</p>
         </div>
       ) : (
         <>
           {/* Desktop Table View */}
-          <div className="hidden md:block border rounded-lg overflow-hidden">
+          <div className="hidden md:block border border-gray-200 dark:border-transparent rounded-lg overflow-hidden bg-white dark:bg-[#222222]">
             <Table className="text-base">
               <TableHeader>
-                <TableRow className="bg-gray-50 h-12">
-                  <TableHead>S/No</TableHead>
-                  <TableHead>Tracking ID</TableHead>
-                  <TableHead>Recipient</TableHead>
-                  <TableHead>Address</TableHead>
-                  <TableHead>Status</TableHead>
-                  <TableHead>Date</TableHead>
-                  <TableHead className="text-right">Actions</TableHead>
+                <TableRow className="bg-gray-50 dark:bg-[#1C1C1C]/50 h-12 border-b border-gray-200 dark:border-gray-700/50">
+                  <TableHead className="text-gray-700 dark:text-gray-300">S/No</TableHead>
+                  <TableHead className="text-gray-700 dark:text-gray-300">Tracking ID</TableHead>
+                  <TableHead className="text-gray-700 dark:text-gray-300">Recipient</TableHead>
+                  <TableHead className="text-gray-700 dark:text-gray-300">Address</TableHead>
+                  <TableHead className="text-gray-700 dark:text-gray-300">Status</TableHead>
+                  <TableHead className="text-gray-700 dark:text-gray-300">Date</TableHead>
+                  <TableHead className="text-right text-gray-700 dark:text-gray-300">Actions</TableHead>
                 </TableRow>
               </TableHeader>
               <TableBody>
@@ -549,13 +549,13 @@ export default function DeliveryStaffPage() {
                   const isAssigned = shipment.status === 'Assigned';
 
                   return (
-                    <TableRow key={shipment._id} className="hover:bg-gray-50">
-                      <TableCell className="font-medium text-base">{startIndex + index + 1}</TableCell>
-                      <TableCell className="font-mono text-xs">{shipment.trackingId}</TableCell>
-                      <TableCell className="font-medium">{shipment.recipient.name}</TableCell>
-                      <TableCell className="text-sm text-gray-600 max-w-xs truncate">{shipment.recipient.address}</TableCell>
+                    <TableRow key={shipment._id} className="hover:bg-gray-50 dark:hover:bg-[#0F0F0F]/50 border-b border-gray-100 dark:border-gray-700/50">
+                      <TableCell className="font-medium text-base text-gray-900 dark:text-white">{startIndex + index + 1}</TableCell>
+                      <TableCell className="font-mono text-xs text-gray-900 dark:text-white">{shipment.trackingId}</TableCell>
+                      <TableCell className="font-medium text-gray-900 dark:text-white">{shipment.recipient.name}</TableCell>
+                      <TableCell className="text-sm text-gray-600 dark:text-gray-400 max-w-xs truncate">{shipment.recipient.address}</TableCell>
                       <TableCell>{getStatusBadge(shipment.status)}</TableCell>
-                      <TableCell className="text-gray-500 text-sm">
+                      <TableCell className="text-gray-500 dark:text-gray-400 text-sm">
                         {new Date(shipment.createdAt).toLocaleDateString('en-US', {
                           month: 'short',
                           day: 'numeric',
@@ -755,7 +755,7 @@ export default function DeliveryStaffPage() {
 
           {/* Pagination */}
           <div className="flex flex-col sm:flex-row items-center justify-between gap-3 sm:gap-0">
-            <p className="text-sm text-gray-600">
+            <p className="text-sm text-gray-600 dark:text-gray-400">
               Showing {startIndex + 1} to {Math.min(endIndex, filteredShipments.length)} of {filteredShipments.length} deliveries
             </p>
             <div className="flex gap-2 w-full sm:w-auto">
@@ -829,11 +829,11 @@ function ImageViewerModal({
 }) {
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-2xl max-h-[90vh]">
+      <DialogContent className="max-w-2xl max-h-[90vh] bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
         <DialogHeader>
-          <DialogTitle>Proof View</DialogTitle>
+          <DialogTitle className="text-gray-900 dark:text-gray-100">Proof View</DialogTitle>
         </DialogHeader>
-        <div className="flex justify-center bg-gray-50 overflow-auto py-6">
+        <div className="flex justify-center bg-gray-50 dark:bg-[#111111] overflow-auto py-6 rounded-md">
           <img src={imageUrl} alt="Proof" className="max-w-full max-h-[70vh] object-contain rounded" />
         </div>
       </DialogContent>
@@ -904,10 +904,10 @@ function ProofOfDeliveryModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[95vh] overflow-y-auto bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
         <DialogHeader>
-          <DialogTitle>Proof of Delivery</DialogTitle>
-          <DialogDescription>Upload photo as proof</DialogDescription>
+          <DialogTitle className="text-gray-900 dark:text-gray-100">Proof of Delivery</DialogTitle>
+          <DialogDescription className="text-gray-500 dark:text-gray-400">Upload photo as proof</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-4">
@@ -923,16 +923,16 @@ function ProofOfDeliveryModal({
             {isUploading && (
               <div className="text-center py-4">
                 <Loader className="inline-block animate-spin h-6 w-6 text-blue-500 mb-2" />
-                <p className="text-xs text-gray-600">Uploading photo...</p>
+                <p className="text-xs text-gray-600 dark:text-gray-400">Uploading photo...</p>
               </div>
             )}
             {proofUrl && !isUploading && (
-              <div className="bg-gray-50 p-4 rounded-lg space-y-3">
-                <p className="text-xs text-green-600 font-medium">Photo uploaded successfully</p>
-                <img 
-                  src={proofUrl} 
-                  alt="Delivery proof" 
-                  className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 shadow-sm" 
+              <div className="bg-gray-50 dark:bg-[#111111] p-4 rounded-lg space-y-3">
+                <p className="text-xs text-green-600 dark:text-green-500 font-medium">Photo uploaded successfully</p>
+                <img
+                  src={proofUrl}
+                  alt="Delivery proof"
+                  className="w-full h-auto max-h-64 object-cover rounded-lg border border-gray-300 dark:border-gray-700 shadow-sm"
                   onError={(e) => {
                     console.error('Image failed to load:', proofUrl);
                     (e.target as HTMLImageElement).src = 'data:image/svg+xml,%3Csvg xmlns=%22http://www.w3.org/2000/svg%22 viewBox=%220 0 400 300%22%3E%3Crect fill=%22%23f0f0f0%22 width=%22400%22 height=%22300%22/%3E%3Ctext x=%2250%25%22 y=%2250%25%22 text-anchor=%22middle%22 dy=%22.3em%22 font-family=%22sans-serif%22 font-size=%2220%22 fill=%22%23999%22%3EImage failed to load%3C/text%3E%3C/svg%3E';
@@ -948,6 +948,7 @@ function ProofOfDeliveryModal({
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
           >
             Cancel
           </Button>
@@ -992,15 +993,15 @@ function FailureReasonModal({
 
   return (
     <Dialog open={true} onOpenChange={onClose}>
-      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto">
+      <DialogContent className="max-w-md max-h-[90vh] overflow-y-auto bg-white dark:bg-[#1C1C1C] border-gray-200 dark:border-gray-800">
         <DialogHeader>
-          <DialogTitle>Delivery Failed</DialogTitle>
-          <DialogDescription>Please select a reason</DialogDescription>
+          <DialogTitle className="text-gray-900 dark:text-gray-100">Delivery Failed</DialogTitle>
+          <DialogDescription className="text-gray-500 dark:text-gray-400">Please select a reason</DialogDescription>
         </DialogHeader>
 
         <div className="space-y-2">
           {reasons.map((reason) => (
-            <label key={reason} className="flex items-center p-3 border border-gray-200 rounded-lg hover:bg-gray-50 cursor-pointer transition-colors">
+            <label key={reason} className="flex items-center p-3 border border-gray-200 dark:border-gray-700 rounded-lg hover:bg-gray-50 dark:hover:bg-[#252525] cursor-pointer transition-colors">
               <input
                 type="radio"
                 value={reason}
@@ -1008,7 +1009,7 @@ function FailureReasonModal({
                 onChange={(e) => setSelectedReason(e.target.value)}
                 className="mr-3 w-4 h-4 flex-shrink-0"
               />
-              <span className="text-sm text-gray-700">{reason}</span>
+              <span className="text-sm text-gray-700 dark:text-gray-300">{reason}</span>
             </label>
           ))}
 
@@ -1019,6 +1020,7 @@ function FailureReasonModal({
                 placeholder="Please explain..."
                 value={otherReason}
                 onChange={(e) => setOtherReason(e.target.value)}
+                className="bg-white dark:bg-[#1A1A1A] border-gray-300 dark:border-gray-700 text-gray-900 dark:text-gray-100 placeholder:text-gray-400 dark:placeholder:text-gray-500"
               />
             </div>
           )}
@@ -1029,6 +1031,7 @@ function FailureReasonModal({
             variant="outline"
             onClick={onClose}
             disabled={isSubmitting}
+            className="border-gray-300 dark:border-gray-700 text-gray-700 dark:text-gray-300 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]"
           >
             Cancel
           </Button>

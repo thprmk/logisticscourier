@@ -276,15 +276,15 @@ export default function StaffManagementPage() {
   const isDispatcher = user?.role === 'admin' && (user as any)?.isManager === false;
 
   if (error) return (
-    <div className="flex h-64 items-center justify-center bg-white rounded-lg shadow-sm border border-gray-200">
+    <div className="flex h-64 items-center justify-center bg-white dark:bg-[#222222] rounded-lg shadow-sm border border-gray-200 dark:border-[#333333]">
       <div className="text-center">
-        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-red-600">
+        <div className="mx-auto mb-3 flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+          <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke="currentColor" className="h-6 w-6 text-red-600 dark:text-red-400">
             <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M12 9v2m0 4h.01m-6.938 4h13.856c1.54 0 2.502-1.667 1.732-3L13.732 4c-.77-1.333-2.694-1.333-3.464 0L3.34 16c-.77 1.333.192 3 1.732 3z" />
           </svg>
         </div>
-        <h3 className="text-lg font-medium text-gray-900">Error loading data</h3>
-        <p className="mt-1 text-base text-gray-500">{error}</p>
+        <h3 className="text-lg font-medium text-gray-900 dark:text-white">Error loading data</h3>
+        <p className="mt-1 text-base text-gray-500 dark:text-[#A3A3A3]">{error}</p>
       </div>
     </div>
   );
@@ -292,20 +292,20 @@ export default function StaffManagementPage() {
   const getRoleBadge = (member: IUser) => {
     if (member.role === 'admin') {
       if (member.isManager) {
-        return <Badge className="bg-purple-100 text-purple-800">Branch Manager</Badge>;
+        return <Badge className="bg-[#9333EA] text-white">Branch Manager</Badge>;
       } else {
-        return <Badge className="bg-blue-100 text-blue-800">Dispatcher</Badge>;
+        return <Badge className="bg-[#06B6D4] text-white">Dispatcher</Badge>;
       }
     } else {
-      return <Badge className="bg-green-100 text-green-800">Delivery Staff</Badge>;
+      return <Badge className="bg-[#10B981] text-white">Delivery Staff</Badge>;
     }
   };
 
   return (
     <div className="space-y-6">
       <div className="mb-4 sm:mb-6">
-        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900">User & Role Management</h1>
-        <p className="text-sm sm:text-base text-gray-600 mt-1 sm:mt-2">Manage staff members and their roles within your branch.</p>
+        <h1 className="text-2xl sm:text-3xl font-bold text-gray-900 dark:text-white">User & Role Management</h1>
+        <p className="text-sm sm:text-base text-gray-600 dark:text-white mt-1 sm:mt-2">Manage staff members and their roles within your branch.</p>
       </div>
 
       {/* Action Bar */}
@@ -329,7 +329,7 @@ export default function StaffManagementPage() {
           <div className="flex items-center gap-3 sm:gap-4 flex-wrap">
             {/* Filter by Role */}
             <div className="flex-1 min-w-[150px]">
-              <Label htmlFor="role-filter" className="text-xs block mb-1 font-medium">Filter by Role</Label>
+              <Label htmlFor="role-filter" className="text-xs block mb-1 font-medium dark:text-white">Filter by Role</Label>
               <Select value={roleFilter || 'all'} onValueChange={(val) => setRoleFilter(val === 'all' ? '' : val)}>
                 <SelectTrigger id="role-filter" className="h-10 text-sm">
                   <SelectValue placeholder="All Roles" />
@@ -370,10 +370,10 @@ export default function StaffManagementPage() {
                     setIsStaffModalOpen(true);
                   }}
                   title="Add new staff member"
-                  className="h-10 gap-2 whitespace-nowrap text-sm"
+                  className="h-10 gap-2 whitespace-nowrap text-sm bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
                 >
                   <Plus size={18} />
-                  <span className="hidden sm:inline">Add New</span>
+                  <span className="hidden sm:inline">Add New Staff</span>
                   <span className="sm:hidden">Add</span>
                 </Button>
               )}
@@ -384,16 +384,16 @@ export default function StaffManagementPage() {
 
       {/* Bulk Actions Toolbar */}
       {selectedStaffIds.size > 0 && (
-        <div className="bg-blue-50 border border-blue-200 rounded-lg p-4 flex items-center justify-between">
+        <div className="bg-blue-50 dark:bg-[#222222] border border-blue-200 dark:border-[#333333] rounded-lg p-4 flex items-center justify-between">
           <div className="flex items-center gap-4">
-            <span className="text-sm font-medium text-gray-900">
+            <span className="text-sm font-medium text-gray-900 dark:text-white">
               {selectedStaffIds.size} staff member{selectedStaffIds.size > 1 ? 's' : ''} selected
             </span>
             <Button
               size="sm"
               variant="destructive"
               onClick={handleBulkDelete}
-              className="gap-2 text-sm"
+              className="gap-2 text-sm bg-[#DC2626] hover:bg-[#B91C1C] text-white"
             >
               <Trash2 size={16} />
               Delete Selected
@@ -403,7 +403,7 @@ export default function StaffManagementPage() {
             size="sm"
             variant="outline"
             onClick={() => setSelectedStaffIds(new Set())}
-            className="text-sm"
+            className="text-sm dark:text-white"
           >
             Clear
           </Button>
@@ -414,20 +414,20 @@ export default function StaffManagementPage() {
           <div className="py-12 flex justify-center">
             <div className="text-center">
               <div className="relative w-8 h-8 mx-auto mb-3">
-                <div className="absolute inset-0 rounded-full border-2 border-gray-200"></div>
-                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 border-r-blue-500 animate-spin" style={{ animationDuration: '0.6s' }}></div>
+                <div className="absolute inset-0 rounded-full border-2 border-gray-200 dark:border-[#333333]"></div>
+                <div className="absolute inset-0 rounded-full border-2 border-transparent border-t-blue-500 dark:border-t-blue-400 border-r-blue-500 dark:border-r-blue-400 animate-spin" style={{ animationDuration: '0.6s' }}></div>
               </div>
-              <p className="text-sm text-gray-600">Loading...</p>
+              <p className="text-sm text-gray-600 dark:text-[#A3A3A3]">Loading...</p>
             </div>
           </div>
         ) : filteredStaff.length > 0 ? (
           <>
             {/* Desktop Table View */}
-            <div className="hidden md:block table-container border rounded-lg">
+            <div className="hidden md:block table-container border border-gray-200 dark:border-[#333333] rounded-lg bg-white dark:bg-[#222222]">
               <Table className="text-sm">
                 <TableHeader>
-                  <TableRow className="bg-gray-50 h-14">
-                    <TableHead className="w-16 text-sm font-semibold">
+                  <TableRow className="bg-gray-50/80 dark:bg-[#222222] border-b border-gray-200 dark:border-[#333333] h-14 hover:bg-gray-50/80 dark:hover:bg-[#222222]">
+                    <TableHead className="w-16 text-sm font-semibold dark:text-white">
                       <input
                         type="checkbox"
                         checked={selectedStaffIds.size === filteredStaff.length && filteredStaff.length > 0}
@@ -436,18 +436,18 @@ export default function StaffManagementPage() {
                         title="Select all"
                       />
                     </TableHead>
-                    <TableHead className="w-16 text-sm font-semibold">S/No</TableHead>
-                    <TableHead className="text-sm font-semibold">User</TableHead>
-                    <TableHead className="text-sm font-semibold">Email</TableHead>
-                    <TableHead className="text-sm font-semibold">Role</TableHead>
+                    <TableHead className="w-16 text-sm font-semibold dark:text-white">S/No</TableHead>
+                    <TableHead className="text-sm font-semibold dark:text-white">User</TableHead>
+                    <TableHead className="text-sm font-semibold dark:text-white">Email</TableHead>
+                    <TableHead className="text-sm font-semibold dark:text-white">Role</TableHead>
                     {!isDispatcher && (
-                      <TableHead className="text-right text-sm font-semibold">Actions</TableHead>
+                      <TableHead className="text-right text-sm font-semibold dark:text-white">Actions</TableHead>
                     )}
                   </TableRow>
                 </TableHeader>
                 <TableBody>
                   {paginatedStaff.map((member, index) => (
-                    <TableRow key={member._id} className="h-16 hover:bg-gray-50">
+                    <TableRow key={member._id} className="h-16 border-b border-gray-100 dark:border-[#333333] hover:bg-gray-50/50 dark:hover:bg-[#1A3D2A] transition-colors">
                       <TableCell>
                         <input
                           type="checkbox"
@@ -456,16 +456,16 @@ export default function StaffManagementPage() {
                           className="w-4 h-4 cursor-pointer"
                         />
                       </TableCell>
-                      <TableCell className="font-medium text-sm">{startIndex + index + 1}</TableCell>
+                      <TableCell className="font-medium text-sm dark:text-[#E5E5E5]">{startIndex + index + 1}</TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100">
-                            <UserIcon className="h-4 w-4 text-gray-500" />
+                          <div className="flex h-8 w-8 items-center justify-center rounded-full bg-gray-100 dark:bg-[#333333]">
+                            <UserIcon className="h-4 w-4 text-gray-500 dark:text-[#A3A3A3]" />
                           </div>
-                          <div className="text-sm font-medium text-gray-900">{member.name}</div>
+                          <div className="text-sm font-medium text-gray-900 dark:text-white">{member.name}</div>
                         </div>
                       </TableCell>
-                      <TableCell className="text-sm text-gray-600">{member.email}</TableCell>
+                      <TableCell className="text-sm text-gray-600 dark:text-[#A3A3A3]">{member.email}</TableCell>
                       <TableCell className="text-sm">{getRoleBadge(member)}</TableCell>
                       {!isDispatcher && (
                         <TableCell className="text-right space-x-1">
@@ -476,6 +476,7 @@ export default function StaffManagementPage() {
                               onClick={() => handleEditStaff(member)}
                               title={member.isManager ? 'Cannot edit Branch Managers' : 'Edit Staff Member'}
                               disabled={member.isManager}
+                              className="hover:bg-green-50 dark:hover:bg-green-900/20 hover:text-green-600 dark:hover:text-green-400"
                             >
                               <Edit size={16} />
                             </Button>
@@ -485,6 +486,7 @@ export default function StaffManagementPage() {
                               onClick={() => handleDeleteStaff(member._id, member.name)}
                               title={member.isManager ? 'Cannot delete Branch Managers' : 'Remove Staff Member'}
                               disabled={member.isManager}
+                              className="hover:bg-red-50 dark:hover:bg-red-900/20 hover:text-red-600 dark:hover:text-red-400"
                             >
                               <Trash2 size={16} />
                             </Button>
@@ -500,7 +502,7 @@ export default function StaffManagementPage() {
             {/* Mobile Card View */}
             <div className="md:hidden space-y-4">
               {paginatedStaff.map((member, index) => (
-                <div key={member._id} className="bg-white border border-gray-200 rounded-lg p-4 space-y-3">
+                <div key={member._id} className="bg-white dark:bg-[#222222] border border-gray-200 dark:border-[#333333] rounded-lg p-4 space-y-3">
                   <div className="flex items-start justify-between">
                     <div className="flex items-center gap-3 flex-1">
                       <input
@@ -509,19 +511,19 @@ export default function StaffManagementPage() {
                         onChange={() => handleSelectStaff(member._id)}
                         className="w-4 h-4 cursor-pointer mt-1 flex-shrink-0"
                       />
-                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 flex-shrink-0">
-                        <UserIcon className="h-5 w-5 text-gray-500" />
+                      <div className="flex h-10 w-10 items-center justify-center rounded-full bg-gray-100 dark:bg-[#333333] flex-shrink-0">
+                        <UserIcon className="h-5 w-5 text-gray-500 dark:text-[#A3A3A3]" />
                       </div>
                       <div className="flex-1 min-w-0">
-                        <p className="text-base font-semibold text-gray-900 truncate">{member.name}</p>
-                        <p className="text-sm text-gray-500 truncate">{member.email}</p>
+                        <p className="text-base font-semibold text-gray-900 dark:text-white truncate">{member.name}</p>
+                        <p className="text-sm text-gray-500 dark:text-[#A3A3A3] truncate">{member.email}</p>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <span className="text-xs text-gray-500 font-medium">S/No:</span>
-                      <span className="text-sm font-medium text-gray-900">{startIndex + index + 1}</span>
+                      <span className="text-xs text-gray-500 dark:text-[#A3A3A3] font-medium">S/No:</span>
+                      <span className="text-sm font-medium text-gray-900 dark:text-white">{startIndex + index + 1}</span>
                     </div>
                     {getRoleBadge(member)}
                   </div>
@@ -534,7 +536,7 @@ export default function StaffManagementPage() {
                           onClick={() => handleEditStaff(member)}
                           title={member.isManager ? 'Cannot edit Branch Managers' : 'Edit Staff Member'}
                           disabled={member.isManager}
-                          className="h-9 gap-2"
+                          className="h-9 gap-2 dark:text-white"
                         >
                           <Edit size={16} />
                           <span className="text-xs">Edit</span>
@@ -545,7 +547,7 @@ export default function StaffManagementPage() {
                           onClick={() => handleDeleteStaff(member._id, member.name)}
                           title={member.isManager ? 'Cannot delete Branch Managers' : 'Remove Staff Member'}
                           disabled={member.isManager}
-                          className="h-9 gap-2 text-red-600 hover:bg-red-50 border-red-200"
+                          className="h-9 gap-2 text-red-600 dark:text-red-400 hover:bg-red-50 dark:hover:bg-red-900/20 border-red-200 dark:border-red-800/30"
                         >
                           <Trash2 size={16} />
                           <span className="text-xs">Remove</span>
@@ -559,9 +561,9 @@ export default function StaffManagementPage() {
           </>
         ) : (
           <div className="py-12 text-center">
-            <UserIcon className="mx-auto h-12 w-12 text-gray-300" />
-            <h3 className="mt-2 text-lg font-medium text-gray-900">No staff members</h3>
-            <p className="mt-1 text-sm text-gray-500 mb-6">Get started by adding a new staff member.</p>
+            <UserIcon className="mx-auto h-12 w-12 text-gray-300 dark:text-[#A3A3A3]" />
+            <h3 className="mt-2 text-lg font-medium text-gray-900 dark:text-white">No staff members</h3>
+            <p className="mt-1 text-sm text-gray-500 dark:text-[#A3A3A3] mb-6">Get started by adding a new staff member.</p>
             <Button
               onClick={() => {
                 setStaffName('');
@@ -572,7 +574,7 @@ export default function StaffManagementPage() {
                 setEditingStaffId('');
                 setIsStaffModalOpen(true);
               }}
-              className="gap-2 text-sm h-10"
+              className="gap-2 text-sm h-10 bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
             >
               <Plus size={16} />
               Add First Staff Member
@@ -581,8 +583,8 @@ export default function StaffManagementPage() {
         )}
         
         {filteredStaff.length > 0 && (
-          <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white border border-gray-200 rounded-lg">
-          <div className="text-sm text-gray-600">
+          <div className="flex items-center justify-between mt-4 px-4 py-3 bg-white dark:bg-[#222222] border border-gray-200 dark:border-[#333333] rounded-lg">
+          <div className="text-sm text-gray-600 dark:text-white">
             Showing <span className="font-medium">{startIndex + 1}</span> to <span className="font-medium">{Math.min(endIndex, filteredStaff.length)}</span> of <span className="font-medium">{filteredStaff.length}</span> staff members
           </div>
           
@@ -592,7 +594,7 @@ export default function StaffManagementPage() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.max(1, prev - 1))}
               disabled={currentPage === 1}
-              className="text-xs px-3 h-9"
+              className="text-xs px-3 h-9 dark:text-white"
             >
               Previous
             </Button>
@@ -604,7 +606,7 @@ export default function StaffManagementPage() {
                   variant={currentPage === page ? "default" : "outline"}
                   size="sm"
                   onClick={() => setCurrentPage(page)}
-                  className="text-xs w-8 h-8 p-0"
+                  className={`text-xs w-8 h-8 p-0 ${currentPage === page ? 'bg-[#1A9D4A] hover:bg-[#158A3F] text-white' : 'dark:text-white'}`}
                 >
                   {page}
                 </Button>
@@ -616,7 +618,7 @@ export default function StaffManagementPage() {
               size="sm"
               onClick={() => setCurrentPage(prev => Math.min(totalPages, prev + 1))}
               disabled={currentPage === totalPages}
-              className="text-xs px-3 h-9"
+              className="text-xs px-3 h-9 dark:text-white"
             >
               Next
             </Button>
@@ -625,12 +627,12 @@ export default function StaffManagementPage() {
       )}
 
       <Dialog open={isStaffModalOpen} onOpenChange={setIsStaffModalOpen}>
-        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
+        <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto dark:bg-[#222222] dark:border-[#333333]">
           <DialogHeader>
-            <DialogTitle>
+            <DialogTitle className="dark:text-white">
               {isEditingStaff ? 'Edit Staff Member' : 'Add Staff Member'}
             </DialogTitle>
-            <DialogDescription>
+            <DialogDescription className="dark:text-[#A3A3A3]">
               {isEditingStaff 
                 ? 'Update the details for this staff member.' 
                 : 'Fill in the details to add a new staff member to your branch.'}
@@ -639,7 +641,7 @@ export default function StaffManagementPage() {
           
           <form onSubmit={handleAddStaff} autoComplete="off" className="space-y-4">
             <div>
-              <Label htmlFor="staffName" className="text-sm font-medium">Full Name</Label>
+              <Label htmlFor="staffName" className="text-sm font-medium dark:text-white">Full Name</Label>
               <Input
                 id="staffName"
                 type="text"
@@ -653,7 +655,7 @@ export default function StaffManagementPage() {
             </div>
             
             <div>
-              <Label htmlFor="staffEmail" className="text-sm font-medium">Email Address</Label>
+              <Label htmlFor="staffEmail" className="text-sm font-medium dark:text-white">Email Address</Label>
               <Input
                 id="staffEmail"
                 type="email"
@@ -667,7 +669,7 @@ export default function StaffManagementPage() {
             </div>
             
             <div>
-              <Label htmlFor="staffPassword" className="text-sm font-medium">{isEditingStaff ? 'New Password (Optional)' : 'Temporary Password'}</Label>
+              <Label htmlFor="staffPassword" className="text-sm font-medium dark:text-white">{isEditingStaff ? 'New Password (Optional)' : 'Temporary Password'}</Label>
               <Input
                 id="staffPassword"
                 type="password"
@@ -678,11 +680,11 @@ export default function StaffManagementPage() {
                 required={!isEditingStaff}
                 className="mt-2 h-10 text-sm"
               />
-              {isEditingStaff && <p className="mt-1 text-xs text-gray-500">Only fill this to change the password</p>}
+              {isEditingStaff && <p className="mt-1 text-xs text-gray-500 dark:text-[#A3A3A3]">Only fill this to change the password</p>}
             </div>
                         
             <div>
-              <Label htmlFor="staffRole" className="text-sm font-medium">Role</Label>
+              <Label htmlFor="staffRole" className="text-sm font-medium dark:text-white">Role</Label>
               <Select value={staffRole} onValueChange={(val) => setStaffRole(val as 'staff' | 'admin')}>
                 <SelectTrigger id="staffRole" className="mt-2 h-10 text-sm">
                   <SelectValue />
@@ -692,8 +694,8 @@ export default function StaffManagementPage() {
                   <SelectItem value="admin">Dispatcher (Admin)</SelectItem>
                 </SelectContent>
               </Select>
-              <p className="mt-2 text-xs text-gray-500 flex items-start gap-2">
-                <span className="text-blue-500 font-bold flex-shrink-0 mt-0.5"></span>
+              <p className="mt-2 text-xs text-gray-500 dark:text-[#A3A3A3] flex items-start gap-2">
+                <span className="text-blue-500 dark:text-blue-400 font-bold flex-shrink-0 mt-0.5"></span>
                 <span>
                   <strong>Delivery Staff:</strong> Drivers - uses mobile app, makes deliveries.<br/>
                   <strong>Dispatcher:</strong> Can manage shipments, manifests, and drivers.
@@ -707,14 +709,14 @@ export default function StaffManagementPage() {
                 variant="outline"
                 onClick={() => setIsStaffModalOpen(false)}
                 disabled={isSubmittingStaff}
-                className="h-10 text-sm px-4"
+                className="h-10 text-sm px-4 dark:text-white"
               >
                 Cancel
               </Button>
               <Button
                 type="submit"
                 disabled={isSubmittingStaff}
-                className="h-10 text-sm px-6"
+                className="h-10 text-sm px-6 bg-[#1A9D4A] hover:bg-[#158A3F] text-white"
               >
                 {isSubmittingStaff 
                   ? (isEditingStaff ? 'Updating...' : 'Adding...') 
@@ -727,18 +729,18 @@ export default function StaffManagementPage() {
 
       {/* Delete Confirmation Modal */}
       <Dialog open={showDeleteModal} onOpenChange={setShowDeleteModal}>
-        <DialogContent className="max-w-md">
+        <DialogContent className="max-w-md dark:bg-[#222222] dark:border-[#333333]">
           <DialogHeader>
-            <DialogTitle>Remove Staff Member</DialogTitle>
+            <DialogTitle className="dark:text-white">Remove Staff Member</DialogTitle>
           </DialogHeader>
           
           <div className="flex items-center gap-4 py-4">
-            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100">
-              <Trash2 className="h-6 w-6 text-red-600" />
+            <div className="flex h-12 w-12 items-center justify-center rounded-full bg-red-100 dark:bg-red-900/30">
+              <Trash2 className="h-6 w-6 text-red-600 dark:text-red-400" />
             </div>
             <div className="flex-1">
-              <p className="text-sm text-gray-600">
-                Are you sure you want to remove <span className="font-semibold">{staffToDelete?.name}</span> from your branch?
+              <p className="text-sm text-gray-600 dark:text-[#A3A3A3]">
+                Are you sure you want to remove <span className="font-semibold dark:text-white">{staffToDelete?.name}</span> from your branch?
               </p>
             </div>
           </div>
@@ -751,7 +753,7 @@ export default function StaffManagementPage() {
                 setShowDeleteModal(false);
                 setStaffToDelete(null);
               }}
-              className="h-10 text-sm px-4"
+              className="h-10 text-sm px-4 dark:text-white"
             >
               Cancel
             </Button>
@@ -759,7 +761,7 @@ export default function StaffManagementPage() {
               type="button"
               variant="destructive"
               onClick={confirmDeleteStaff}
-              className="h-10 text-sm px-4"
+              className="h-10 text-sm px-4 bg-[#DC2626] hover:bg-[#B91C1C] text-white"
             >
               Remove Staff
             </Button>

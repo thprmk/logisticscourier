@@ -2,6 +2,7 @@
 import "./globals.css";
 import { Toaster } from 'react-hot-toast';
 import { UserProvider } from "./context/UserContext";
+import { ThemeProvider } from "./context/ThemeContext";
 import PWASetup from "./components/PWASetup";
 
 import type { Metadata } from "next";
@@ -14,7 +15,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <meta name="theme-color" content="#2563eb" />
@@ -23,11 +24,60 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-title" content="Netta" />
       </head>
       <body>
-        <Toaster position="top-right" toastOptions={{ duration: 3500 }} />
-        <UserProvider>
-          <PWASetup />
-          {children}
-        </UserProvider>
+        <ThemeProvider>
+          <Toaster
+            position="top-right"
+            toastOptions={{
+              duration: 3500,
+              // Default styling for all toasts
+              style: {
+                background: 'var(--background)',
+                color: 'var(--foreground)',
+                border: '1px solid var(--border)',
+              },
+              // Success toast styling
+              success: {
+                style: {
+                  background: 'var(--background)',
+                  color: 'var(--foreground)',
+                  border: '1px solid rgb(34, 197, 94)',
+                },
+                iconTheme: {
+                  primary: 'rgb(34, 197, 94)',
+                  secondary: 'var(--background)',
+                },
+              },
+              // Error toast styling
+              error: {
+                style: {
+                  background: 'var(--background)',
+                  color: 'var(--foreground)',
+                  border: '1px solid rgb(239, 68, 68)',
+                },
+                iconTheme: {
+                  primary: 'rgb(239, 68, 68)',
+                  secondary: 'var(--background)',
+                },
+              },
+              // Loading toast styling
+              loading: {
+                style: {
+                  background: 'var(--background)',
+                  color: 'var(--foreground)',
+                  border: '1px solid rgb(59, 130, 246)',
+                },
+                iconTheme: {
+                  primary: 'rgb(59, 130, 246)',
+                  secondary: 'var(--background)',
+                },
+              },
+            }}
+          />
+          <UserProvider>
+            <PWASetup />
+            {children}
+          </UserProvider>
+        </ThemeProvider>
       </body>
     </html>
   );

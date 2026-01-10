@@ -64,6 +64,18 @@ interface IShipment {
     type: string;
     details?: string;
   };
+  pricing?: {
+    basePrice: number;
+    zoneSurcharge: number;
+    finalPrice: number;
+  };
+  paymentMethod?: 'prepaid' | 'postpaid';
+  paymentStatus?: 'pending' | 'paid' | 'collected' | 'billed';
+  corporateClientId?: {
+    _id: string;
+    companyName: string;
+  };
+  collectedAmount?: number;
   deliveryProof?: {
     type: 'signature' | 'photo';
     url: string;  // Vercel Blob URL
@@ -155,7 +167,7 @@ export default function DeliveryStaffPage() {
     }
   }, [user, showProofModal, showFailureModal]);
 
-  const handleStatusUpdate = async (shipmentId: string, newStatus: IShipment['status'], failureReason?: string, deliveryProof?: { type: 'signature' | 'photo'; url: string }) => {
+  const handleStatusUpdate = async (shipmentId: string, newStatus: IShipment['status'], failureReason?: string, deliveryProof?: { type: 'signature' | 'photo'; url: string }, collectedAmount?: number) => {
     setUpdatingShipment(shipmentId);
     const toastId = toast.loading('Updating delivery status...');
 
@@ -167,7 +179,8 @@ export default function DeliveryStaffPage() {
         body: JSON.stringify({
           status: newStatus,
           ...(failureReason && { failureReason }),
-          ...(deliveryProof && { deliveryProof })
+          ...(deliveryProof && { deliveryProof }),
+          ...(collectedAmount !== undefined && { collectedAmount, paymentStatus: 'collected' })
         }),
       });
 
@@ -678,6 +691,24 @@ export default function DeliveryStaffPage() {
                       </div>
                     </div>
 
+                    {/* Price and Payment Info */}
+                    {shipment.pricing && (
+                      <div className="p-2 bg-gray-50 dark:bg-[#1A1A1A] rounded-lg">
+                        <p className="text-xs text-gray-500 dark:text-gray-400 font-semibold mb-1">PRICE</p>
+                        <p className="text-base font-bold text-gray-900 dark:text-white">
+                          ₹{shipment.pricing.finalPrice.toFixed(2)}
+                        </p>
+                        {shipment.paymentMethod && (
+                          <p className="text-xs text-gray-600 dark:text-gray-400 mt-1">
+                            {shipment.paymentMethod === 'prepaid' ? '💰 Pre-paid (COD)' : '📋 Post-paid'}
+                            {shipment.paymentMethod === 'postpaid' && shipment.corporateClientId && (
+                              <span className="block mt-0.5">Client: {shipment.corporateClientId.companyName}</span>
+                            )}
+                          </p>
+                        )}
+                      </div>
+                    )}
+
                     {/* Contact Info */}
                     {(isAssigned || isOutForDelivery) && (
                       <div>
@@ -790,7 +821,8 @@ export default function DeliveryStaffPage() {
           {showProofModal === shipment._id && (
             <ProofOfDeliveryModal
               shipmentId={shipment._id}
-              onSubmit={(proof) => handleStatusUpdate(shipment._id, 'Delivered', undefined, proof as any)}
+              shipment={shipment}
+              onSubmit={(proof, collectedAmount) => handleStatusUpdate(shipment._id, 'Delivered', undefined, proof as any, collectedAmount)}
               onClose={() => setShowProofModal(null)}
               isSubmitting={updatingShipment === shipment._id}
             />
@@ -844,18 +876,26 @@ function ImageViewerModal({
 // Proof of Delivery Modal Component
 function ProofOfDeliveryModal({
   shipmentId,
+  shipment,
   onSubmit,
   onClose,
   isSubmitting,
 }: {
   shipmentId: string;
-  onSubmit: (proof: { type: 'signature' | 'photo'; url: string }) => void;
+  shipment: IShipment;
+  onSubmit: (proof: { type: 'signature' | 'photo'; url: string }, collectedAmount?: number) => void;
   onClose: () => void;
   isSubmitting: boolean;
 }) {
   const [proofType, setProofType] = useState<'signature' | 'photo'>('signature');
   const [proofUrl, setProofUrl] = useState<string>('');
   const [isUploading, setIsUploading] = useState(false);
+  const [collectedAmount, setCollectedAmount] = useState<string>('');
+  
+  // Get expected amount
+  const expectedAmount = shipment.pricing?.finalPrice || 0;
+  const isPrepaid = shipment.paymentMethod === 'prepaid';
+  const isPostpaid = shipment.paymentMethod === 'postpaid';
 
   const handlePhotoCapture = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const file = e.target.files?.[0];
@@ -891,15 +931,19 @@ function ProofOfDeliveryModal({
     }
   };
 
-  const handleSubmit = () => {
+  const handleSubmit = (amount?: number) => {
     if (!proofUrl) {
       toast.error('Please provide a photo');
+      return;
+    }
+    if (isPrepaid && expectedAmount > 0 && !amount) {
+      toast.error('Please enter the collected amount');
       return;
     }
     onSubmit({
       type: 'photo',
       url: proofUrl,
-    });
+    }, amount);
   };
 
   return (
@@ -946,6 +990,53 @@ function ProofOfDeliveryModal({
           </div>
         </div>
 
+        {/* Payment Collection (for prepaid only) */}
+        {isPrepaid && expectedAmount > 0 && (
+          <div className="space-y-3 border-t pt-4">
+            <div className="p-3 bg-blue-50 dark:bg-blue-900/20 rounded-lg border border-blue-200 dark:border-blue-800">
+              <div className="flex justify-between items-center mb-2">
+                <span className="text-sm font-medium text-gray-700 dark:text-gray-300">Amount to Collect:</span>
+                <span className="text-lg font-bold text-blue-600 dark:text-blue-400">₹{expectedAmount.toFixed(2)}</span>
+              </div>
+            </div>
+            <div className="space-y-2">
+              <Label htmlFor="collected-amount" className="text-sm">Amount Collected (₹) *</Label>
+              <Input
+                id="collected-amount"
+                type="number"
+                step="0.01"
+                min="0"
+                value={collectedAmount}
+                onChange={(e) => setCollectedAmount(e.target.value)}
+                placeholder={`Enter amount (Expected: ₹${expectedAmount.toFixed(2)})`}
+                required
+              />
+              {collectedAmount && parseFloat(collectedAmount) !== expectedAmount && (
+                <p className="text-xs text-orange-600 dark:text-orange-400">
+                  {parseFloat(collectedAmount) < expectedAmount
+                    ? `Short by ₹${(expectedAmount - parseFloat(collectedAmount)).toFixed(2)}`
+                    : `Over by ₹${(parseFloat(collectedAmount) - expectedAmount).toFixed(2)}`}
+                </p>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* Postpaid Info */}
+        {isPostpaid && shipment.corporateClientId && (
+          <div className="p-3 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1">Post-paid Client:</p>
+            <p className="text-base font-semibold text-green-600 dark:text-green-400">
+              {shipment.corporateClientId.companyName}
+            </p>
+            {expectedAmount > 0 && (
+              <p className="text-sm text-gray-600 dark:text-gray-400 mt-1">
+                Amount: ₹{expectedAmount.toFixed(2)} (Billed to account)
+              </p>
+            )}
+          </div>
+        )}
+
         <DialogFooter className="flex gap-2">
           <Button
             variant="outline"
@@ -956,8 +1047,11 @@ function ProofOfDeliveryModal({
             Cancel
           </Button>
           <Button
-            onClick={handleSubmit}
-            disabled={isSubmitting || isUploading || !proofUrl}
+            onClick={() => {
+              const amount = isPrepaid && collectedAmount ? parseFloat(collectedAmount) : undefined;
+              handleSubmit(amount);
+            }}
+            disabled={isSubmitting || isUploading || !proofUrl || (isPrepaid && expectedAmount > 0 && !collectedAmount)}
             className="bg-green-600 hover:bg-green-700"
           >
             {isSubmitting ? 'Submitting...' : 'Confirm Delivery'}

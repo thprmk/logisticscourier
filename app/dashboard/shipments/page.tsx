@@ -128,6 +128,18 @@ export default function ShipmentsPage() {
   const [assignedStaff, setAssignedStaff] = useState(''); // New state for staff assignment
   const [originBranchId, setOriginBranchId] = useState('');
   const [destinationBranchId, setDestinationBranchId] = useState('');
+  
+  // Pricing state
+  const [calculatedPrice, setCalculatedPrice] = useState<{
+    basePrice: number;
+    zoneSurcharge: number;
+    finalPrice: number;
+    breakdown?: any;
+  } | null>(null);
+  const [isCalculatingPrice, setIsCalculatingPrice] = useState(false);
+  const [paymentMethod, setPaymentMethod] = useState<'prepaid' | 'postpaid' | ''>('');
+  const [corporateClientId, setCorporateClientId] = useState('');
+  const [corporateClients, setCorporateClients] = useState<Array<{ _id: string; companyName: string }>>([]);
 
   // State for the update form
   const [updateStatus, setUpdateStatus] = useState<IShipment['status']>('At Origin Branch');
@@ -253,6 +265,10 @@ export default function ShipmentsPage() {
     setOriginBranchId(user?.tenantId || '');
     setUpdateStatus('At Origin Branch'); setUpdateAssignedTo(''); setUpdateNotes('');
     setSelectedShipment(null);
+    // Reset pricing
+    setCalculatedPrice(null);
+    setPaymentMethod('');
+    setCorporateClientId('');
   };
 
   // Check if user can edit this shipment
@@ -364,13 +380,33 @@ export default function ShipmentsPage() {
     setIsSubmitting(true);
     const toastId = toast.loading('Creating new shipment...');
 
+    // Validate pricing
+    if (!calculatedPrice) {
+      toast.error('Please wait for price calculation to complete');
+      return;
+    }
+
+    // Validate payment method if price is calculated
+    if (calculatedPrice.finalPrice > 0 && !paymentMethod) {
+      toast.error('Please select a payment method');
+      return;
+    }
+
+    // Validate corporate client if postpaid
+    if (paymentMethod === 'postpaid' && !corporateClientId) {
+      toast.error('Please select a corporate client for postpaid shipments');
+      return;
+    }
+
     const newShipmentData = {
       sender: { name: sanitizedSenderName, address: sanitizedSenderAddress, phone: sanitizedSenderPhone },
       recipient: { name: sanitizedRecipientName, address: sanitizedRecipientAddress, phone: sanitizedRecipientPhone },
       packageInfo: { weight: packageWeight, type: packageType },
       originBranchId: originBranchId,
       destinationBranchId: destinationBranchId,
-      assignedTo: assignedStaff || undefined // Include assigned staff if selected
+      assignedTo: assignedStaff || undefined, // Include assigned staff if selected
+      paymentMethod: paymentMethod || undefined,
+      corporateClientId: corporateClientId || undefined,
     };
 
     try {
@@ -1323,6 +1359,81 @@ export default function ShipmentsPage() {
                 </div>
               </div>
             </div>
+
+            {/* Pricing Section */}
+            {destinationBranchId && packageWeight > 0 && (
+              <div className="space-y-3 border-t pt-4">
+                <h3 className="text-sm font-semibold">Pricing</h3>
+                {isCalculatingPrice ? (
+                  <div className="text-sm text-gray-500">Calculating price...</div>
+                ) : calculatedPrice ? (
+                  <div className="space-y-2 p-4 bg-green-50 dark:bg-green-900/20 rounded-lg border border-green-200 dark:border-green-800">
+                    <div className="flex justify-between text-sm">
+                      <span className="text-gray-600 dark:text-gray-400">Base Price:</span>
+                      <span className="font-medium">₹{calculatedPrice.basePrice.toFixed(2)}</span>
+                    </div>
+                    {calculatedPrice.zoneSurcharge > 0 && (
+                      <div className="flex justify-between text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Zone Surcharge:</span>
+                        <span className="font-medium">₹{calculatedPrice.zoneSurcharge.toFixed(2)}</span>
+                      </div>
+                    )}
+                    <div className="flex justify-between text-base font-bold border-t pt-2 mt-2">
+                      <span>Final Price:</span>
+                      <span className="text-green-600 dark:text-green-400">₹{calculatedPrice.finalPrice.toFixed(2)}</span>
+                    </div>
+                  </div>
+                ) : (
+                  <div className="text-sm text-red-600">Unable to calculate price. Please check zone assignments.</div>
+                )}
+
+                {/* Payment Method */}
+                {calculatedPrice && calculatedPrice.finalPrice > 0 && (
+                  <div className="space-y-3">
+                    <div>
+                      <Label htmlFor="payment-method" className="text-xs">Payment Method *</Label>
+                      <Select value={paymentMethod} onValueChange={(val) => {
+                        setPaymentMethod(val as 'prepaid' | 'postpaid');
+                        if (val === 'prepaid') {
+                          setCorporateClientId('');
+                        }
+                      }}>
+                        <SelectTrigger id="payment-method">
+                          <SelectValue placeholder="Select payment method" />
+                        </SelectTrigger>
+                        <SelectContent>
+                          <SelectItem value="prepaid">Pre-paid (Cash on Delivery)</SelectItem>
+                          <SelectItem value="postpaid">Post-paid (Corporate Client)</SelectItem>
+                        </SelectContent>
+                      </Select>
+                    </div>
+
+                    {/* Corporate Client Selector (if postpaid) */}
+                    {paymentMethod === 'postpaid' && (
+                      <div>
+                        <Label htmlFor="corporate-client" className="text-xs">Corporate Client *</Label>
+                        <Select value={corporateClientId} onValueChange={setCorporateClientId}>
+                          <SelectTrigger id="corporate-client">
+                            <SelectValue placeholder="Select corporate client" />
+                          </SelectTrigger>
+                          <SelectContent>
+                            {corporateClients.length === 0 ? (
+                              <SelectItem value="" disabled>No active clients available</SelectItem>
+                            ) : (
+                              corporateClients.map((client) => (
+                                <SelectItem key={client._id} value={client._id}>
+                                  {client.companyName}
+                                </SelectItem>
+                              ))
+                            )}
+                          </SelectContent>
+                        </Select>
+                      </div>
+                    )}
+                  </div>
+                )}
+              </div>
+            )}
 
             <DialogFooter className="pt-4">
               <Button type="button" variant="outline" onClick={closeModal}>

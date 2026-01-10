@@ -4,10 +4,13 @@ import { NextRequest, NextResponse } from 'next/server';
 import dbConnect from '@/lib/dbConnect';
 import Shipment from '@/models/Shipment.model';
 import User from '@/models/User.model';
+import CorporateClient from '@/models/CorporateClient.model';
 import { jwtVerify } from 'jose';
 import { customAlphabet } from 'nanoid';
 import { sanitizeInput, sanitizeObject, isValidEmail, isValidPhone, isValidAddress } from '@/lib/sanitize';
 import { dispatchNotification } from '@/app/lib/notificationDispatcher';
+import { calculateFinalPrice } from '@/lib/pricingCalculator';
+import { getZonesForBranches, validateZoneAssignment } from '@/lib/zoneService';
 
 // Helper to get the logged-in user's payload from their token
 async function getUserPayload(request: NextRequest) {
@@ -85,7 +88,14 @@ export async function POST(request: NextRequest) {
 
   try {
     const body = await request.json();
-    const { assignedTo, originBranchId, destinationBranchId, ...shipmentData } = body;
+    const { 
+      assignedTo, 
+      originBranchId, 
+      destinationBranchId, 
+      paymentMethod,
+      corporateClientId,
+      ...shipmentData 
+    } = body;
 
     // Sanitize all string inputs to prevent XSS
     const sanitized = sanitizeObject(shipmentData);
@@ -119,25 +129,140 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    // Validate weight is provided for pricing
+    const weight = sanitized.packageInfo?.weight;
+    if (!weight || weight <= 0) {
+      return NextResponse.json(
+        { message: 'Package weight is required and must be greater than 0' },
+        { status: 400 }
+      );
+    }
+
+    // Calculate price if weight is provided
+    let pricing: any = undefined;
+    try {
+      // Get zones for both branches
+      const zones = await getZonesForBranches(originBranchId, destinationBranchId);
+
+      if (!zones.originZoneId || !zones.destinationZoneId) {
+        // Validate zone assignment
+        const validation = await validateZoneAssignment(originBranchId, destinationBranchId);
+        return NextResponse.json(
+          {
+            message: 'Zone assignment error. Both branches must have zones assigned.',
+            errors: validation.errors,
+            warnings: validation.warnings,
+          },
+          { status: 400 }
+        );
+      }
+
+      // Calculate final price
+      const priceResult = await calculateFinalPrice(
+        weight,
+        zones.originZoneId,
+        zones.destinationZoneId
+      );
+
+      pricing = {
+        basePrice: priceResult.basePrice,
+        zoneSurcharge: priceResult.zoneSurcharge,
+        finalPrice: priceResult.finalPrice,
+        calculatedAt: new Date(),
+      };
+    } catch (error: any) {
+      console.error('Price calculation error:', error);
+      return NextResponse.json(
+        { message: `Price calculation failed: ${error.message}` },
+        { status: 400 }
+      );
+    }
+
+    // Validate payment method if provided
+    if (paymentMethod && !['prepaid', 'postpaid'].includes(paymentMethod)) {
+      return NextResponse.json(
+        { message: 'Payment method must be either "prepaid" or "postpaid"' },
+        { status: 400 }
+      );
+    }
+
+    // Validate corporate client if postpaid
+    if (paymentMethod === 'postpaid') {
+      if (!corporateClientId) {
+        return NextResponse.json(
+          { message: 'Corporate client ID is required for postpaid shipments' },
+          { status: 400 }
+        );
+      }
+
+      // Verify corporate client exists and is active
+      const corporateClient = await CorporateClient.findById(corporateClientId);
+      if (!corporateClient) {
+        return NextResponse.json(
+          { message: 'Corporate client not found' },
+          { status: 404 }
+        );
+      }
+
+      if (!corporateClient.isActive) {
+        return NextResponse.json(
+          { message: 'Corporate client is not active' },
+          { status: 400 }
+        );
+      }
+
+      // Check credit limit if applicable
+      if (corporateClient.creditLimit && pricing) {
+        const newOutstanding = (corporateClient.outstandingAmount || 0) + pricing.finalPrice;
+        if (newOutstanding > corporateClient.creditLimit) {
+          return NextResponse.json(
+            {
+              message: `Credit limit exceeded. Current outstanding: ₹${corporateClient.outstandingAmount || 0}, Credit limit: ₹${corporateClient.creditLimit}, Shipment price: ₹${pricing.finalPrice}`,
+            },
+            { status: 400 }
+          );
+        }
+      }
+    }
+
     // Generate a unique, human-readable tracking ID
     const nanoid = customAlphabet('ABCDEFGHIJKLMNOPQRSTUVWXYZ0123456789', 10);
     const trackingId = `TRK-${nanoid()}`;
+
+    // Determine payment status
+    let paymentStatus: 'pending' | 'paid' | 'collected' | 'billed' = 'pending';
+    if (paymentMethod === 'prepaid') {
+      paymentStatus = 'pending'; // Will be collected at delivery
+    } else if (paymentMethod === 'postpaid') {
+      paymentStatus = 'billed'; // Billed to corporate client
+    }
 
     // Create the new shipment with sanitized data
     const newShipment = new Shipment({
       ...sanitized,
       trackingId: trackingId,
-      createdBy:payload.userId || payload.id || payload.sub,
+      createdBy: payload.userId || payload.id || payload.sub,
       status: 'At Origin Branch', // Set initial status
       tenantId: payload.tenantId, // CRUCIAL: Assign the creator's tenantId (current/origin branch)
       originBranchId, // The branch where this shipment was created
       destinationBranchId, // The final destination
       currentBranchId: payload.tenantId, // Initially, the shipment is at the origin branch
       statusHistory: [{ status: 'At Origin Branch', timestamp: new Date() }], // Start the history log
-      ...(assignedTo && { assignedTo }) // Add assignedTo if provided
+      ...(assignedTo && { assignedTo }), // Add assignedTo if provided
+      pricing, // Add pricing breakdown
+      paymentMethod, // Add payment method
+      paymentStatus, // Add payment status
+      ...(corporateClientId && { corporateClientId }), // Add corporate client if postpaid
     });
 
     await newShipment.save();
+
+    // Update corporate client outstanding amount if postpaid
+    if (paymentMethod === 'postpaid' && corporateClientId && pricing) {
+      await CorporateClient.findByIdAndUpdate(corporateClientId, {
+        $inc: { outstandingAmount: pricing.finalPrice },
+      });
+    }
     
     // Dispatch 'shipment_created' notification
     await dispatchNotification({

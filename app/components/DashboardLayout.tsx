@@ -26,7 +26,11 @@ import {
   X,
   ChevronDown,
   Moon,
-  Sun
+  Sun,
+  DollarSign,
+  Layers,
+  MapPin,
+  Building2
 } from 'lucide-react';
 import toast from 'react-hot-toast';
 import { Button } from '@/app/components/ui/button';
@@ -238,8 +242,17 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
   if (user.role === 'superAdmin') {
     userRole = 'Platform Owner';
-    pageTitle = 'Branch Management';
-    navLinks = [{ href: '/superadmin/dashboard', label: 'Branches', icon: Building }];
+    if (pathname.startsWith('/superadmin/pricing/weight-tiers')) pageTitle = 'Weight Tiers';
+    else if (pathname.startsWith('/superadmin/pricing/zones')) pageTitle = 'Zones';
+    else if (pathname.startsWith('/superadmin/pricing/zone-surcharges')) pageTitle = 'Zone Surcharges';
+    else if (pathname.startsWith('/superadmin/pricing/corporate-clients')) pageTitle = 'Corporate Clients';
+    else if (pathname.startsWith('/superadmin/pricing')) pageTitle = 'Pricing Configuration';
+    else pageTitle = 'Branch Management';
+    
+    navLinks = [
+      { href: '/superadmin/dashboard', label: 'Branches', icon: Building },
+      { href: '/superadmin/pricing/weight-tiers', label: 'Pricing', icon: DollarSign }
+    ];
   } else {
     // For admin role: check isManager to distinguish between Branch Manager and Dispatcher
     if (user.role === 'admin' && user.isManager) {
@@ -349,24 +362,122 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
 
             {/* Navigation */}
             <nav className="hidden md:flex items-center space-x-1">
-              {navLinks.map((link) => (
-                <Link
-                  key={link.href}
-                  href={link.href}
-                  onClick={() => {
-                    if (pathname !== link.href) {
-                      NProgress.start();
-                    }
-                  }}
-                  className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
-                    ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
-                    : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
-                    }`}
-                >
-                  <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2.5} />
-                  <span>{link.label}</span>
-                </Link>
-              ))}
+              {navLinks.map((link) => {
+                // Special handling for Pricing dropdown (SuperAdmin only)
+                if (user.role === 'superAdmin' && link.href === '/superadmin/pricing/weight-tiers') {
+                  const isPricingActive = pathname.startsWith('/superadmin/pricing');
+                  return (
+                    <DropdownMenu key="pricing">
+                      <DropdownMenuTrigger asChild>
+                        <button
+                          className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${
+                            isPricingActive
+                              ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                              : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white'
+                          }`}
+                        >
+                          <DollarSign className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+                          <span>Pricing</span>
+                          <ChevronDown className="h-4 w-4 ml-1" strokeWidth={2.5} />
+                        </button>
+                      </DropdownMenuTrigger>
+                      <DropdownMenuContent align="start" className="w-56 bg-white dark:bg-[#222222] border-gray-200 dark:border-[#333333]">
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/superadmin/pricing/weight-tiers"
+                            onClick={() => {
+                              if (pathname !== '/superadmin/pricing/weight-tiers') {
+                                NProgress.start();
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                              pathname === '/superadmin/pricing/weight-tiers'
+                                ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                                : ''
+                            }`}
+                          >
+                            <Layers className="h-4 w-4" />
+                            <span>Weight Tiers</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/superadmin/pricing/zones"
+                            onClick={() => {
+                              if (pathname !== '/superadmin/pricing/zones') {
+                                NProgress.start();
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                              pathname === '/superadmin/pricing/zones'
+                                ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                                : ''
+                            }`}
+                          >
+                            <MapPin className="h-4 w-4" />
+                            <span>Zones</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/superadmin/pricing/zone-surcharges"
+                            onClick={() => {
+                              if (pathname !== '/superadmin/pricing/zone-surcharges') {
+                                NProgress.start();
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                              pathname === '/superadmin/pricing/zone-surcharges'
+                                ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                                : ''
+                            }`}
+                          >
+                            <Package className="h-4 w-4" />
+                            <span>Zone Surcharges</span>
+                          </Link>
+                        </DropdownMenuItem>
+                        <DropdownMenuItem asChild>
+                          <Link
+                            href="/superadmin/pricing/corporate-clients"
+                            onClick={() => {
+                              if (pathname !== '/superadmin/pricing/corporate-clients') {
+                                NProgress.start();
+                              }
+                            }}
+                            className={`flex items-center gap-2 px-3 py-2 cursor-pointer ${
+                              pathname === '/superadmin/pricing/corporate-clients'
+                                ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                                : ''
+                            }`}
+                          >
+                            <Building2 className="h-4 w-4" />
+                            <span>Corporate Clients</span>
+                          </Link>
+                        </DropdownMenuItem>
+                      </DropdownMenuContent>
+                    </DropdownMenu>
+                  );
+                }
+                // Regular link for other items
+                return (
+                  <Link
+                    key={link.href}
+                    href={link.href}
+                    onClick={() => {
+                      if (pathname !== link.href) {
+                        NProgress.start();
+                      }
+                    }}
+                    className={`flex items-center gap-2 px-4 py-2 sm:px-3 sm:py-2 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
+                      ? 'bg-[#DAFED4] dark:bg-[#1A3D2A] text-black dark:text-white'
+                      : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
+                      }`}
+                  >
+                    <link.icon className="h-5 w-5 sm:h-4 sm:w-4" strokeWidth={2.5} />
+                    <span>{link.label}</span>
+                  </Link>
+                );
+              })}
             </nav>
 
             {/* User Menu */}
@@ -492,25 +603,116 @@ export default function DashboardLayout({ children }: DashboardLayoutProps) {
         <div className={`md:hidden fixed top-16 left-0 w-64 h-screen bg-white dark:bg-[#1A1A1A] border-r border-gray-200 dark:border-[#333333] shadow-lg z-40 transform transition-transform duration-300 ease-in-out overflow-y-auto ${isMobileMenuOpen ? 'translate-x-0' : '-translate-x-full'
           }`}>
           <nav className="px-3 sm:px-4 py-4 sm:py-3 space-y-2 sm:space-y-1">
-            {navLinks.map((link) => (
-              <Link
-                key={link.href}
-                href={link.href}
-                onClick={() => {
-                  setIsMobileMenuOpen(false);
-                  if (pathname !== link.href) {
-                    NProgress.start();
-                  }
-                }}
-                className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
-                  ? 'bg-[#25D366] dark:bg-[#25D366] text-white shadow-md'
-                  : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
-                  }`}
-              >
-                <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
-                <span>{link.label}</span>
-              </Link>
-            ))}
+            {navLinks.map((link) => {
+              // Special handling for Pricing in mobile (SuperAdmin only)
+              if (user.role === 'superAdmin' && link.href === '/superadmin/pricing/weight-tiers') {
+                const isPricingActive = pathname.startsWith('/superadmin/pricing');
+                return (
+                  <div key="pricing-mobile" className="space-y-1">
+                    <div
+                      className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold ${
+                        isPricingActive
+                          ? 'bg-[#25D366] dark:bg-[#25D366] text-white shadow-md'
+                          : 'text-gray-700 dark:text-white'
+                      }`}
+                    >
+                      <DollarSign className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                      <span>Pricing</span>
+                    </div>
+                    <div className="pl-4 space-y-1">
+                      <Link
+                        href="/superadmin/pricing/weight-tiers"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (pathname !== '/superadmin/pricing/weight-tiers') {
+                            NProgress.start();
+                          }
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
+                          pathname === '/superadmin/pricing/weight-tiers'
+                            ? 'bg-[#25D366] dark:bg-[#25D366] text-white'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
+                        }`}
+                      >
+                        <Layers className="h-4 w-4" />
+                        <span>Weight Tiers</span>
+                      </Link>
+                      <Link
+                        href="/superadmin/pricing/zones"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (pathname !== '/superadmin/pricing/zones') {
+                            NProgress.start();
+                          }
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
+                          pathname === '/superadmin/pricing/zones'
+                            ? 'bg-[#25D366] dark:bg-[#25D366] text-white'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
+                        }`}
+                      >
+                        <MapPin className="h-4 w-4" />
+                        <span>Zones</span>
+                      </Link>
+                      <Link
+                        href="/superadmin/pricing/zone-surcharges"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (pathname !== '/superadmin/pricing/zone-surcharges') {
+                            NProgress.start();
+                          }
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
+                          pathname === '/superadmin/pricing/zone-surcharges'
+                            ? 'bg-[#25D366] dark:bg-[#25D366] text-white'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
+                        }`}
+                      >
+                        <Package className="h-4 w-4" />
+                        <span>Zone Surcharges</span>
+                      </Link>
+                      <Link
+                        href="/superadmin/pricing/corporate-clients"
+                        onClick={() => {
+                          setIsMobileMenuOpen(false);
+                          if (pathname !== '/superadmin/pricing/corporate-clients') {
+                            NProgress.start();
+                          }
+                        }}
+                        className={`flex items-center gap-3 px-4 py-3 rounded-lg text-sm ${
+                          pathname === '/superadmin/pricing/corporate-clients'
+                            ? 'bg-[#25D366] dark:bg-[#25D366] text-white'
+                            : 'text-gray-600 dark:text-gray-400 hover:bg-gray-50 dark:hover:bg-[#2A2A2A]'
+                        }`}
+                      >
+                        <Building2 className="h-4 w-4" />
+                        <span>Corporate Clients</span>
+                      </Link>
+                    </div>
+                  </div>
+                );
+              }
+              // Regular link for other items
+              return (
+                <Link
+                  key={link.href}
+                  href={link.href}
+                  onClick={() => {
+                    setIsMobileMenuOpen(false);
+                    if (pathname !== link.href) {
+                      NProgress.start();
+                    }
+                  }}
+                  className={`flex items-center gap-3 px-4 py-4 sm:py-3 rounded-lg text-base sm:text-sm font-semibold transition-all duration-150 focus:outline-none focus:ring-0 ${pathname.startsWith(link.href) && (link.href !== '/dashboard' || pathname === '/dashboard')
+                    ? 'bg-[#25D366] dark:bg-[#25D366] text-white shadow-md'
+                    : 'text-gray-700 dark:text-white hover:bg-gray-50 dark:hover:bg-[#2A2A2A] hover:text-black dark:hover:text-white focus:bg-gray-50 dark:focus:bg-[#2A2A2A] focus:text-black dark:focus:text-white'
+                    }`}
+                >
+                  <link.icon className="h-6 w-6 sm:h-5 sm:w-5" strokeWidth={2.5} />
+                  <span>{link.label}</span>
+                </Link>
+              );
+            })}
 
             {/* Mobile User Info */}
             <div className="flex items-center gap-3 px-4 py-4 sm:py-3 mt-2 border-t border-gray-200 dark:border-[#333333] pt-4 sm:pt-3">

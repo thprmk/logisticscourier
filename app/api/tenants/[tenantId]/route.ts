@@ -5,6 +5,7 @@ import dbConnect from '@/lib/dbConnect';
 import Tenant from '@/models/Tenant.model';
 import User from '@/models/User.model';
 import Shipment from '@/models/Shipment.model';
+import Zone from '@/models/Zone.model';
 import { jwtVerify } from 'jose';
 import mongoose from 'mongoose';
 import bcrypt from 'bcryptjs';
@@ -65,11 +66,29 @@ export async function PATCH(request: NextRequest) {
         const tenantId = getTenantIdFromUrl(request);
         const body = await request.json();
         
-        const { name, adminName, adminEmail, adminPassword } = body;
+        const { name, adminName, adminEmail, adminPassword, zoneId } = body;
 
         // --- Update Tenant ---
+        const updateData: any = {};
         if (name) {
-            const updatedTenant = await Tenant.findByIdAndUpdate(tenantId, { name }, { new: true });
+            updateData.name = name;
+        }
+        if (zoneId !== undefined) {
+            // If zoneId is null or empty string, remove zone assignment
+            if (zoneId === null || zoneId === '') {
+                updateData.zoneId = null;
+            } else {
+                // Validate zone exists
+                const zone = await Zone.findById(zoneId);
+                if (!zone) {
+                    return NextResponse.json({ message: 'Zone not found' }, { status: 404 });
+                }
+                updateData.zoneId = zoneId;
+            }
+        }
+
+        if (Object.keys(updateData).length > 0) {
+            const updatedTenant = await Tenant.findByIdAndUpdate(tenantId, updateData, { new: true });
             if (!updatedTenant) {
                 return NextResponse.json({ message: 'Tenant not found' }, { status: 404 });
             }

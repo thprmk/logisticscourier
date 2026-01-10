@@ -6,14 +6,15 @@ import Tenant from '@/models/Tenant.model';
 import User from '@/models/User.model';
 import Notification from '@/models/Notification.model';
 import PushSubscription from '@/models/PushSubscription.model';
+// Pricing module models
+import WeightTier from '@/models/WeightTier.model';
+import Zone from '@/models/Zone.model';
+import ZoneSurcharge from '@/models/ZoneSurcharge.model';
+import CorporateClient from '@/models/CorporateClient.model';
+import { env } from './env';
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    'Please define the MONGODB_URI environment variable inside .env.local'
-  );
-}
+// Use validated environment variable
+const MONGODB_URI = env.MONGODB_URI;
 
  
 //  Global is used here to maintain a cached connection across hot reloads

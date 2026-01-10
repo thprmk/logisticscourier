@@ -9,6 +9,14 @@ interface IAddressDetails {
   phone: string;
 } 
 
+// Interface for pricing breakdown
+interface IPricingDetails {
+  basePrice: number;              // Weight-based price
+  zoneSurcharge: number;          // Zone-based surcharge
+  finalPrice: number;             // Total price (basePrice + zoneSurcharge)
+  calculatedAt: Date;             // When price was calculated
+}
+
 // This is the main TypeScript interface for a Shipment document
 export interface IShipment extends Document {
   tenantId: Schema.Types.ObjectId;      // CRUCIAL: The link to the Branch/Tenant (current branch)
@@ -26,6 +34,12 @@ export interface IShipment extends Document {
   status: 'At Origin Branch' | 'In Transit to Destination' | 'At Destination Branch' | 'Assigned' | 'Out for Delivery' | 'Delivered' | 'Failed'; // Controlled list of statuses
   assignedTo?: Schema.Types.ObjectId;     // Optional: The User ID of the assigned driver
   createdBy: Schema.Types.ObjectId;
+  pricing?: IPricingDetails;             // Pricing breakdown (locked at creation)
+  paymentMethod?: 'prepaid' | 'postpaid'; // Payment type
+  paymentStatus?: 'pending' | 'paid' | 'collected' | 'billed'; // Payment status
+  corporateClientId?: Schema.Types.ObjectId; // If postpaid, link to corporate client
+  collectedAmount?: number;               // Amount collected at delivery
+  collectedAt?: Date;                     // When payment was collected
   statusHistory: {
     status: string;
     timestamp: Date;
@@ -70,6 +84,35 @@ const ShipmentSchema = new Schema<IShipment>({
 
   createdBy: { type: Schema.Types.ObjectId, ref: 'User', required: true },
 
+  // Pricing information (locked at creation)
+  pricing: {
+    basePrice: { type: Number, min: 0 },
+    zoneSurcharge: { type: Number, min: 0 },
+    finalPrice: { type: Number, min: 0 },
+    calculatedAt: { type: Date, default: Date.now },
+  },
+  
+  // Payment information
+  paymentMethod: {
+    type: String,
+    enum: ['prepaid', 'postpaid'],
+  },
+  paymentStatus: {
+    type: String,
+    enum: ['pending', 'paid', 'collected', 'billed'],
+    default: 'pending',
+  },
+  corporateClientId: {
+    type: Schema.Types.ObjectId,
+    ref: 'CorporateClient',
+  },
+  collectedAmount: {
+    type: Number,
+    min: 0,
+  },
+  collectedAt: {
+    type: Date,
+  },
   
   statusHistory: [{
     status: String,
@@ -87,6 +130,8 @@ const ShipmentSchema = new Schema<IShipment>({
 ShipmentSchema.index({ tenantId: 1, status: 1 }); // For filtering by tenant and status
 ShipmentSchema.index({ tenantId: 1, createdAt: -1 }); // For date-sorted tenant queries
 ShipmentSchema.index({ tenantId: 1, assignedTo: 1 }); // For staff assignment queries
+ShipmentSchema.index({ paymentStatus: 1 }); // For payment status filtering
+ShipmentSchema.index({ corporateClientId: 1 }); // For corporate client reports
 
 const Shipment = models.Shipment || model<IShipment>('Shipment', ShipmentSchema);
 

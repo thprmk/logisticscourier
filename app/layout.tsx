@@ -4,8 +4,17 @@ import { Toaster } from 'react-hot-toast';
 import { UserProvider } from "./context/UserContext";
 import { ThemeProvider } from "./context/ThemeContext";
 import PWASetup from "./components/PWASetup";
+import { Inter } from 'next/font/google';
 
 import type { Metadata } from "next";
+
+// Optimize Inter font with Next.js
+const inter = Inter({
+  subsets: ['latin'],
+  weight: ['400', '500', '600', '700'],
+  display: 'swap',
+  variable: '--font-inter',
+});
 
 export const metadata: Metadata = {
   title: "Nettaa Logistics",
@@ -15,7 +24,7 @@ export const metadata: Metadata = {
 
 export default function RootLayout({ children }: { children: React.ReactNode }) {
   return (
-    <html lang="en" suppressHydrationWarning>
+    <html lang="en" suppressHydrationWarning className={inter.variable}>
       <head>
         <link rel="manifest" href="/manifest.json" />
         <link rel="icon" href="/icons/favicon-32x32.png" sizes="32x32" type="image/png" />
@@ -27,7 +36,7 @@ export default function RootLayout({ children }: { children: React.ReactNode }) 
         <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
         <meta name="apple-mobile-web-app-title" content="Nettaa" />
       </head>
-      <body>
+      <body className={inter.className}>
         <ThemeProvider>
           <Toaster
             position="top-right"
